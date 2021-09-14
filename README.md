@@ -133,7 +133,7 @@ To install library, simply run
 
 This tutorial allows users to explore bulk plasma proteome measured from 6 healthy donors over 10 timepoints. Plasma proteomic data available at github. 1. Olink_NPX_log2_Protein.Rda (Normalized protein expression data) 2. data_Annotation.Rda (clinical metadata). Longitudinal dataset have 6 donors (3 male and 3 females). PBMC was collected for 10 weeks. Please follow following steps.
 
-#### 1.1: Load Library and assign parameters
+#### 1.1: Load Library
    
     #Load Library
     library("longituinalDynamics")
@@ -287,7 +287,7 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 
 This tutorial allows users to explore single cell RNAseq data measured from 4 healthy donors over 6 timepoints (week 2-7). Single cell data available at **GEOXXX**. (1) pbmc_longitudinal_data (Normalized scRNA seurat object) (2) data_Annotation.Rda (clinical metadata). Longitudinal dataset have 4 donors (2 male and 2 females). Please follow following steps.
 
-#### 2.1: Load Library and assign parameters
+#### 2.1: Load Library
    
     #Load Library
     library("longituinalDynamics")
