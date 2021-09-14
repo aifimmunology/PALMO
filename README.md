@@ -9,7 +9,7 @@ Table of Contents
 * [Introduction](#introduction)
 * [Install package and load library](#library)
 * [Quick Usage (Longitudinal data)](#usage)
-    * [Plasma proteome](#olnk)
+    * [Plasma proteome](#olink)
     * [Flow cell-proportion](#flow)
     * [Blood count data](#cbc)
     * [Single cell RNA data](#scrna)
