@@ -128,12 +128,12 @@ To install library, simply run
 ### <a name="example1"></a> Tutorial-1: Plasma proteome
 This tutorial allows users to explore bulk plasma proteome measured from 6 healthy donors over 10 timepoints.
 
-#### Load Library
+   #Load Library
    library("longituinalDynamics")
    library("Hmisc")
    library("ggpubr")
 
-#### Assign data and paramaters
+   #Assign data and paramaters
    #assign rownames with sample name
    row.names(ann) <- ann$Sample
 
