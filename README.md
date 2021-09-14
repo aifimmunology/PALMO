@@ -300,6 +300,12 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     pbmc <- readRDS("data/01-scRNA-PBMC-FinalData.RDS")
     metaData <- pbmc@meta.data
     pbmc@meta.data$Sample <- pbmc@meta.data$orig.ident
+    #UMAP plot
+    p1 <- DimPlot(object = pbmc, reduction = 'umap', group.by = "Sample", label = F)
+    p2 <- DimPlot(object = pbmc, reduction = 'umap', group.by = "celltype", label = F)
+    print(plot_grid(p1, p2, align="hv", ncol=2))
+
+#### 
 
     #Clinical metadata/annotation
     load("data/data_Annotation.Rda")
@@ -378,14 +384,7 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     mat <- mat[,Overlap]
     write.table(sort(unique(ann$group)), file=paste(filePATH,"/",fileName,"-group.txt", sep=""), row.names = F, col.names=F, quote=F)
 
-#### 2.3: Check data
-#### UMAP plot
-
-    p1 <- DimPlot(object = pbmc, reduction = 'umap', group.by = "Sample", label = F)
-    p2 <- DimPlot(object = pbmc, reduction = 'umap', group.by = "celltype", label = F)
-    print(plot_grid(p1, p2, align="hv", ncol=2))
-
-#### CV profile
+#### 2.3: CV profile
 
     exp_profile <- cvSampleprofile(mat=mat, ann=ann)
     #Mean Plot
