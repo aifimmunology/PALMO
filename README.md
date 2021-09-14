@@ -464,6 +464,39 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     print(plots$plot1)
     plots <- plotFunction(ann, mat, geneName="LILRA4")
     print(plots$plot2)
+    
+#### 2.5: Intra-donor variations over time
+#### Calculate CV
+
+    meanThreshold=0.1
+    cvThreshold=10
+    cv_res <- cvCalcSC(mat=mat, ann=ann, meanThreshold=meanThreshold, cvThreshold=cvThreshold, housekeeping_genes=housekeeping_genes, filePATH=filePATH, fileName="scrna")
+
+#### Find stable and variable features in longitudinal data
+
+    donorThreshold <- 4
+    groupThreshold <- 40 #number of donors * number of celltypes/2 (4x19/2)
+    topFeatures <- 25
+    var_gene <- VarFeatures(ann=ann, group_oi=group_oi, meanThreshold=meanThreshold, cvThreshold=cvThreshold, donorThreshold=donorThreshold, groupThreshold=groupThreshold, topFeatures=topFeatures, filePATH=filePATH, fileName=fileName)
+
+    stable_gene <- StableFeatures(ann=ann, group_oi=group_oi, meanThreshold=meanThreshold, cvThreshold=cvThreshold, donorThreshold=donorThreshold, groupThreshold=groupThreshold, topFeatures=topFeatures, filePATH=filePATH, fileName=fileName)
+
+#### UMAP Plot
+
+    nPC <- 15
+    plot1 <- DimPlot(object = pbmc, reduction = 'umap', group.by = "celltype", label = T)
+    rnaObj <- dimUMAPPlot(rnaObj=dataObj, nPC=nPC, gene_oi=var_gene, groupName=avgGroup, plotname="variable", filePATH=filePATH, fileName=fileName)
+    rnaObj <- dimUMAPPlot(rnaObj=dataObj, nPC=nPC, gene_oi=stable_gene, groupName=avgGroup, plotname="stable", filePATH=filePATH, fileName=fileName)
+
+#### gene Plot
+
+    plots <- genePlot(ann=ann, data=mat, geneName="IL7R", groupName="group")
+
+#### Circular gene expression plot
+
+    load("output/scrna-CV-allgenes-raw.Rda")
+    geneList <- c("IL32","CCL5","TCF7","IL7R","LEF1") #T-cell
+    res <- genecircosPlot(data=cv_res, geneList=geneList, group_oi=group_oi)
 
 ### <a name="example3"></a> Tutorial-3: scATAC
 ### <a name="exampl4"></a> Tutorial-4: CNP data
