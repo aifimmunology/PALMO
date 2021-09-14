@@ -129,14 +129,14 @@ To install library, simply run
 
 This tutorial allows users to explore bulk plasma proteome measured from 6 healthy donors over 10 timepoints. Plasma proteomic data available at github. 1. Olink_NPX_log2_Protein.Rda (Normalized protein expression data) 2. data_Annotation.Rda (clinical metadata). Longitudinal dataset have 6 donors (3 male and 3 females). PBMC was collected for 10 weeks. Please follow following steps.
 
-#### 1.1.0 : Load Library
+#### 1.1: Load Library and assign parameters
    
     #Load Library
     library("longituinalDynamics")
     library("Hmisc")
     library("ggpubr")
     
-#### 1.1.1 : Assign data and paramaters
+#### Assign data and paramaters
 
     #assign rownames with sample name
     row.names(ann) <- ann$Sample
@@ -148,21 +148,21 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
     cvThreshold=5
     housekeeping_genes <- c("GAPDH", "ACTB")
     
-#### 1.1.2 : Create output directory
+#### Create output directory
 
     outputDirectory <- "output"
     filePATH <- paste(getwd(), "/",outputDirectory, sep="")
     dir.create(file.path(getwd(), outputDirectory), showWarnings = FALSE)
     
-#### 1.1.3 : Sample overlap
+#### Sample overlap
 
     overlap <- intersect(metadata$Sample, colnames(datamatrix))
     metadata <- metadata[overlap,]
     datamatrix <- data.frame(datamatrix, check.names = F, stringsAsFactors = F)
     datamatrix <- datamatrix[,overlap]
 
-#### 1.2.0 :  Check data
-#### 1.2.1 :  PCA Plot
+#### 1.2:  Check data
+#### PCA Plot
 
     row.has.na <- apply(datamatrix,1,function(x){any(is.na(x))})
     datamatrix_nonNA <- datamatrix[!row.has.na,]
@@ -172,7 +172,7 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
              theme_classic()
     print(plot1)
 
-#### 1.2.2 :  Sample variability (Correlation)
+#### Sample variability (Correlation)
     cor_mat <- rcorr(as.matrix(datamatrix_nonNA), type="pearson")
     res <- cor_mat$r
     #Plot heatmap
