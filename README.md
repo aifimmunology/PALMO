@@ -506,11 +506,6 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
 
 [Suhas Vasaikar](https://github.com/suhasaii), [Aarthi talla](https://github.com/aarthitallaAI) and [Xiaojun Li](https://github.com/Xiaojun-Li) designed the longitudinalDynamics algorithm. [Suhas Vasaikar](https://github.com/suhasaii) implemented the longitudinalDynamics package.
 
-## <a name="acknowledgements"></a> Acknowledgements
-
-We thank Dr. Adam Savage, Dr. Troy Torgerson, Dr. Peter Skene and Dr. Tom Bumol for contribution.
-
-
 ## <a name="license"></a> License
 
 longitudinalDynamics is licensed under the [MIT-License](https://github.com/git/git-scm.com/blob/main/MIT-LICENSE.txt).
