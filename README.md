@@ -287,7 +287,7 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 
 This tutorial allows users to explore single cell RNAseq data measured from 4 healthy donors over 6 timepoints (week 2-7). Single cell data available at **GEOXXX**. (1) pbmc_longitudinal_data (Normalized scRNA seurat object) (2) data_Annotation.Rda (clinical metadata). Longitudinal dataset have 4 donors (2 male and 2 females). Please follow following steps.
 
-#### 1.1: Load Library and assign parameters
+#### 2.1: Load Library and assign parameters
    
     #Load Library
     library("longituinalDynamics")
@@ -327,11 +327,144 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     
 #### Sample overlap
 
-    overlap <- intersect(metadata$Sample, colnames(datamatrix))
+    overlap <- intersect(metadata$Sample, dataObj@meta.data$Sample)
     metadata <- metadata[overlap,]
-    datamatrix <- data.frame(datamatrix, check.names = F, stringsAsFactors = F)
-    datamatrix <- datamatrix[,overlap]
+    #in-case subset of samples only
+    dataObj <- subset(x = dataObj, subset = Sample %in% overlap)
+ 
+#### 2.2: Aggregate data at celltypes (psuedo-bulk)
+#### For single cell data merge annotation and single cell metadata
+
+    metaData <- dataObj@meta.data
+    metadata1 <- metadata[metaData$Sample,]
+    metaData <- cbind(metaData, metadata1)
+    dataObj@meta.data <- metaData
+
+#### Define sample group and Calculate average expression
+
+    dataObj@meta.data$Sample_group <- paste(dataObj@meta.data$Sample, dataObj@meta.data[,avgGroup], sep=":")
+    dataObj@meta.data$Sample_group <- gsub(" ", "_", dataObj@meta.data$Sample_group)
+    metaData <- dataObj@meta.data
     
+#### Calculate average expression across group/celltype
+    
+    Idents(dataObj) <- "Sample_group"
+    table(Idents(dataObj))
+    scrna_avgmat <- avgExpCalc(dataObj=dataObj, group.by="Sample_group")
+
+#### Keep genes with avgExpression > zero
+
+    rowDF <- rowSums(scrna_avgmat)
+    rowDF <- rowDF[rowDF > 0]
+    mat <- scrna_avgmat[names(rowDF),]
+
+#### Create annotation
+
+    cn <- data.frame(Sample_group=colnames(mat))
+    temp <- data.frame(do.call(rbind, strsplit(cn$Sample_group, split = ":")), stringsAsFactors = F)
+    cn <- data.frame(cn, Sample=temp$X1, group=temp$X2, stringsAsFactors = F)
+    row.names(cn) <- cn$Sample_group
+    cn <- merge(cn, metadata, by="Sample", all=TRUE)
+    cn <- cn[!is.na(cn$Sample_group),]
+    row.names(cn) <- cn$Sample_group
+    ann <- cn
+    ann$Sample_group_i <- paste(ann$group, ann$PTID, sep=":")
+    rm(cn)
+
+#### Final matrix
+
+    Overlap <- intersect(colnames(mat), row.names(ann))
+    ann <- ann[Overlap,]
+    mat <- mat[,Overlap]
+    write.table(sort(unique(ann$group)), file=paste(filePATH,"/",fileName,"-group.txt", sep=""), row.names = F, col.names=F, quote=F)
+
+#### 2.3: Check data
+#### UMAP plot
+
+    p1 <- DimPlot(object = pbmc, reduction = 'umap', group.by = "Sample", label = F)
+    p2 <- DimPlot(object = pbmc, reduction = 'umap', group.by = "celltype", label = F)
+    print(plot_grid(p1, p2, align="hv", ncol=2))
+
+#### CV profile
+
+    exp_profile <- cvSampleprofile(mat=mat, ann=ann)
+    #Mean Plot
+    ggplot(exp_profile, aes(x=mean)) +
+      geom_histogram(binwidth=0.1, color="black", fill="white") +
+      scale_x_continuous(trans='log10')
+
+    ggplot(exp_profile, aes(x=mean)) +
+      geom_histogram(binwidth=0.1, color="black", fill="white") +
+      scale_x_continuous(trans='log10') +
+      facet_wrap(~group)
+
+    #CV plot
+    ggplot(exp_profile, aes(x=cv)) +
+      geom_histogram(binwidth=1, color="black", fill="white")
+    
+    #Housekeeping genes data
+    exp_profile <- exp_profile[exp_profile$gene %in% c("ACTB","GAPDH"),]
+    ggplot(exp_profile, aes(x=mean, y=cv)) + geom_point() +
+      facet_wrap(~gene)
+
+#### 2.4: Features contributing towards donor variations
+#### Variance decomposition
+
+    meanThreshold <- 0.1
+    lmem_res <- lmeVariance(ann=ann, mat=mat, features=c(features,"group"), meanThreshold=meanThreshold, fileName=fileName, filePATH=filePATH)
+    res <- lmem_res[,c("PTID","Time","group","Residual")]
+    colnames(res) <- c("donor","week","celltype","Residuals")
+    res <- res*100 #in percentage
+    
+#### Donor-specific variance
+
+    df1 <- filter(res, donor>week & donor>celltype & Residuals < 50)
+    df1 <- df1[order(df1$donor, decreasing = T),]
+    df <- melt(data.matrix(df1))
+    df$Var2 <- factor(df$Var2, levels = rev(c("donor","week", "celltype", "Residuals")))
+    df$Var1 <- factor(df$Var1, levels = rev(unique(df$Var1)))
+    p1 <- ggplot(df, aes(x=Var1, y=value, fill=Var2)) +
+      geom_bar(stat="identity", position="stack") +
+      scale_fill_manual(values = c("donor"="#C77CFF", "celltype"="#00BFC4", "week"="#7CAE00", "Residuals"="grey")) +
+      theme_bw() + theme(axis.text.x = element_text(angle=90, hjust = 0.5, vjust = 1),legend.position = "right") +
+      coord_flip()
+    print(p1)  
+
+#### Plot the variables
+
+    genelist <- c("MTRNR2L8", "XIST", "RPS4Y1", "RPS26",
+                  "JUN", "DAXX", "FOSB", "STAT1",
+                  "LILRA4", "CLEC9A", "CST3", "BANK1")
+    plotFunction <- function(ann, mat, geneName) {
+      df <- data.frame(exp=as.numeric(mat[geneName,]), ann, stringsAsFactors = F)
+      wk <- c("W2","W3","W4","W5","W6","W7")
+      col <- colorRampPalette(c("cyan", "grey", "black"))(6)
+      names(col) <- wk
+      df$Time <- factor(df$Time, levels = wk)
+      plot1 <- ggplot(df, aes(x=PTID, y=exp, fill=Time)) +
+          #geom_bar(stat="identity", position="dodge") +
+          #geom_point(position=position_dodge(width=0.9), aes(y=exp), size=0.2) +
+          geom_boxplot(outlier.size = 0.1) +
+          scale_fill_manual(values = col) +
+          labs(x="", y="RNA expression", title=geneName) +
+          theme_classic() + theme(axis.text.x = element_text(angle=0, hjust = 0.5, vjust = 1),legend.position = "right")
+        
+      plot2 <- ggplot(df, aes(x=PTID, y=exp, fill=Time)) +
+          #geom_bar(stat="identity", position="dodge") +
+          #geom_point(position=position_dodge(width=0.9), aes(y=exp), size=0.2) +
+          geom_boxplot(outlier.size = 0.1) +
+          scale_fill_manual(values = col) +
+          facet_wrap(~group) +
+          labs(x="", y="RNA expression", title=geneName) +
+          theme_classic() + theme(axis.text.x = element_text(angle=90, hjust = 0.5, vjust = 1),legend.position = "right")
+      return(list(plot1=plot1, plot2=plot2))
+    }
+    
+    plots <- plotFunction(ann, mat, geneName="MTRNR2L8")
+    print(plots$plot1)
+    plots <- plotFunction(ann, mat, geneName="LILRA4")
+    print(plots$plot2)
+
 ### <a name="example3"></a> Tutorial-3: scATAC
 ### <a name="exampl4"></a> Tutorial-4: CNP data
     
