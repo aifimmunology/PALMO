@@ -198,10 +198,10 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 #### 1.3:  Features contributing towards donor variations
 #### Variance decomposition
 
-lmem_res <- lmeVariance(ann=metadata, mat=datamatrix, features=features, meanThreshold=meanThreshold)
-res <- lmem_res[,c("PTID","Time","Residual")]
-colnames(res) <- c("donor","week","Residuals")
-res <- res*100 #in percentage
+    lmem_res <- lmeVariance(ann=metadata, mat=datamatrix, features=features, meanThreshold=meanThreshold)
+    res <- lmem_res[,c("PTID","Time","Residual")]
+    colnames(res) <- c("donor","week","Residuals")
+    res <- res*100 #in percentage
     
 #### Donor-specific variance contrubuting features
     
