@@ -125,7 +125,7 @@ To install library, simply run
                                      outputDirectory="output")
 
 ## <a name="example-main"></a> Tutorials
-### <a name="example1"></a> Tutorial-1: Plasma proteome
+### <a name="example1"></a> Tutorial-1: Plasma proteome [Bulk dataset]
 
 This tutorial allows users to explore bulk plasma proteome measured from 6 healthy donors over 10 timepoints. Plasma proteomic data available at github. 1. Olink_NPX_log2_Protein.Rda (Normalized protein expression data) 2. data_Annotation.Rda (clinical metadata). Longitudinal dataset have 6 donors (3 male and 3 females). PBMC was collected for 10 weeks. Please follow following steps.
 
@@ -233,6 +233,49 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
       splots[[i]] <- plot1
     }
     plot_grid(plotlist=splots, ncol= 3, align="hv")
+
+#### 1.4:  Intra-donor variations over time
+#### CV vs Mean
+
+    cv_res <- cvCalcBulk(mat=datamatrix, ann=metadata, meanThreshold=meanThreshold, cvThreshold=cvThreshold)
+    CV <- cv_res$CV
+    variable_genes <- cv_res$variable_genes
+    stable_genes <- cv_res$stable_genes
+
+#### 1.5:  Outlier analysis
+#### Calculate IQR
+
+    IQR_res <- iqrBulk(ann=metadata, mat=datamatrix)
+
+#### Plot
+    
+    df <- melt(data.matrix(IQR_res))
+    df <- df[df$value != 0,]
+    df <- df[!is.na(df$Var1),]
+    df <- df[order(df$value, decreasing = T),]
+    plot1 <- ggplot(df, aes(x=Var2, y=value)) +
+        geom_violin(scale="width") +
+        #geom_boxplot(width=0.1, fill="white") +
+        labs(x="", y="Z-score (>2SD)") +
+        ggforce::geom_sina(size=0.5) +
+        theme_classic() + theme(axis.text.x = element_text(angle=90, hjust = 1, vjust = 1, size=6), axis.text.y = element_text(size=6), legend.position = "right")
+    print(plot1)
+
+#### Gene plot
+
+    genelist <- c("NAA10", "IFI30", "FCAR", "TNFRSF13C", "IL15")
+    genelist <- as.character(unique(df$Var1)[1:9])
+    splots <- list()
+    for(i in 1:length(genelist)) {
+       geneName <- genelist[i]
+       df <- data.frame(exp=as.numeric(datamatrix[geneName,]), metadata, stringsAsFactors = F)
+       df$PTID <- factor(df$PTID, levels = uniSample)
+       plot1 <- ggline(df, x = "PTID", y = "exp", add.params = list(shape="Time"), add = c("mean_se", "jitter"), ylab = "NPX", xlab = "Donor", title = geneName, legend = "right", outlier.shape = NA) +
+       scale_shape_manual(values = 0:10) + theme(axis.text.x = element_text(angle=45, hjust = 1, vjust = 1))
+       splots[[i]] <- plot1
+    }
+    plot_grid(plotlist=splots, ncol= 3, align="hv")
+    
 
 ### <a name="ex1"></a> Tutorial-2: scRNA
 ### <a name="ex1"></a> Tutorial-3: scATAC
