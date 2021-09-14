@@ -126,6 +126,25 @@ To install library, simply run
 
 ## <a name="example-main"></a> Tutorials
 ### <a name="ex1"></a> Tutorial-1: Plasma proteome
+This tutorial allows users to explore bulk plasma proteome measured from 6 healthy donors over 10 timepoints.
+
+#### Load Library
+   library("longituinalDynamics")
+   library("Hmisc")
+   library("ggpubr")
+
+#### Assign data and paramaters
+   #assign rownames with sample name
+   row.names(ann) <- ann$Sample
+
+   #Parameters
+   metadata=ann
+   datamatrix=data
+   features=c("PTID", "Time")
+   meanThreshold=1
+   cvThreshold=5
+   housekeeping_genes <- c("GAPDH", "ACTB")
+
 ### <a name="ex1"></a> Tutorial-2: scRNA
 ### <a name="ex1"></a> Tutorial-3: scATAC
 ### <a name="ex1"></a> Tutorial-4: CNP data
