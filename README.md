@@ -7,7 +7,7 @@ Table of Contents
 -----------------
 
 * [Introduction](#introduction)
-* [Install Library](#library)
+* [Install package and load library](#library)
 * [Quick Usage (Longitudinal data)](#usage)
     * [Plasma proteome](#olnk)
     * [Flow cell-proportion](#flow)
@@ -28,7 +28,7 @@ Table of Contents
 ## <a name="introduction"></a> Introduction
 longitudinalDynamics is an implementation of the longitudinal data analysis platform in R. It allows to identify intra-donor, inter-donor variations over longitudinal time points. The analysis can be done on bulk expression dataset without known celltype information or single cell with celltype information or known groups. It allows to identify stable and variable features in given donor and each celltype (or user defined group). The outlier in intra-donor can be performed to identify perturbed or change in sample currespnding to donor/participant. The stable and variable gene signature helps to identify gene signatures in dataset and perturbation specific featureset.
 
-## <a name="library"></a> Install Library
+## <a name="library"></a> Install package and load library
 
 To install library, simply run
    
@@ -125,7 +125,7 @@ To install library, simply run
                                      outputDirectory="output")
 
 ## <a name="example-main"></a> Tutorials
-### <a name="ex1"></a> Tutorial-1: Plasma proteome
+### <a name="example1"></a> Tutorial-1: Plasma proteome
 This tutorial allows users to explore bulk plasma proteome measured from 6 healthy donors over 10 timepoints.
 
 #### Load Library
