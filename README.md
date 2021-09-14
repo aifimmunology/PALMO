@@ -140,8 +140,10 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
     library("Hmisc")
     library("ggpubr")
     
-#### Assign data and paramaters
+#### Load data and assign paramaters
 
+    load("Olink_NPX_log2_Protein.Rda")
+    load("data_Annotation.Rda")
     #assign rownames with sample name
     row.names(ann) <- ann$Sample
     #Parameters
@@ -251,7 +253,7 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 
     IQR_res <- iqrBulk(ann=metadata, mat=datamatrix)
 
-#### Plot
+#### IQR Plot
     
     df <- melt(data.matrix(IQR_res))
     df <- df[df$value != 0,]
@@ -265,7 +267,7 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
         theme_classic() + theme(axis.text.x = element_text(angle=90, hjust = 1, vjust = 1, size=6), axis.text.y = element_text(size=6), legend.position = "right")
     print(plot1)
 
-#### Gene plot
+#### Gene plot (probable outliers)
 
     genelist <- c("NAA10", "IFI30", "FCAR", "TNFRSF13C", "IL15")
     genelist <- as.character(unique(df$Var1)[1:9])
@@ -281,9 +283,57 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
     plot_grid(plotlist=splots, ncol= 3, align="hv")
     
 
-### <a name="ex1"></a> Tutorial-2: scRNA
-### <a name="ex1"></a> Tutorial-3: scATAC
-### <a name="ex1"></a> Tutorial-4: CNP data
+### <a name="example2"></a> Tutorial-2: scRNA longitudinal data (n=4 and 6 weeks follow-up)
+
+This tutorial allows users to explore single cell RNAseq data measured from 4 healthy donors over 6 timepoints (week 2-7). Single cell data available at **GEOXXX**. (1) pbmc_longitudinal_data (Normalized scRNA seurat object) (2) data_Annotation.Rda (clinical metadata). Longitudinal dataset have 4 donors (2 male and 2 females). Please follow following steps.
+
+#### 1.1: Load Library and assign parameters
+   
+    #Load Library
+    library("longituinalDynamics")
+    library("Hmisc")
+    library("ggpubr")
+    
+#### Load data and assign paramaters
+
+    #scRNA seurat object
+    pbmc <- readRDS("data/01-scRNA-PBMC-FinalData.RDS")
+    metaData <- pbmc@meta.data
+    pbmc@meta.data$Sample <- pbmc@meta.data$orig.ident
+
+    #Clinical metadata/annotation
+    load("data/data_Annotation.Rda")
+    metadata=ann
+
+    #Parameters
+    dataObj <- pbmc
+    features=c("PTID", "Time") 
+    avgGroup="celltype"
+    housekeeping_genes <- c("GAPDH", "ACTB")
+
+    #Celltypes to be considered
+    cell_type <- sort(unique(pbmc@meta.data$celltype))
+    group_oi <- c("CD4_Naive","CD4_TEM","CD4_TCM","CD4_CTL","CD8_Naive","CD8_TEM","CD8_TCM","Treg","MAIT","gdT",
+              "NK", "NK_CD56bright",
+              "B_naive", "B_memory", "B_intermediate",
+              "CD14_Mono","CD16_Mono",
+              "cDC2","pDC")
+    
+#### Create output directory
+
+    outputDirectory <- "output"
+    filePATH <- paste(getwd(), "/",outputDirectory, sep="")
+    dir.create(file.path(getwd(), outputDirectory), showWarnings = FALSE)
+    
+#### Sample overlap
+
+    overlap <- intersect(metadata$Sample, colnames(datamatrix))
+    metadata <- metadata[overlap,]
+    datamatrix <- data.frame(datamatrix, check.names = F, stringsAsFactors = F)
+    datamatrix <- datamatrix[,overlap]
+    
+### <a name="example3"></a> Tutorial-3: scATAC
+### <a name="exampl4"></a> Tutorial-4: CNP data
     
     
     
