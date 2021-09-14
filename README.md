@@ -126,24 +126,66 @@ To install library, simply run
 
 ## <a name="example-main"></a> Tutorials
 ### <a name="example1"></a> Tutorial-1: Plasma proteome
-This tutorial allows users to explore bulk plasma proteome measured from 6 healthy donors over 10 timepoints.
 
-   #Load Library
-   library("longituinalDynamics")
-   library("Hmisc")
-   library("ggpubr")
+This tutorial allows users to explore bulk plasma proteome measured from 6 healthy donors over 10 timepoints. Plasma proteomic data available at github. 1. Olink_NPX_log2_Protein.Rda (Normalized protein expression data) 2. data_Annotation.Rda (clinical metadata). Longitudinal dataset have 6 donors (3 male and 3 females). PBMC was collected for 10 weeks. Please follow following steps.
 
-   #Assign data and paramaters
-   #assign rownames with sample name
-   row.names(ann) <- ann$Sample
+#### 1.1.0 : Load Library
+   
+    #Load Library
+    library("longituinalDynamics")
+    library("Hmisc")
+    library("ggpubr")
+    
+#### 1.1.1 : Assign data and paramaters
 
-   #Parameters
-   metadata=ann
-   datamatrix=data
-   features=c("PTID", "Time")
-   meanThreshold=1
-   cvThreshold=5
-   housekeeping_genes <- c("GAPDH", "ACTB")
+    #assign rownames with sample name
+    row.names(ann) <- ann$Sample
+    #Parameters
+    metadata=ann
+    datamatrix=data
+    features=c("PTID", "Time")
+    meanThreshold=1
+    cvThreshold=5
+    housekeeping_genes <- c("GAPDH", "ACTB")
+    
+#### 1.1.2 : Create output directory
+
+    outputDirectory <- "output"
+    filePATH <- paste(getwd(), "/",outputDirectory, sep="")
+    dir.create(file.path(getwd(), outputDirectory), showWarnings = FALSE)
+    
+#### 1.1.3 : Sample overlap
+
+    overlap <- intersect(metadata$Sample, colnames(datamatrix))
+    metadata <- metadata[overlap,]
+    datamatrix <- data.frame(datamatrix, check.names = F, stringsAsFactors = F)
+    datamatrix <- datamatrix[,overlap]
+
+#### 1.2.0 :  Check data
+#### 1.2.1 :  PCA Plot
+
+    row.has.na <- apply(datamatrix,1,function(x){any(is.na(x))})
+    datamatrix_nonNA <- datamatrix[!row.has.na,]
+    res.pca <- suppressMessages(prcomp(t(datamatrix_nonNA),  center=T, scale = TRUE), classes = "message")
+    plot1 <- fviz_pca_ind(res.pca, col.ind = metadata$PTID, geom.ind =c("point", "text"),  labelsize = 3, addEllipses=FALSE, ellipse.level=0.95) +
+             theme(axis.text.x=element_text(size=12, color="black"), axis.text.y=element_text(size=12, color="black"), legend.position = "none") +
+             theme_classic()
+    print(plot1)
+
+#### 1.2.2 :  Sample variability (Correlation)
+    cor_mat <- rcorr(as.matrix(datamatrix_nonNA), type="pearson")
+    res <- cor_mat$r
+    #Plot heatmap
+    ha_col <- HeatmapAnnotation(df=data.frame(PTID=metadata$PTID))
+    ht1 <- Heatmap(data.matrix(res), cluster_rows =F,  
+               cluster_columns = F,
+               row_split = as.character(metadata$PTID), column_split = as.character(metadata$PTID),
+               na_col = "grey", col = colorRamp2(c(-1,0,0.9,1), c("black","white","pink","red")),
+               row_names_max_width=unit(10, "cm"),
+               column_names_gp = gpar(fontsize = 6), row_names_gp = gpar(fontsize =6),
+               top_annotation = ha_col,
+               heatmap_legend_param = list(title = "Pearson",heatmap_legend_side = "right") )
+    draw(ht1)
 
 ### <a name="ex1"></a> Tutorial-2: scRNA
 ### <a name="ex1"></a> Tutorial-3: scATAC
