@@ -173,6 +173,7 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
     print(plot1)
 
 #### Sample variability (Correlation)
+
     cor_mat <- rcorr(as.matrix(datamatrix_nonNA), type="pearson")
     res <- cor_mat$r
     #Plot heatmap
@@ -186,6 +187,52 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
                top_annotation = ha_col,
                heatmap_legend_param = list(title = "Pearson",heatmap_legend_side = "right") )
     draw(ht1)
+
+#### Remove genes with >40%NAs (optional)
+
+    row.na <- apply(datamatrix,1,function(x) { sum(is.na(x)) })
+    row.non.na <- row.na[row.na < (0.4*ncol(datamatrix))] #select features with NAs <40%
+    datamatrix <- datamatrix[names(row.non.na),]
+    rowN <- data.frame(row.names(datamatrix), stringsAsFactors = F)
+
+#### 1.3:  Features contributing towards donor variations
+#### Variance decomposition
+
+lmem_res <- lmeVariance(ann=metadata, mat=datamatrix, features=features, meanThreshold=meanThreshold)
+res <- lmem_res[,c("PTID","Time","Residual")]
+colnames(res) <- c("donor","week","Residuals")
+res <- res*100 #in percentage
+    
+#### Donor-specific variance contrubuting features
+    
+    df1 <- filter(res, donor>week & Residuals < 50)
+    df1 <- df1[order(df1$donor, decreasing = T),]
+    df <- melt(data.matrix(df1[1:15,]))
+    df$Var2 <- factor(df$Var2, levels = rev(c("donor","week", "Residuals")))
+    df$Var1 <- factor(df$Var1, levels = rev(unique(df$Var1)))
+    p1 <- ggplot(df, aes(x=Var1, y=value, fill=Var2)) +
+        geom_bar(stat="identity", position="stack") +
+        scale_fill_manual(values = c("donor"="#C77CFF", "celltype"="#00BFC4", "week"="#7CAE00", "Residuals"="grey")) +
+        theme_bw() + theme(axis.text.x = element_text(angle=90, hjust = 0.5, vjust = 1),legend.position = "right") +
+        coord_flip()
+    print(p1)
+
+#### Plot the variables
+
+    genelist <- c("FOLR3", "GH2", "MICA", "FOSB", "EIF4G1", "SRC", "DNAJB1", "SIRT2")
+    uniSample <- as.character(unique(metadata$PTID))
+    splots <- list()
+    for(i in 1:length(genelist)) {
+      geneName <- genelist[i]
+      df <- data.frame(exp=as.numeric(datamatrix[geneName,]), metadata, stringsAsFactors = F)
+      df$PTID <- factor(df$PTID, levels = uniSample)
+      plot1 <- ggpubr::ggline(df, x = "PTID", y = "exp", 
+                add.params = list(shape="Time"), add = c("mean_se", "jitter", "boxplot"), 
+                ylab = "NPX", xlab = "Donor", title = geneName, legend = "none", 
+                outlier.shape = NA) + scale_shape_manual(values = 0:10)
+      splots[[i]] <- plot1
+    }
+    plot_grid(plotlist=splots, ncol= 3, align="hv")
 
 ### <a name="ex1"></a> Tutorial-2: scRNA
 ### <a name="ex1"></a> Tutorial-3: scATAC
