@@ -570,11 +570,11 @@ This tutorial allows users to explore single cell ATACseq genscore data measured
     write.table(sort(unique(ann$group)), file=paste(filePATH,"/",fileName,"-group.txt", sep=""), row.names = F, col.names=F, quote=F)
 
 #### 3.2: CV profile
-# CV profile
+#### CV profile
 
     exp_profile <- cvSampleprofile(mat=mat, ann=ann)
 
-# Mean Plot
+#### Mean Plot
 
     ggplot(exp_profile, aes(x=mean)) +
       geom_histogram(binwidth=0.1, color="black", fill="white") +
