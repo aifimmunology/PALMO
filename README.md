@@ -497,7 +497,299 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     geneList <- c("IL32","CCL5","TCF7","IL7R","LEF1") #T-cell
     res <- genecircosPlot(data=cv_res, geneList=geneList, group_oi=group_oi)
 
-### <a name="example3"></a> Tutorial-3: scATAC
+### <a name="example3"></a> Tutorial-3: scATAC Longitudinal data (n=4 and 6 weeks follow-up)
+This tutorial allows users to explore single cell ATACseq genscore data measured from 4 healthy donors over 6 timepoints (week 2-7). Single cell ATAC data available at GEOXXX. (1) pbmc_scatac_archr_genescore_longitudinal_data (2) data_Annotation.Rda (clinical metadata). Longitudinal dataset have 4 donors (2 male and 2 females). Please follow following steps.
+
+#### 3.1: Load Library
+
+    #Load Library
+    library("longituinalDynamics")
+    library("Hmisc")
+    library("ggpubr")
+
+#### Load data and assign paramaters
+
+    #scATAC object
+    load("data/pbmc_scatac_archr_genescore_longitudinal_data.Rda")
+    #Clinical metadata/annotation
+    load("data/data_Annotation.Rda")
+    metadata=ann
+
+#### Parameters
+
+    metadata <- ann
+    atacObj <- log2(scatac_gm+1)
+    housekeeping_genes <- c("GAPDH", "ACTB")
+    #Celltypes to be considered
+    group_oi <- c("CD4_Naive","CD4_TEM","CD4_TCM","CD4_CTL","CD8_Naive","CD8_TEM","CD8_TCM","Treg","MAIT","gdT",
+          "NK", "NK_CD56bright",
+          "B_naive", "B_memory", "B_intermediate",
+          "CD14_Mono","CD16_Mono",
+          "cDC2","pDC")
+
+#### Create output directory
+
+    outputDirectory <- "output"
+    filePATH <- paste(getwd(), "/",outputDirectory, sep="")
+    dir.create(file.path(getwd(), outputDirectory), showWarnings = FALSE)
+
+#### Sample overlap
+
+    temp <- data.frame(do.call(rbind, strsplit(colnames(atacObj), split = ":")), stringsAsFactors = F)
+    cn <- data.frame(id=colnames(atacObj), Sample=temp$X1, group=temp$X2, check.names=F, stringsAsFactors = F)
+    cn <- cn[cn$Sample %in% metadata$Sample,]
+    overlap <- as.character(unique(cn$Sample))
+    atac_overlap <- cn$id
+    metadata <- metadata[overlap,]
+    atacObj <- atacObj[,atac_overlap]
+
+#### Keep genes with avgExpression > zero
+
+    rowDF <- rowSums(atacObj)
+    rowDF <- rowDF[rowDF > 0]
+    mat <- atacObj[names(rowDF),]
+
+#### Create annotation
+
+    cn <- data.frame(Sample_group=colnames(mat))
+    temp <- data.frame(do.call(rbind, strsplit(cn$Sample_group, split = ":")), stringsAsFactors = F)
+    cn <- data.frame(cn, Sample=temp$X1, group=temp$X2, stringsAsFactors = F)
+    row.names(cn) <- cn$Sample_group
+    cn <- merge(cn, metadata, by="Sample", all=TRUE)
+    cn <- cn[!is.na(cn$Sample_group),]
+    row.names(cn) <- cn$Sample_group
+    ann <- cn
+    ann$Sample_group_i <- paste(ann$group, ann$PTID, sep=":")
+    rm(cn)
+
+#### Final matrix
+
+    Overlap <- intersect(colnames(mat), row.names(ann))
+    ann <- ann[Overlap,]
+    mat <- mat[,Overlap]
+    write.table(sort(unique(ann$group)), file=paste(filePATH,"/",fileName,"-group.txt", sep=""), row.names = F, col.names=F, quote=F)
+
+#### 3.2: CV profile
+# CV profile
+
+    exp_profile <- cvSampleprofile(mat=mat, ann=ann)
+
+# Mean Plot
+
+    ggplot(exp_profile, aes(x=mean)) +
+      geom_histogram(binwidth=0.1, color="black", fill="white") +
+      scale_x_continuous(trans='log10')
+
+    ggplot(exp_profile, aes(x=mean)) +
+      geom_histogram(binwidth=0.1, color="black", fill="white") +
+      scale_x_continuous(trans='log10') +
+      facet_wrap(~group)
+
+    ggplot(exp_profile, aes(x=cv)) +
+      geom_histogram(binwidth=1, color="black", fill="white")
+    
+    #Housekeeping genes data
+    exp_profile <- exp_profile[exp_profile$gene %in% c("ACTB","GAPDH"),]
+    ggplot(exp_profile, aes(x=mean, y=cv)) + geom_point() +
+      facet_wrap(~gene)
+
+#### 3.3: Features contributing towards donor variations
+
+    meanThreshold <- 0.1
+    lmem_res <- lmeVariance(ann=ann, mat=mat, features=c(features,"group"), meanThreshold=meanThreshold, fileName=fileName, filePATH=filePATH)
+    res <- lmem_res[,c("PTID","Time","group","Residual")]
+    colnames(res) <- c("donor","week","celltype","Residuals")
+    res <- res*100 #in percentage
+    
+#### Donor-specific
+
+    df1 <- filter(res, donor>week & donor>celltype & Residuals < 50)
+    df1 <- df1[order(df1$donor, decreasing = T),]
+    df <- melt(data.matrix(df1[1:15,]))
+    df$Var2 <- factor(df$Var2, levels = rev(c("donor","week", "celltype", "Residuals")))
+    df$Var1 <- factor(df$Var1, levels = rev(unique(df$Var1)))
+    p1 <- ggplot(df, aes(x=Var1, y=value, fill=Var2)) +
+      geom_bar(stat="identity", position="stack") +
+      scale_fill_manual(values = c("donor"="#C77CFF", "celltype"="#00BFC4", "week"="#7CAE00", "Residuals"="grey")) +
+      theme_bw() + theme(axis.text.x = element_text(angle=90, hjust = 0.5, vjust = 1),legend.position = "right") +
+      coord_flip()
+    p1
+    
+#### Week-specific
+
+    df2 <- filter(res, donor<week & week>celltype)
+    df2 <- df2[order(df2$week, decreasing = T),]
+    #select Top15
+    df2 <- df2[1:15,]
+    df <- melt(data.matrix(df2))
+    df$Var2 <- factor(df$Var2, levels = rev(c("week", "donor","celltype", "Residuals")))
+    df$Var1 <- factor(df$Var1, levels = rev(unique(df$Var1)))
+    p2 <- ggplot(df, aes(x=Var1, y=value, fill=Var2)) +
+      geom_bar(stat="identity", position="stack") +
+      scale_fill_manual(values = c("donor"="#C77CFF", "celltype"="#00BFC4", "week"="#7CAE00", "Residuals"="grey")) +
+      theme_bw() + theme(axis.text.x = element_text(angle=90, hjust = 0.5, vjust = 1),legend.position = "right") +
+      coord_flip()
+    p2
+    
+#### celltype-specific
+
+    df3 <- filter(res, celltype>donor & celltype>week & Residuals < 50)
+    df3 <- df3[order(df3$celltype, decreasing = T),]
+    #select Top15
+    df3 <- df3[1:15,]
+    df <- melt(data.matrix(df3))
+    df$Var2 <- factor(df$Var2, levels = rev(c("donor","week", "celltype", "Residuals")))
+    df$Var1 <- factor(df$Var1, levels = rev(unique(df$Var1)))
+    p3 <- ggplot(df, aes(x=Var1, y=value, fill=Var2)) +
+      geom_bar(stat="identity", position="stack") +
+      scale_fill_manual(values = c("donor"="#C77CFF", "celltype"="#00BFC4", "week"="#7CAE00", "Residuals"="grey")) +
+      theme_bw() + theme(axis.text.x = element_text(angle=90, hjust = 0.5, vjust = 1),legend.position = "right") +
+      coord_flip()
+    p3
+    
+    #Plot
+    plot_grid(p1,p2,p3, align="hv", ncol=3)
+
+    #Top genes
+    genelist <- c("FIRRE", "XIST", "RHD", "GSTM1", "ZNF705D", "LOC105376805",
+              "DPP6", "THSD7A", "OPCML", "CACNA2D3", "PTPRD", "NELL1",
+              "SPIB", "KLF4", "IFI30", "FOSL2", "TARP", "PRF1")
+
+    plotFunction <- function(ann, mat, geneName) {
+      df <- data.frame(exp=as.numeric(mat[geneName,]), ann, stringsAsFactors = F)
+      wk <- c("W2","W3","W4","W5","W6","W7")
+      col <- colorRampPalette(c("cyan", "grey", "black"))(6)
+      names(col) <- wk
+      df$Time <- factor(df$Time, levels = wk)
+      plot1 <- ggplot(df, aes(x=PTID, y=exp, fill=Time)) +
+          #geom_bar(stat="identity", position="dodge") +
+          #geom_point(position=position_dodge(width=0.9), aes(y=exp), size=0.2) +
+          geom_boxplot(outlier.size = 0.1) +
+          scale_fill_manual(values = col) +
+          labs(x="", y="RNA expression", title=geneName) +
+          theme_classic() + theme(axis.text.x = element_text(angle=0, hjust = 0.5, vjust = 1),legend.position = "right")
+        
+      plot2 <- ggplot(df, aes(x=PTID, y=exp, fill=Time)) +
+          #geom_bar(stat="identity", position="dodge") +
+          #geom_point(position=position_dodge(width=0.9), aes(y=exp), size=0.2) +
+          geom_boxplot(outlier.size = 0.1) +
+          scale_fill_manual(values = col) +
+          facet_wrap(~group) +
+          labs(x="", y="RNA expression", title=geneName) +
+          theme_classic() + theme(axis.text.x = element_text(angle=90, hjust = 0.5, vjust = 1),legend.position = "right")
+      return(list(plot1=plot1, plot2=plot2))
+    }
+
+    plots <- plotFunction(ann, mat, geneName="MTRNR2L8")
+    print(plots$plot1)
+    plots <- plotFunction(ann, mat, geneName="LILRA4")
+    print(plots$plot2)
+
+#### 3.4: Intra-donor variations over time
+
+    Calculate CV
+    meanThreshold=0.1
+    cvThreshold=10
+    cv_res <- cvCalcSC(mat=mat, ann=ann, meanThreshold=meanThreshold, cvThreshold=cvThreshold, housekeeping_genes=housekeeping_genes, filePATH=filePATH,     fileName=fileName)
+
+#### Find stable and variable features in longitudinal data
+
+    #Find stable and variable features in longitudinal data
+    donorThreshold <- 4
+    groupThreshold <- 22 #number of donors * number of celltypes/2 (5x15/2)
+    topFeatures <- 25
+    var_gene <- VarFeatures(ann=ann, group_oi=group_oi, meanThreshold=meanThreshold, cvThreshold=cvThreshold, donorThreshold=donorThreshold, groupThreshold=groupThreshold, topFeatures=topFeatures, filePATH=filePATH, fileName=fileName)
+    stable_gene <- StableFeatures(ann=ann, group_oi=group_oi, meanThreshold=meanThreshold, cvThreshold=cvThreshold, donorThreshold=donorThreshold, groupThreshold=groupThreshold, topFeatures=topFeatures, filePATH=filePATH, fileName=fileName)
+
+#### Gene Plot
+
+    plots <- genePlot(ann=ann, data=mat, geneName="IL7R", groupName="group")
+
+#### Circos plot
+
+    load("output/scrna-CV-allgenes-raw.Rda")
+    group_oi <- c("CD4_Naive","CD4_CTL","CD4_TCM","CD4_TEM",
+              "CD8_Naive","CD8_TCM","CD8_TEM","Treg","MAIT","gdT",
+              "B_intermediate","B_memory","B_naive",
+              "NK", "NK_CD56bright",
+              "CD14_Mono","CD16_Mono",
+              "cDC2","pDC")
+
+    geneList <- c("HLA-A","HLA-B","HLA-C","HLA-DRA","HLA-DPA1","HLA-DRB1")
+    res <- genecircosPlot(data=cv_res, geneList=geneList, group_oi=group_oi)
+
+#### 3.5: Comparing gene expression from scRNA and scATAC
+
+    load("data/05-1-scATAC-averageExpression_Celltype_archr_score05.Rda")
+    temp <- data.frame(do.call(rbind, strsplit(colnames(scatac_gm), split = ":")), stringsAsFactors = F)
+    unique(temp$X2)
+
+    load("data/scrna_avgmat.Rda")
+    scrna_gm <- scrna_avgmat
+    
+    #Gene and sample oerlap
+    geneOverlap <- intersect(row.names(scrna_gm), row.names(scatac_gm))
+    sampleOverlap <- intersect(colnames(scrna_gm), colnames(scatac_gm))
+    scrna_gm <- scrna_gm[geneOverlap, sampleOverlap]
+    scatac_gm <- scatac_gm[geneOverlap, sampleOverlap]
+    
+    #Perform correltion
+    cor_res <- lapply(geneOverlap,function(x) {
+    res <- cor.test(as.numeric(scrna_gm[x,]), as.numeric(scatac_gm[x,]), method = "pearson")
+      c(res$estimate, res$p.value)
+    })
+    cor_res <- do.call(rbind, cor_res)
+    cor_res <- data.frame(gene=geneOverlap, cor_res, stringsAsFactors = F)
+    colnames(cor_res) <- c("Gene", "cor", "pvalue")
+    row.names(cor_res) <- cor_res$Gene
+    cor_res <- cor_res[order(cor_res$cor, decreasing = T),]
+    cor_res$FDR <- p.adjust(cor_res$pvalue, method = "BH")
+    
+    #Summary of correlation
+    summary(cor_res$cor)
+    cor_res$direction <- ifelse(cor_res$cor>=0, "pos", "neg")
+    cor_res$sig <- ifelse(cor_res$FDR <=0.05, "sig", "non-sig")
+    table(cor_res$direction)
+    table(cor_res$direction, cor_res$sig)
+    
+    #Plot
+    plot1 <- ggplot(cor_res, aes(x=cor, fill=direction)) +
+        geom_histogram(bins=100) + theme_classic()
+    print(plot1)
+
+#### 3.6: Correlation across modality
+
+    genelist <- c("HLA-A","HLA-B","HLA-C","HLA-DRA","HLA-DPA1","HLA-DRB1",
+              "IRF1","IRF2","IRF3","IRF4","IRF5","IRF8",
+              "IL32","IL7R","IL10RA","IL2RB","IL1B","IL18",
+              "CXCR4","CXCR5","CXCR6","CXCL8","CXCL10","CXCL16",
+              "JAK1","JAK2","JAK3","STAT2","STAT4","STAT6",
+              "TNFRSF1B","TNFRSF13C","TNFRSF10B","TNFRSF25","TNFRSF11A", "TNFRSF17")
+
+    splots <- list()
+    for(i in 1:length(genelist)) {
+       geneName <- genelist[i]
+       dx <- data.frame(sample=sampleOverlap, x=as.numeric(scrna_gm[geneName,]), y=as.numeric(scatac_gm[geneName,]), stringsAsFactors = F)
+       cn <- data.frame(do.call(rbind, strsplit(dx$sample, split = ":")), stringsAsFactors = F)
+       dx$donor <- cn$X1
+       dx$celltype <- cn$X2
+       p1 <- ggplot(dx, aes(x=x, y=y)) + geom_point(aes(color=celltype)) + 
+           #scale_color_manual(values=c("red"="red", "grey"="grey")) +
+           labs(title=geneName) +
+           labs(x="scRNA (Expression)", y="scATAC (genescore)") +
+           ggpubr::stat_cor(method = "pearson") +
+           theme_classic() + theme(legend.position = "right")
+
+       p2 <- ggplot(dx, aes(x=x, y=y)) + geom_point(aes(color=celltype)) + 
+           labs(title=geneName) +
+           theme_classic() + labs(x="scRNA (Expression)", y="scATAC (genescore)") +
+           facet_wrap(~celltype) + ggpubr::stat_cor(method = "pearson")
+       print(p1)
+       splots[[i]] <- p1
+    }
+    #Plot
+    plot_grid(plotlist=splots, ncol= 6, align="hv")
+
 ### <a name="exampl4"></a> Tutorial-4: CNP data
     
     
