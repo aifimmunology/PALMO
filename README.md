@@ -18,7 +18,7 @@ Table of Contents
     * [Tutorial-1: Plasma proteome longitudinal data](#example1)
     * [Tutorial-2: scRNA longitudinal data](#example2)
     * [Tutorial-3: scATAC longitudinal data](#example3)
-    * [Tutorial-4: CNP data longitudinal data](#example4)
+    * [Tutorial-4: CNP0001102 data longitudinal data](#example4)
     * [Tutorial-5: Differential Genes from longitudinal data](#example5)
 * [Authors](#authors)
 * [Acknowledgements](#acknowledgements)
@@ -791,7 +791,7 @@ This tutorial allows users to explore single cell ATACseq genscore data measured
     #Plot
     plot_grid(plotlist=splots, ncol= 6, align="hv")
 
-### <a name="example4"></a> Tutorial-4: CNP data
+### <a name="example4"></a> Tutorial-4: CNP0001102 data
     
 ### <a name="example5"></a> Tutorial-5: Differential Genes from longitudinal data]
 
