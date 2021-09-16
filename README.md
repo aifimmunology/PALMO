@@ -21,7 +21,6 @@ Table of Contents
     * [Tutorial-4: CNP0001102 data longitudinal data](#example4)
     * [Tutorial-5: Differential Genes from longitudinal data](#example5)
 * [Authors](#authors)
-* [Acknowledgements](#acknowledgements)
 * [License](#license)
 
 * * *
