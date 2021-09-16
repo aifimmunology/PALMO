@@ -795,6 +795,32 @@ This tutorial allows users to explore single cell ATACseq genscore data measured
     
 ### <a name="example5"></a> Tutorial-5: Differential Genes from longitudinal data]
 
+This tutorial allows users to identify differential expressed genes in direction of time-points. As an example single cell data from [Zhu et al. 2020](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7368915/) downloaded from [here](https://db.cngb.org/search/project/CNP0001102/). Metadata is downloaded from table and can be found in the [data](https://github.com/aifimmunology/longitudinalDynamics/tree/main/data). The dataset consists of 5 Covid-19 donors, 2 Flu donors with longitudinal data and 3 controls. To explore differetial expressed gened in each celltype of each donor we used hurdle model based modeling on input data to retrive the DEGs. To infer DEGs in each celltype towards time progression (timepoints considered as continoues if more than 2), please follow following steps.
+
+#### 5.1: load data and clinical metadata
+#### Single cell object CNP0001102
+    
+    pbmc <- readRDS("data/CNP0001102_Final_nCoV_0716_upload.RDS")
+    #Add column Sample and group as celltype
+    pbmc@meta.data$Sample <- pbmc@meta.data$batch
+    pbmc@meta.data$celltype <- gsub(" ", "_", pbmc@meta.data$cell_type)
+    
+#### Clinical annotations [Table S1. Clinical data of the enrolled subjects](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7368915/)
+    
+    metadata <- read.csv("data/CNP0001102-annotation.csv", stringsAsFactors = F)
+    row.names(metadata) <- metadata$Sample
+    
+#### Load library and run
+
+    library("longitudinalDynamics")
+    #run
+    DEGres <- sclongitudinalDGE(ann=metadata, dataObj=pbmc, scassay="RNA", celltypecol="celltype")
+    #Plots can be seen in output directory output
+    head(DEGres[order(DEGres$coef, decreasing = T),])
+
+<br><br> ![](vignettes/img5a-CNP0001102-DEGs.png) <br><br>
+Fig.5 General analysis schema and differential results for celltype Cytotoxic CD8 T-cells using **LongitudinalDynamics**.
+
 ## <a name="authors"></a> Authors
 
 [Suhas Vasaikar](https://github.com/suhasaii), [Aarthi talla](https://github.com/aarthitallaAI) and [Xiaojun Li](https://github.com/Xiaojun-Li) designed the longitudinalDynamics algorithm. [Suhas Vasaikar](https://github.com/suhasaii) implemented the longitudinalDynamics package.
