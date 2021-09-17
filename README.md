@@ -1022,6 +1022,7 @@ This tutorial allows users to identify differential expressed genes in direction
 
     #Plots can be seen in output directory output
     head(DEGres[order(DEGres$coef, decreasing = T),])
+    
     #primerid contrast         nomP     coef         adjP donorID celltype dir
     #IGHG4   TimeD9 1.701579e-26 3.056092 1.453999e-23   IAV-2   Plasma upregulated at D9
     #JCHAIN   TimeD9 8.759407e-32 2.647757 2.245474e-28   IAV-2   Plasma upregulated at D9
