@@ -791,7 +791,224 @@ This tutorial allows users to explore single cell ATACseq genscore data measured
     plot_grid(plotlist=splots, ncol= 6, align="hv")
 
 ### <a name="example4"></a> Tutorial-4: CNP0001102 data
+This tutorial allows users to explore single cell RNAseq data variability across COVID and FLU donors. PBMC from the patients were collected longitudinally. Single cell data from [Zhu et al. 2020](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7368915/) downloaded from [here](https://db.cngb.org/search/project/CNP0001102/). Metadata is downloaded from table and can be found in the [data](https://github.com/aifimmunology/longitudinalDynamics/tree/main/data). To infer variability (inter- and Intra-) and identify stable genes, please follow following steps.
+
+#### 4.1: Load Library
+   
+    #Load Library
+    library("longituinalDynamics")
+    library("Hmisc")
+    library("ggpubr")
     
+#### Load data and assign paramaters
+
+    #scRNA
+    pbmc <- readRDS(".data/CNP0001102_Final_nCoV_0716_upload.RDS")
+    pbmc@meta.data$Sample <- pbmc@meta.data$batch
+    pbmc@meta.data$celltype <- gsub(" ", "_", pbmc@meta.data$cell_type)
+        
+    metadata <- read.csv("data/CNP0001102-annotation.csv", stringsAsFactors = F)
+    row.names(metadata) <- metadata$Sample
+
+    #Exploring only COVID samples 
+    metadata <- metadata[metadata$PTID %in% c("COV-1", "COV-2", "COV-3", "COV-4", "COV-5"),]
+    #Exploring only FLU samples
+    metadata <- metadata[metadata$PTID %in% c("IAV-1","IAV-2"),]
+        
+    #Parameters
+    dataObj <- pbmc
+    features=c("PTID", "Time") 
+    avgGroup="celltype"
+    housekeeping_genes <- c("GAPDH", "ACTB")
+    cell_type <- sort(unique(pbmc@meta.data$celltype))
+
+#### 
+
+    #Clinical metadata/annotation
+    load("data/data_Annotation.Rda")
+    metadata=ann
+
+    #Parameters
+    dataObj <- pbmc
+    features=c("PTID", "Time") 
+    avgGroup="celltype"
+    housekeeping_genes <- c("GAPDH", "ACTB")
+
+    #Celltypes to be considered
+    cell_type <- sort(unique(pbmc@meta.data$celltype))
+    group_oi <- c("CD4_Naive","CD4_TEM","CD4_TCM","CD4_CTL","CD8_Naive","CD8_TEM","CD8_TCM","Treg","MAIT","gdT",
+              "NK", "NK_CD56bright",
+              "B_naive", "B_memory", "B_intermediate",
+              "CD14_Mono","CD16_Mono",
+              "cDC2","pDC")
+    
+#### Create output directory
+
+    outputDirectory <- "output"
+    filePATH <- paste(getwd(), "/",outputDirectory, sep="")
+    dir.create(file.path(getwd(), outputDirectory), showWarnings = FALSE)
+    
+#### Sample overlap
+
+    overlap <- intersect(metadata$Sample, dataObj@meta.data$Sample)
+    metadata <- metadata[overlap,]
+    #in-case subset of samples only
+    dataObj <- subset(x = dataObj, subset = Sample %in% overlap)
+ 
+#### 2.2: Aggregate data at celltypes (psuedo-bulk)
+#### For single cell data merge annotation and single cell metadata
+
+    metaData <- dataObj@meta.data
+    metadata1 <- metadata[metaData$Sample,]
+    metaData <- cbind(metaData, metadata1)
+    dataObj@meta.data <- metaData
+
+#### Define sample group and Calculate average expression
+
+    dataObj@meta.data$Sample_group <- paste(dataObj@meta.data$Sample, dataObj@meta.data[,avgGroup], sep=":")
+    dataObj@meta.data$Sample_group <- gsub(" ", "_", dataObj@meta.data$Sample_group)
+    metaData <- dataObj@meta.data
+    
+#### Calculate average expression across group/celltype
+    
+    Idents(dataObj) <- "Sample_group"
+    table(Idents(dataObj))
+    scrna_avgmat <- avgExpCalc(dataObj=dataObj, group.by="Sample_group")
+
+#### Keep genes with avgExpression > zero
+
+    rowDF <- rowSums(scrna_avgmat)
+    rowDF <- rowDF[rowDF > 0]
+    mat <- scrna_avgmat[names(rowDF),]
+
+#### Create annotation
+
+    cn <- data.frame(Sample_group=colnames(mat))
+    temp <- data.frame(do.call(rbind, strsplit(cn$Sample_group, split = ":")), stringsAsFactors = F)
+    cn <- data.frame(cn, Sample=temp$X1, group=temp$X2, stringsAsFactors = F)
+    row.names(cn) <- cn$Sample_group
+    cn <- merge(cn, metadata, by="Sample", all=TRUE)
+    cn <- cn[!is.na(cn$Sample_group),]
+    row.names(cn) <- cn$Sample_group
+    ann <- cn
+    ann$Sample_group_i <- paste(ann$group, ann$PTID, sep=":")
+    rm(cn)
+
+#### Final matrix
+
+    Overlap <- intersect(colnames(mat), row.names(ann))
+    ann <- ann[Overlap,]
+    mat <- mat[,Overlap]
+    write.table(sort(unique(ann$group)), file=paste(filePATH,"/",fileName,"-group.txt", sep=""), row.names = F, col.names=F, quote=F)
+
+#### 2.3: CV profile
+
+    exp_profile <- cvSampleprofile(mat=mat, ann=ann)
+    #Mean Plot
+    ggplot(exp_profile, aes(x=mean)) +
+      geom_histogram(binwidth=0.1, color="black", fill="white") +
+      scale_x_continuous(trans='log10')
+
+    ggplot(exp_profile, aes(x=mean)) +
+      geom_histogram(binwidth=0.1, color="black", fill="white") +
+      scale_x_continuous(trans='log10') +
+      facet_wrap(~group)
+
+    #CV plot
+    ggplot(exp_profile, aes(x=cv)) +
+      geom_histogram(binwidth=1, color="black", fill="white")
+    
+    #Housekeeping genes data
+    exp_profile <- exp_profile[exp_profile$gene %in% c("ACTB","GAPDH"),]
+    ggplot(exp_profile, aes(x=mean, y=cv)) + geom_point() +
+      facet_wrap(~gene)
+
+#### 2.4: Features contributing towards donor variations
+#### Variance decomposition
+
+    meanThreshold <- 0.1
+    lmem_res <- lmeVariance(ann=ann, mat=mat, features=c(features,"group"), meanThreshold=meanThreshold, fileName=fileName, filePATH=filePATH)
+    res <- lmem_res[,c("PTID","Time","group","Residual")]
+    colnames(res) <- c("donor","week","celltype","Residuals")
+    res <- res*100 #in percentage
+    
+#### Donor-specific variance
+
+    df1 <- filter(res, donor>week & donor>celltype & Residuals < 50)
+    df1 <- df1[order(df1$donor, decreasing = T),]
+    df <- melt(data.matrix(df1))
+    df$Var2 <- factor(df$Var2, levels = rev(c("donor","week", "celltype", "Residuals")))
+    df$Var1 <- factor(df$Var1, levels = rev(unique(df$Var1)))
+    p1 <- ggplot(df, aes(x=Var1, y=value, fill=Var2)) +
+      geom_bar(stat="identity", position="stack") +
+      scale_fill_manual(values = c("donor"="#C77CFF", "celltype"="#00BFC4", "week"="#7CAE00", "Residuals"="grey")) +
+      theme_bw() + theme(axis.text.x = element_text(angle=90, hjust = 0.5, vjust = 1),legend.position = "right") +
+      coord_flip()
+    print(p1)  
+
+#### Plot the variables
+
+    genelist <- c("MTRNR2L8", "XIST", "RPS4Y1", "RPS26",
+                  "JUN", "DAXX", "FOSB", "STAT1",
+                  "LILRA4", "CLEC9A", "CST3", "BANK1")
+    plotFunction <- function(ann, mat, geneName) {
+      df <- data.frame(exp=as.numeric(mat[geneName,]), ann, stringsAsFactors = F)
+      wk <- c("W2","W3","W4","W5","W6","W7")
+      col <- colorRampPalette(c("cyan", "grey", "black"))(6)
+      names(col) <- wk
+      df$Time <- factor(df$Time, levels = wk)
+      plot1 <- ggplot(df, aes(x=PTID, y=exp, fill=Time)) +
+          #geom_bar(stat="identity", position="dodge") +
+          #geom_point(position=position_dodge(width=0.9), aes(y=exp), size=0.2) +
+          geom_boxplot(outlier.size = 0.1) +
+          scale_fill_manual(values = col) +
+          labs(x="", y="RNA expression", title=geneName) +
+          theme_classic() + theme(axis.text.x = element_text(angle=0, hjust = 0.5, vjust = 1),legend.position = "right")
+        
+      plot2 <- ggplot(df, aes(x=PTID, y=exp, fill=Time)) +
+          #geom_bar(stat="identity", position="dodge") +
+          #geom_point(position=position_dodge(width=0.9), aes(y=exp), size=0.2) +
+          geom_boxplot(outlier.size = 0.1) +
+          scale_fill_manual(values = col) +
+          facet_wrap(~group) +
+          labs(x="", y="RNA expression", title=geneName) +
+          theme_classic() + theme(axis.text.x = element_text(angle=90, hjust = 0.5, vjust = 1),legend.position = "right")
+      return(list(plot1=plot1, plot2=plot2))
+    }
+    
+    plots <- plotFunction(ann, mat, geneName="MTRNR2L8")
+    print(plots$plot1)
+    plots <- plotFunction(ann, mat, geneName="LILRA4")
+    print(plots$plot2)
+    
+#### 2.5: Intra-donor variations over time
+#### Calculate CV
+
+    meanThreshold=0.1
+    cvThreshold=10
+    cv_res <- cvCalcSC(mat=mat, ann=ann, meanThreshold=meanThreshold, cvThreshold=cvThreshold, housekeeping_genes=housekeeping_genes, filePATH=filePATH, fileName="scrna")
+
+#### Find stable and variable features in longitudinal data
+
+    donorThreshold <- 4
+    groupThreshold <- 40 #number of donors * number of celltypes/2 (4x19/2)
+    topFeatures <- 25
+    var_gene <- VarFeatures(ann=ann, group_oi=group_oi, meanThreshold=meanThreshold, cvThreshold=cvThreshold, donorThreshold=donorThreshold, groupThreshold=groupThreshold, topFeatures=topFeatures, filePATH=filePATH, fileName=fileName)
+
+    stable_gene <- StableFeatures(ann=ann, group_oi=group_oi, meanThreshold=meanThreshold, cvThreshold=cvThreshold, donorThreshold=donorThreshold, groupThreshold=groupThreshold, topFeatures=topFeatures, filePATH=filePATH, fileName=fileName)
+
+#### UMAP Plot
+
+    nPC <- 15
+    plot1 <- DimPlot(object = pbmc, reduction = 'umap', group.by = "celltype", label = T)
+    rnaObj <- dimUMAPPlot(rnaObj=dataObj, nPC=nPC, gene_oi=var_gene, groupName=avgGroup, plotname="variable", filePATH=filePATH, fileName=fileName)
+    rnaObj <- dimUMAPPlot(rnaObj=dataObj, nPC=nPC, gene_oi=stable_gene, groupName=avgGroup, plotname="stable", filePATH=filePATH, fileName=fileName)
+
+#### gene Plot
+
+    plots <- genePlot(ann=ann, data=mat, geneName="IL7R", groupName="group")
+
+
 ### <a name="example5"></a> Tutorial-5: Differential Genes from longitudinal data]
 
 This tutorial allows users to identify differential expressed genes in direction of time-points. As an example single cell data from [Zhu et al. 2020](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7368915/) downloaded from [here](https://db.cngb.org/search/project/CNP0001102/). Metadata is downloaded from table and can be found in the [data](https://github.com/aifimmunology/longitudinalDynamics/tree/main/data). The dataset consists of 5 Covid-19 donors, 2 Flu donors with longitudinal data and 3 controls. To explore differetial expressed gened in each celltype of each donor we used hurdle model based modeling on input data to retrive the DEGs. To infer DEGs in each celltype towards time progression (timepoints considered as continoues if more than 2), please follow following steps.
