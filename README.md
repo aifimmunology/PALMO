@@ -821,26 +821,6 @@ This tutorial allows users to explore single cell RNAseq data variability across
     avgGroup="celltype"
     housekeeping_genes <- c("GAPDH", "ACTB")
     cell_type <- sort(unique(pbmc@meta.data$celltype))
-
-#### 
-
-    #Clinical metadata/annotation
-    load("data/data_Annotation.Rda")
-    metadata=ann
-
-    #Parameters
-    dataObj <- pbmc
-    features=c("PTID", "Time") 
-    avgGroup="celltype"
-    housekeeping_genes <- c("GAPDH", "ACTB")
-
-    #Celltypes to be considered
-    cell_type <- sort(unique(pbmc@meta.data$celltype))
-    group_oi <- c("CD4_Naive","CD4_TEM","CD4_TCM","CD4_CTL","CD8_Naive","CD8_TEM","CD8_TCM","Treg","MAIT","gdT",
-              "NK", "NK_CD56bright",
-              "B_naive", "B_memory", "B_intermediate",
-              "CD14_Mono","CD16_Mono",
-              "cDC2","pDC")
     
 #### Create output directory
 
@@ -855,7 +835,7 @@ This tutorial allows users to explore single cell RNAseq data variability across
     #in-case subset of samples only
     dataObj <- subset(x = dataObj, subset = Sample %in% overlap)
  
-#### 2.2: Aggregate data at celltypes (psuedo-bulk)
+#### 4.2: Aggregate data at celltypes (psuedo-bulk)
 #### For single cell data merge annotation and single cell metadata
 
     metaData <- dataObj@meta.data
@@ -901,7 +881,7 @@ This tutorial allows users to explore single cell RNAseq data variability across
     mat <- mat[,Overlap]
     write.table(sort(unique(ann$group)), file=paste(filePATH,"/",fileName,"-group.txt", sep=""), row.names = F, col.names=F, quote=F)
 
-#### 2.3: CV profile
+#### 4.3: CV profile
 
     exp_profile <- cvSampleprofile(mat=mat, ann=ann)
     #Mean Plot
@@ -923,7 +903,7 @@ This tutorial allows users to explore single cell RNAseq data variability across
     ggplot(exp_profile, aes(x=mean, y=cv)) + geom_point() +
       facet_wrap(~gene)
 
-#### 2.4: Features contributing towards donor variations
+#### 4.4: Features contributing towards donor variations
 #### Variance decomposition
 
     meanThreshold <- 0.1
@@ -981,7 +961,7 @@ This tutorial allows users to explore single cell RNAseq data variability across
     plots <- plotFunction(ann, mat, geneName="LILRA4")
     print(plots$plot2)
     
-#### 2.5: Intra-donor variations over time
+#### 4.5: Intra-donor variations over time
 #### Calculate CV
 
     meanThreshold=0.1
