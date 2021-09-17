@@ -136,7 +136,7 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 #### 1.1: Load Library
    
     #Load Library
-    library("longituinalDynamics")
+    library("longitudinalDynamics")
     library("Hmisc")
     library("ggpubr")
     
@@ -290,7 +290,7 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
 #### 2.1: Load Library
    
     #Load Library
-    library("longituinalDynamics")
+    library("longitudinalDynamics")
     library("Hmisc")
     library("ggpubr")
     
@@ -503,7 +503,7 @@ This tutorial allows users to explore single cell ATACseq genscore data measured
 #### 3.1: Load Library
 
     #Load Library
-    library("longituinalDynamics")
+    library("longitudinalDynamics")
     library("Hmisc")
     library("ggpubr")
 
@@ -796,7 +796,7 @@ This tutorial allows users to explore single cell RNAseq data variability across
 #### 4.1: Load Library
    
     #Load Library
-    library("longituinalDynamics")
+    library("longitudinalDynamics")
     library("Hmisc")
     library("ggpubr")
     
