@@ -1011,8 +1011,24 @@ This tutorial allows users to identify differential expressed genes in direction
     library("longitudinalDynamics")
     #run
     DEGres <- sclongitudinalDGE(ann=metadata, dataObj=pbmc, scassay="RNA", celltypecol="celltype")
+    
+    >Fitting a ZLM model for donorID:  COV-1 
+    >Fitting a ZLM model for donorID:  COV-2 
+    >Fitting a ZLM model for donorID:  COV-3 
+    >Fitting a ZLM model for donorID:  COV-4 
+    >Fitting a ZLM model for donorID:  COV-5 
+    >Fitting a ZLM model for donorID:  IAV-1 
+    >Fitting a ZLM model for donorID:  IAV-2 
+
     #Plots can be seen in output directory output
     head(DEGres[order(DEGres$coef, decreasing = T),])
+    #primerid contrast         nomP     coef         adjP donorID celltype dir
+    #IGHG4   TimeD9 1.701579e-26 3.056092 1.453999e-23   IAV-2   Plasma upregulated at D9
+    #JCHAIN   TimeD9 8.759407e-32 2.647757 2.245474e-28   IAV-2   Plasma upregulated at D9
+    #IGHG3   TimeD9 8.470810e-22 2.485250 2.412769e-19   IAV-2   Plasma upregulated at D9
+    #IGLC2   TimeD9 1.352490e-16 2.289544 8.890022e-15   IAV-2   Plasma upregulated at D9
+    #IGHG1   TimeD9 1.292885e-16 2.219146 8.608601e-15   IAV-2   Plasma upregulated at D9
+    #SYNE2   TimeD4 7.249010e-13 2.209541 1.215659e-09   COV-4 XCL+_NKs upregulated at D4
 
 <br><br> ![](vignettes/img5a-CNP0001102-DEGs.png) <br><br>
 Fig.5 General analysis schema and differential results for celltype Cytotoxic CD8 T-cells using **LongitudinalDynamics**.
