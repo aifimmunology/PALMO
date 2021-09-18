@@ -172,7 +172,7 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 
     row.has.na <- apply(datamatrix,1,function(x){any(is.na(x))})
     datamatrix_nonNA <- datamatrix[!row.has.na,]
-    res.pca <- suppressMessages(prcomp(t(datamatrix_nonNA),  center=T, scale = TRUE), classes = "message")
+    res.pca <- prcomp(t(datamatrix_nonNA),  center=T, scale = TRUE)
     plot1 <- fviz_pca_ind(res.pca, col.ind = metadata$PTID, geom.ind =c("point", "text"),  labelsize = 3, addEllipses=FALSE, ellipse.level=0.95) +
              theme(axis.text.x=element_text(size=12, color="black"), axis.text.y=element_text(size=12, color="black"), legend.position = "none") +
              theme_classic()
