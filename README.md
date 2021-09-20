@@ -195,7 +195,7 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
                heatmap_legend_param = list(title = "Pearson",heatmap_legend_side = "right") )
     draw(ht1)
     
-    <br><br> ![](vignettes/Tutorial-1-samplecorrelation.png) <br><br>
+<br><br> ![](vignettes/Tutorial-1-samplecorrelation.png) <br><br>
 
 #### Remove genes with >40%NAs (optional)
 
