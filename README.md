@@ -28,7 +28,7 @@ Table of Contents
 ## <a name="introduction"></a> Introduction
 LongitudinalDynamics `(longitudinalDynamics)` is a platform for anayzing longitudinal data from bulk as well as single cell. It allows to identify inter-, intra-donor variations in genes over longitudinal time points. The analysis can be done on bulk expression dataset without known celltype information or single cell with celltype/user-defined groups. It allows to infer stable and variable features in given donor and each celltype (or user defined group). The outlier analysis can be performed to identify techinical/biological perturbed samples in donor/participant. Further, differential analysis can be performed to deciher time-wise changes in gene expression in a celtype.
 
-<br><br> ![](vignettes/LongitudinalDynamics-workflow.png) <br><br>
+<br><br> ![img](vignettes/LongitudinalDynamics-workflow.png) <br><br>
 Fig.1 General workflow and analysis schema of **LongitudinalDynamics**. It can work with longitudinal data obtained from bulk such as clinical, bulk RNAseq, proteomic or single cell dataset from scRNAseq, scATACseq and scADT.
 
 
@@ -209,7 +209,8 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 
     lmem_res <- lmeVariance(ann=metadata, mat=datamatrix, features=features, meanThreshold=meanThreshold)
 
-<br><br> ![](vignettes/Tutorial-1-variance.png) <br><br>
+<br><br> <img src="vignettes/Tutorial-1-variance.png" width="50%" height="50%"> <br><br>
+
     
     res <- lmem_res[,c("PTID","Time","Residual")]
     colnames(res) <- c("donor","week","Residuals")
@@ -238,7 +239,8 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
         coord_flip()
     print(p1)
     
-<br><br> ![](vignettes/Tutorial-1-DonorVariance.png) <br><br>
+<br><br> <img src="vignettes/Tutorial-1-DonorVariance.png" width="50%" height="50%"> <br><br>
+
 
 #### Plot the variables
 
@@ -257,15 +259,15 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
     }
     plot_grid(plotlist=splots, ncol= 3, align="hv")
 
-<br><br> ![](vignettes/Tutorial-1-geneplot.png) <br><br>
+<br><br> <img src="vignettes/Tutorial-1-geneplot.png" width="100%" height="100%"> <br><br>
 
 #### 1.4:  Intra-donor variations over time
 #### CV vs Mean
 
     cv_res <- cvCalcBulk(mat=datamatrix, ann=metadata, meanThreshold=1, cvThreshold=5)
 
-<br><br> ![](vignettes/Tutorial-1-cvDistribution.png) <br><br>
-<br><br> ![](vignettes/Tutorial-1-VariableStable-Features.png) <br><br>
+<br><br> <img src="vignettes/Tutorial-1-cvDistribution.png" width="50%" height="50%"> <br><br>
+<br><br> <img src="vignettes/Tutorial-1-VariableStable-Features.png" width="80%" height="80%"> <br><br>
 
     CV <- cv_res$CV
     variable_genes <- cv_res$variable_genes
@@ -276,7 +278,7 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 
     IQR_res <- iqrBulk(ann=metadata, mat=datamatrix)
 
-<br><br> ![](vignettes/Tutorial-1-IQRplot.png) <br><br>
+<br><br> <img src="vignettes/Tutorial-1-IQRplot.png" width="80%" height="80%"> <br><br>
 
 #### IQR Plot
     
@@ -316,7 +318,7 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
     }
     plot_grid(plotlist=splots, ncol= 3, align="hv")
 
-<br><br> ![](vignettes/Tutorial-1-IQRgeneplot.png) <br><br>
+<br><br> <img src="vignettes/Tutorial-1-IQRgeneplot.png" width="80%" height="80%"> <br><br>
     
 
 ### <a name="example2"></a> Tutorial-2: scRNA longitudinal data (n=4 and 6 weeks follow-up)
