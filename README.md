@@ -173,6 +173,7 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
     row.has.na <- apply(datamatrix,1,function(x){any(is.na(x))})
     datamatrix_nonNA <- datamatrix[!row.has.na,]
     res.pca <- prcomp(t(datamatrix_nonNA),  center=T, scale = TRUE)
+    library("factoextra")
     plot1 <- fviz_pca_ind(res.pca, col.ind = metadata$PTID, geom.ind =c("point", "text"),  labelsize = 3, addEllipses=FALSE, ellipse.level=0.95) +
              theme(axis.text.x=element_text(size=12, color="black"), axis.text.y=element_text(size=12, color="black"), legend.position = "none") +
              theme_classic()
@@ -193,6 +194,8 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
                top_annotation = ha_col,
                heatmap_legend_param = list(title = "Pearson",heatmap_legend_side = "right") )
     draw(ht1)
+    
+    <br><br> ![](vignettes/Tutorial-1-samplecorrelation.png) <br><br>
 
 #### Remove genes with >40%NAs (optional)
 
@@ -205,9 +208,19 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 #### Variance decomposition
 
     lmem_res <- lmeVariance(ann=metadata, mat=datamatrix, features=features, meanThreshold=meanThreshold)
+    <br><br> ![](vignettes/Tutorial-1-variance.png) <br><br>
     res <- lmem_res[,c("PTID","Time","Residual")]
     colnames(res) <- c("donor","week","Residuals")
     res <- res*100 #in percentage
+    head(res)
+    
+    #Features      donor      week  Residuals
+    #FOLR3   99.90070 0.0000000 0.09930098
+    #GH2     99.49856 0.0000000 0.50144042
+    #PSPN    99.26882 0.1021076 0.62906798
+    #CDHR2   99.07933 0.1157406 0.80493162
+    #SSC4D   98.82794 0.0000000 1.17206000
+    #XPNPEP2 98.67628 0.0000000 1.32372323
     
 #### Donor-specific variance contrubuting features
     
@@ -222,10 +235,11 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
         theme_bw() + theme(axis.text.x = element_text(angle=90, hjust = 0.5, vjust = 1),legend.position = "right") +
         coord_flip()
     print(p1)
+    <br><br> ![](vignettes/Tutorial-1-DonorVariance.png) <br><br>
 
 #### Plot the variables
 
-    genelist <- c("FOLR3", "GH2", "MICA", "FOSB", "EIF4G1", "SRC", "DNAJB1", "SIRT2")
+    genelist <- c("FOLR3", "MICA", "EIF4G1", "SRC")
     uniSample <- as.character(unique(metadata$PTID))
     splots <- list()
     for(i in 1:length(genelist)) {
@@ -239,11 +253,14 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
       splots[[i]] <- plot1
     }
     plot_grid(plotlist=splots, ncol= 3, align="hv")
+    <br><br> ![](vignettes/Tutorial-1-geneplot.png) <br><br>
 
 #### 1.4:  Intra-donor variations over time
 #### CV vs Mean
 
-    cv_res <- cvCalcBulk(mat=datamatrix, ann=metadata, meanThreshold=meanThreshold, cvThreshold=cvThreshold)
+    cv_res <- cvCalcBulk(mat=datamatrix, ann=metadata, meanThreshold=1, cvThreshold=5)
+    <br><br> ![](vignettes/Tutorial-1-cvDistribution.png) <br><br>
+    <br><br> ![](vignettes/Tutorial-1-VariableStable-Features.png) <br><br>
     CV <- cv_res$CV
     variable_genes <- cv_res$variable_genes
     stable_genes <- cv_res$stable_genes
@@ -252,6 +269,7 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 #### Calculate IQR
 
     IQR_res <- iqrBulk(ann=metadata, mat=datamatrix)
+    <br><br> ![](vignettes/Tutorial-1-IQRplot.png) <br><br>
 
 #### IQR Plot
     
@@ -259,6 +277,16 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
     df <- df[df$value != 0,]
     df <- df[!is.na(df$Var1),]
     df <- df[order(df$value, decreasing = T),]
+    head(df)
+    
+    #Var1     Var2    value
+    #NAA10 PB1194W6 9.003908
+    #IFI30 PB1194W6 8.340474
+    #PRTFDC1 PB1194W6 7.946629
+    #FCAR PB1194W6 7.004890
+    #TNFRSF13C PB1194W6 6.605767
+    #DPEP2 PB1194W6 6.595705
+    
     plot1 <- ggplot(df, aes(x=Var2, y=value)) +
         geom_violin(scale="width") +
         #geom_boxplot(width=0.1, fill="white") +
@@ -269,8 +297,7 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 
 #### Gene plot (probable outliers)
 
-    genelist <- c("NAA10", "IFI30", "FCAR", "TNFRSF13C", "IL15")
-    genelist <- as.character(unique(df$Var1)[1:9])
+    genelist <- c("NAA10", "IFI30", "FCAR", "TNFRSF13C", "IL15", "IFNL1")
     splots <- list()
     for(i in 1:length(genelist)) {
        geneName <- genelist[i]
@@ -281,6 +308,7 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
        splots[[i]] <- plot1
     }
     plot_grid(plotlist=splots, ncol= 3, align="hv")
+    <br><br> ![](vignettes/Tutorial-1-IQRgeneplot.png) <br><br>
     
 
 ### <a name="example2"></a> Tutorial-2: scRNA longitudinal data (n=4 and 6 weeks follow-up)
