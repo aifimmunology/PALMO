@@ -278,7 +278,7 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 
     IQR_res <- iqrBulk(ann=metadata, mat=datamatrix)
 
-<br><br> <img src="vignettes/Tutorial-1-IQRplot.png" width="80%" height="80%"> <br><br>
+<br><br> <img src="vignettes/Tutorial-1-IQRplot.png" width="100%" height="100%"> <br><br>
 
 #### IQR Plot
     
