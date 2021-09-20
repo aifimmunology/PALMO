@@ -318,7 +318,7 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
     }
     plot_grid(plotlist=splots, ncol= 3, align="hv")
 
-<br><br> <img src="vignettes/Tutorial-1-IQRgeneplot.png" width="80%" height="80%"> <br><br>
+<br><br> <img src="vignettes/Tutorial-1-IQRgeneplot.png" width="100%" height="100%"> <br><br>
     
 
 ### <a name="example2"></a> Tutorial-2: scRNA longitudinal data (n=4 and 6 weeks follow-up)
