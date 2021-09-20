@@ -208,7 +208,9 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 #### Variance decomposition
 
     lmem_res <- lmeVariance(ann=metadata, mat=datamatrix, features=features, meanThreshold=meanThreshold)
-    <br><br> ![](vignettes/Tutorial-1-variance.png) <br><br>
+
+<br><br> ![](vignettes/Tutorial-1-variance.png) <br><br>
+    
     res <- lmem_res[,c("PTID","Time","Residual")]
     colnames(res) <- c("donor","week","Residuals")
     res <- res*100 #in percentage
@@ -235,7 +237,8 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
         theme_bw() + theme(axis.text.x = element_text(angle=90, hjust = 0.5, vjust = 1),legend.position = "right") +
         coord_flip()
     print(p1)
-    <br><br> ![](vignettes/Tutorial-1-DonorVariance.png) <br><br>
+    
+<br><br> ![](vignettes/Tutorial-1-DonorVariance.png) <br><br>
 
 #### Plot the variables
 
@@ -253,14 +256,17 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
       splots[[i]] <- plot1
     }
     plot_grid(plotlist=splots, ncol= 3, align="hv")
-    <br><br> ![](vignettes/Tutorial-1-geneplot.png) <br><br>
+
+<br><br> ![](vignettes/Tutorial-1-geneplot.png) <br><br>
 
 #### 1.4:  Intra-donor variations over time
 #### CV vs Mean
 
     cv_res <- cvCalcBulk(mat=datamatrix, ann=metadata, meanThreshold=1, cvThreshold=5)
-    <br><br> ![](vignettes/Tutorial-1-cvDistribution.png) <br><br>
-    <br><br> ![](vignettes/Tutorial-1-VariableStable-Features.png) <br><br>
+
+<br><br> ![](vignettes/Tutorial-1-cvDistribution.png) <br><br>
+<br><br> ![](vignettes/Tutorial-1-VariableStable-Features.png) <br><br>
+
     CV <- cv_res$CV
     variable_genes <- cv_res$variable_genes
     stable_genes <- cv_res$stable_genes
@@ -269,7 +275,8 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 #### Calculate IQR
 
     IQR_res <- iqrBulk(ann=metadata, mat=datamatrix)
-    <br><br> ![](vignettes/Tutorial-1-IQRplot.png) <br><br>
+
+<br><br> ![](vignettes/Tutorial-1-IQRplot.png) <br><br>
 
 #### IQR Plot
     
@@ -308,7 +315,8 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
        splots[[i]] <- plot1
     }
     plot_grid(plotlist=splots, ncol= 3, align="hv")
-    <br><br> ![](vignettes/Tutorial-1-IQRgeneplot.png) <br><br>
+
+<br><br> ![](vignettes/Tutorial-1-IQRgeneplot.png) <br><br>
     
 
 ### <a name="example2"></a> Tutorial-2: scRNA longitudinal data (n=4 and 6 weeks follow-up)
