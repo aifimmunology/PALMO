@@ -28,7 +28,7 @@ Table of Contents
 ## <a name="introduction"></a> Introduction
 LongitudinalDynamics `(longitudinalDynamics)` is a platform for anayzing longitudinal data from bulk as well as single cell. It allows to identify inter-, intra-donor variations in genes over longitudinal time points. The analysis can be done on bulk expression dataset without known celltype information or single cell with celltype/user-defined groups. It allows to infer stable and variable features in given donor and each celltype (or user defined group). The outlier analysis can be performed to identify techinical/biological perturbed samples in donor/participant. Further, differential analysis can be performed to deciher time-wise changes in gene expression in a celtype.
 
-<br><br> ![img](vignettes/LongitudinalDynamics-workflow.png) <br><br>
+<br> ![img](vignettes/LongitudinalDynamics-workflow.png) <br>
 Fig.1 General workflow and analysis schema of **LongitudinalDynamics**. It can work with longitudinal data obtained from bulk such as clinical, bulk RNAseq, proteomic or single cell dataset from scRNAseq, scATACseq and scADT.
 
 
@@ -152,7 +152,7 @@ The annotation table `metadata` must consist of column `Sample` (Participant sam
     #Parameters
     metadata=ann
     datamatrix=data
-    featureSet=c("PTID", "Time") #variation look-up featureset
+    featureSet=c("PTID", "Time") #variation attributed to traits
     
 #### Create output directory
 
@@ -195,7 +195,7 @@ Perform the sample correlation to find out overall correlation between longitudi
                heatmap_legend_param = list(title = "Pearson",heatmap_legend_side = "right") )
     draw(ht1)
     
-<br><br> <img src="vignettes/Tutorial-1-samplecorrelation.png" width="50%" height="50%"> <br><br>
+<br> <img src="vignettes/Tutorial-1-samplecorrelation.png" width="50%" height="50%"> <br>
 
 #### Remove genes with >40%NAs (optional)
 
@@ -213,7 +213,7 @@ To perform variance decomposition apply `lmeVariance` function with input metada
 
     lmem_res <- lmeVariance(ann=metadata, mat=datamatrix, featureSet=featureSet, meanThreshold=1)
 
-<br><br> <img src="vignettes/Tutorial-1-variance.png" width="50%" height="50%"> <br><br>
+<br> <img src="vignettes/Tutorial-1-variance.png" width="50%" height="50%"> <br>
 
     
     res <- lmem_res[,c("PTID","Time","Residual")]
@@ -243,7 +243,7 @@ To perform variance decomposition apply `lmeVariance` function with input metada
         coord_flip()
     print(p1)
     
-<br><br> <img src="vignettes/Tutorial-1-DonorVariance.png" width="50%" height="50%"> <br><br>
+<br> <img src="vignettes/Tutorial-1-DonorVariance.png" width="50%" height="50%"> <br>
 
 
 #### Plot the Top variables
@@ -263,15 +263,15 @@ To perform variance decomposition apply `lmeVariance` function with input metada
     }
     plot_grid(plotlist=splots, ncol= 3, align="hv")
 
-<br><br> <img src="vignettes/Tutorial-1-geneplot.png" width="100%" height="100%"> <br><br>
+<br> <img src="vignettes/Tutorial-1-geneplot.png" width="100%" height="100%"> <br>
 
 #### 1.4:  Intra-donor variations over time
 #### CV vs Mean
 
     cv_res <- cvCalcBulk(mat=datamatrix, ann=metadata, meanThreshold=1, cvThreshold=5)
 
-<br><br> <img src="vignettes/Tutorial-1-cvDistribution.png" width="50%" height="50%"> <br><br>
-<br><br> <img src="vignettes/Tutorial-1-VariableStable-Features.png" width="80%" height="80%"> <br><br>
+<br> <img src="vignettes/Tutorial-1-cvDistribution.png" width="50%" height="50%"> <br>
+<br> <img src="vignettes/Tutorial-1-VariableStable-Features.png" width="80%" height="80%"> <br>
 
     CV <- cv_res$CV
     variable_genes <- cv_res$variable_genes
@@ -300,7 +300,7 @@ To perform variance decomposition apply `lmeVariance` function with input metada
       theme_classic() + theme(axis.text.x = element_text(angle=90, hjust = 1, vjust = 1, size=6), axis.text.y = element_text(size=6), legend.position = "right")
     print(plot1)
 
-<br><br> <img src="vignettes/Tutorial-1-IQRplot.png" width="100%" height="100%"> <br><br>
+<br> <img src="vignettes/Tutorial-1-IQRplot.png" width="100%" height="100%"> <br>
     
     #Stringent SD
     outlier_res <- outlierDetect(ann=metadata, mat=datamatrix, SD_threshold= 2.5)
@@ -329,7 +329,7 @@ To perform variance decomposition apply `lmeVariance` function with input metada
     }
     plot_grid(plotlist=splots, ncol= 3, align="hv")
 
-<br><br> <img src="vignettes/Tutorial-1-IQRgeneplot.png" width="100%" height="100%"> <br><br>
+<br> <img src="vignettes/Tutorial-1-IQRgeneplot.png" width="100%" height="100%"> <br>
     
 ### <a name="example2"></a> Tutorial-2: scRNA longitudinal data (n=4 and 6 weeks follow-up)
 
@@ -353,7 +353,7 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     p2 <- DimPlot(object = pbmc, reduction = 'umap', group.by = "celltype", label = F)
     print(plot_grid(p1, p2, align="hv", ncol=2))
     
-<br><br> <img src="vignettes/Tutorial-2-UMAPPlot.png" width="50%" height="50%"> <br><br>
+<br> <img src="vignettes/Tutorial-2-UMAPPlot.png" width="100%" height="100%"> <br>
 
 #### 
 
@@ -466,7 +466,7 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     colnames(res) <- c("PTID","Time","celltype","Residuals")
     res <- res*100 #in percentage
     
-<br><br> <img src="vignettes/Tutorial-2-variancePlot.png" width="50%" height="50%"> <br><br>
+<br> <img src="vignettes/Tutorial-2-variancePlot.png" width="50%" height="50%"> <br>
     
 #### Donor-specific variance
 
@@ -482,8 +482,11 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
       coord_flip()
     print(p1)  
 
-<br><br> <img src="vignettes/Tutorial-2-Donor-variancePlot.png" width="50%" height="50%"> <br><br>
-<br><br> <img src="vignettes/Tutorial-2-Donor-variancePlot2.png" width="100%" height="100%"> <br><br>
+<br> <img src="vignettes/Tutorial-2-Donor-variancePlot2.png" width="50%" height="50%"> <br>
+
+    #Similar procedure applied to get Time- and celltype-attributed variance features
+    
+<br><img src="vignettes/Tutorial-2-Donor-variancePlot.png" width="100%" height="100%"> <br>
 
 #### Plot the variables
 
@@ -518,12 +521,12 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     plots <- plotFunction(ann, mat, geneName="LILRA4")
     print(plots$plot1)
     
-<br><br> <img src="vignettes/Tutorial-2-celltype-LILRA4-1.png" width="50%" height="50%"> <br><br>
+<br> <img src="vignettes/Tutorial-2-celltype-LILRA4-1.png" width="50%" height="50%"> <br>
     
     plots <- plotFunction(ann, mat, geneName="LILRA4")
     print(plots$plot2)
     
-<br><br> <img src="vignettes/Tutorial-2-celltype-LILRA4-2.png" width="50%" height="50%"> <br><br>
+<br> <img src="vignettes/Tutorial-2-celltype-LILRA4-2.png" width="100%" height="100%"> <br>
     
 #### 2.5: Intra-donor variations over time
 #### Calculate CV
@@ -535,11 +538,11 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     #Plots saved in user-defined output directory
     #Variable genes observed in longitidinal data (CV>10%)
 
-<br><br> <img src="vignettes/Tutorial-2-Variable-Plot.png" width="50%" height="50%"> <br><br>
+<br> <img src="vignettes/Tutorial-2-Variable-Plot.png" width="100%" height="100%"> <br>
     
     #Stable genes observed in longitidinal data (CV<10%)
 
-<br><br> <img src="vignettes/Tutorial-2-Stable-Plot.png" width="50%" height="50%"> <br><br>
+<br> <img src="vignettes/Tutorial-2-Stable-Plot.png" width="100%" height="100%"> <br>
 
 #### Find stable and variable features in longitudinal data
 
@@ -555,11 +558,11 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     #Top variable and stable features used for UMAP
     rnaObj <- dimUMAPPlot(rnaObj=dataObj, nPC=nPC, gene_oi=var_gene, groupName=avgGroup, plotname="variable", filePATH=filePATH, fileName=fileName)
     
-<br><br> <img src="vignettes/Tutorial-2-scRNA-UMAP-variable-Genes.png" width="50%" height="50%"> <br><br>
+<br> <img src="vignettes/Tutorial-2-scRNA-UMAP-variable-Genes.png" width="100%" height="100%"> <br>
     
     rnaObj <- dimUMAPPlot(rnaObj=dataObj, nPC=nPC, gene_oi=stable_gene, groupName=avgGroup, plotname="stable", filePATH=filePATH, fileName=fileName)
 
-<br><br> <img src="vignettes/Tutorial-2-scRNA-UMAP-stable-Genes.png" width="50%" height="50%"> <br><br>
+<br> <img src="vignettes/Tutorial-2-scRNA-UMAP-stable-Genes.png" width="100%" height="100%"> <br>
 
 
 #### Circular gene expression plot
@@ -568,7 +571,7 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     geneList <- c("IL32","CCL5","TCF7","IL7R","LEF1") #T-cell
     res <- genecircosPlot(data=cv_res, geneList=geneList, group_oi=group_oi)
     
-<br><br> <img src="vignettes/Tutorial-2-Tcelltype-circularPlot.png" width="50%" height="50%"> <br><br>
+<br> <img src="vignettes/Tutorial-2-Tcelltype-circularPlot.png" width="50%" height="50%"> <br>
 
 ### <a name="example3"></a> Tutorial-3: scATAC Longitudinal data (n=4 and 6 weeks follow-up)
 This tutorial allows users to explore single cell ATACseq genscore data measured from 4 healthy donors over 6 timepoints (week 2-7). Single cell ATAC data available at GEOXXX. (1) pbmc_scatac_archr_genescore_longitudinal_data (2) data_Annotation.Rda (clinical metadata). Longitudinal dataset have 4 donors (2 male and 2 females). Please follow following steps.
