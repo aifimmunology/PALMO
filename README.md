@@ -561,11 +561,11 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
 #### UMAP Plot
 
     #Top variable and stable features used for UMAP
-    rnaObj <- dimUMAPPlot(rnaObj=dataObj, nPC=nPC, gene_oi=var_gene, groupName=avgGroup, plotname="variable", filePATH=filePATH, fileName=fileName)
+    rnaObj <- dimUMAPPlot(rnaObj=dataObj, nPC=15, gene_oi=var_gene, groupName=avgGroup, plotname="variable", filePATH=filePATH, fileName=fileName)
     
 <br> <img src="vignettes/Tutorial-2-scRNA-UMAP-variable-Genes.png" width="100%" height="100%"> <br>
     
-    rnaObj <- dimUMAPPlot(rnaObj=dataObj, nPC=nPC, gene_oi=stable_gene, groupName=avgGroup, plotname="stable", filePATH=filePATH, fileName=fileName)
+    rnaObj <- dimUMAPPlot(rnaObj=dataObj, nPC=15, gene_oi=stable_gene, groupName=avgGroup, plotname="stable", filePATH=filePATH, fileName=fileName)
 
 <br> <img src="vignettes/Tutorial-2-scRNA-UMAP-stable-Genes.png" width="100%" height="100%"> <br>
 
