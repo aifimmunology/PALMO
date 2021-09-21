@@ -277,17 +277,8 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 #### Detect outliers (if any)
 
     outlier_res <- outlierDetect(ann=metadata, mat=datamatrix)
-
-<br><br> <img src="vignettes/Tutorial-1-IQRplot.png" width="100%" height="100%"> <br><br>
-
-#### Z-score Plot
     
-    df <- melt(data.matrix(IQR_res))
-    df <- df[df$value != 0,]
-    df <- df[!is.na(df$Var1),]
-    df <- df[order(df$value, decreasing = T),]
-    head(df)
-    
+    head(outlier_res)
     #Var1     Var2    value
     #IFI30 PB1194W6 2.845471
     #DPEP2 PB1194W6 2.844629
@@ -296,13 +287,16 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
     #TNFRSF13C PB1194W6 2.844410
     #KIR2DL3 PB1194W6 2.844018
     
-    plot1 <- ggplot(df, aes(x=Var2, y=value)) +
-        geom_violin(scale="width") +
-        #geom_boxplot(width=0.1, fill="white") +
-        labs(x="", y="Z-score (>2SD)") +
-        ggforce::geom_sina(size=0.5) +
-        theme_classic() + theme(axis.text.x = element_text(angle=90, hjust = 1, vjust = 1, size=6), axis.text.y = element_text(size=6), legend.position = "right")
+    #Z-score Plot
+    plot1 <- ggplot(outlier_res, aes(x=sample, y=Z)) +
+      geom_violin(scale="width") +
+      #geom_boxplot(width=0.1, fill="white") +
+      labs(x="", y="Z-score (>2SD)") +
+      ggforce::geom_sina(size=0.5) +
+      theme_classic() + theme(axis.text.x = element_text(angle=90, hjust = 1, vjust = 1, size=6), axis.text.y = element_text(size=6), legend.position = "right")
     print(plot1)
+
+<br><br> <img src="vignettes/Tutorial-1-IQRplot.png" width="100%" height="100%"> <br><br>
 
 #### Gene plot (probable outliers)
 
@@ -322,13 +316,10 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
     
     #Stringent SD
     outlier_res <- outlierDetect(ann=metadata, mat=datamatrix, SD_threshold= 2.5)
-    df <- melt(data.matrix(outlier_res))
-    df <- df[df$value != 0,]
-    df <- df[!is.na(df$Var1),]
-    df <- data.frame(table(df$Var2))
+    df <- data.frame(table(outlier_res$sample))
     df <- df[order(df$Freq, decreasing = T),]
-    
     head(df)
+
     #Var1 Freq
     #PB1194W6   71
     #PB5206W9   28
