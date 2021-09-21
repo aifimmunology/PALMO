@@ -164,7 +164,7 @@ The output directory where user can save the result files. Default `output` dire
     
 #### Sample overlap
 
-The amtrix were overlapped for available samples only.
+The data matrix were overlapped with metadata for selecting available samples only.
 
     overlap <- intersect(metadata$Sample, colnames(datamatrix))
     metadata <- metadata[overlap,]
@@ -172,18 +172,11 @@ The amtrix were overlapped for available samples only.
     datamatrix <- datamatrix[,overlap]
 
 #### 1.2:  Check data
-#### PCA Plot
-
-Reduce number dimentions of data for quick check with PCA (principle component analysis) analysis. For PCA remove the genes with missing values.
+#### Missing values
 
     row.has.na <- apply(datamatrix,1,function(x){any(is.na(x))})
     datamatrix_nonNA <- datamatrix[!row.has.na,]
-    res.pca <- prcomp(t(datamatrix_nonNA),  center=T, scale = TRUE)
-    library("factoextra")
-    fviz_pca_ind(res.pca, col.ind = metadata$PTID, geom.ind =c("point", "text"),  labelsize = 3, addEllipses=FALSE, ellipse.level=0.95) +
-             theme(axis.text.x=element_text(size=12, color="black"), axis.text.y=element_text(size=12, color="black"), legend.position = "none") +
-             theme_classic()
-
+    
 #### Sample variability (Correlation)
 
 Perform the sample correlation to find out overall correlation between longitudinal samples.
@@ -216,7 +209,7 @@ For downstream analysis select genes/proteins with less than 40% of missing valu
 #### 1.3:  Features contributing towards donor variations
 #### Variance decomposition
 
-The perform variance decomposition apply `lmeVariance` function with input metadata, and datamatrix. The `featureSet` is a list of variables to which freaction variance explained by each gene is attributed. `meanThreshold` defines the minimum average expression threshold to be used for ongitudinal dataset. Here we used normalized protein expression 1 based on mean expression profile of each gene across longitudinal samples. Residuals suggest the variance can not be explained by available feature set. The variance explained by each gene towards the featureSet of interest given in percentage.
+To perform variance decomposition apply `lmeVariance` function with input metadata, and datamatrix. The `featureSet` is a list of variables to which freaction variance explained by each gene is attributed. `meanThreshold` defines the minimum average expression threshold to be used for ongitudinal dataset. Here we used normalized protein expression 1 based on mean expression profile of each gene across longitudinal samples. Residuals suggest the variance can not be explained by available feature set. The variance explained by each gene towards the featureSet of interest given in percentage.
 
     lmem_res <- lmeVariance(ann=metadata, mat=datamatrix, featureSet=featureSet, meanThreshold=1)
 
