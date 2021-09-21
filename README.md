@@ -263,7 +263,7 @@ To perform variance decomposition apply `lmeVariance` function with input metada
     }
     plot_grid(plotlist=splots, ncol= 3, align="hv")
 
-<br> <img src="vignettes/Tutorial-1-geneplot.png" width="100%" height="100%"> <br>
+<br> <img src="vignettes/Tutorial-1-geneplot.png" width="50%" height="50%"> <br>
 
 #### 1.4:  Intra-donor variations over time
 #### CV vs Mean
@@ -333,7 +333,7 @@ To perform variance decomposition apply `lmeVariance` function with input metada
     
 ### <a name="example2"></a> Tutorial-2: scRNA longitudinal data (n=4 and 6 weeks follow-up)
 
-This tutorial allows users to explore single cell RNAseq data measured from 4 healthy donors over 6 timepoints (week 2-7). Single cell data available at **GEOXXX**. (1) pbmc_longitudinal_data (Normalized scRNA seurat object) (2) data_Annotation.Rda (clinical metadata). Longitudinal dataset have 4 donors (2 male and 2 females). Please follow following steps.
+This tutorial allows users to explore single cell RNAseq data measured from 4 healthy donors over 6 time points (week 2-7). Single cell data available at **GEOXXX**. (1) pbmc_longitudinal_data (Normalized scRNA seurat object) (2) data_Annotation.Rda (clinical metadata). Longitudinal data set includes 4 donors (2 male and 2 females). To infer iner-donor, intra-donor variations, and stable features, please follow following steps.
 
 #### 2.1: Load Library
    
@@ -355,11 +355,12 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     
 <br> <img src="vignettes/Tutorial-2-UMAPPlot.png" width="100%" height="100%"> <br>
 
-#### 
+#### Load annotation data
 
     #Clinical metadata/annotation
     load("data/data_Annotation.Rda")
     metadata=ann
+    row.names(metadata) <- metadata$Sample
 
     #Parameters
     dataObj <- pbmc
@@ -526,7 +527,7 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     plots <- plotFunction(ann, mat, geneName="LILRA4")
     print(plots$plot2)
     
-<br> <img src="vignettes/Tutorial-2-celltype-LILRA4-2.png" width="100%" height="100%"> <br>
+<br> <img src="vignettes/Tutorial-2-celltype-LILRA4-2.png" width="50%" height="50%"> <br>
     
 #### 2.5: Intra-donor variations over time
 #### Calculate CV
@@ -536,13 +537,9 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     cv_res <- cvCalcSC(mat=mat, ann=ann, meanThreshold=meanThreshold, cvThreshold=cvThreshold, housekeeping_genes=housekeeping_genes, filePATH=filePATH, fileName="scrna")
     
     #Plots saved in user-defined output directory
-    #Variable genes observed in longitidinal data (CV>10%)
-
-<br> <img src="vignettes/Tutorial-2-Variable-Plot.png" width="100%" height="100%"> <br>
+    #Overall CV profile in celltypes (black) as well as CV for house-keeping genes (blue). Based on CV of house-keeping genes 10% CV cut-off used and genes considered stable elow 10% CV.
     
-    #Stable genes observed in longitidinal data (CV<10%)
-
-<br> <img src="vignettes/Tutorial-2-Stable-Plot.png" width="100%" height="100%"> <br>
+<br> <img src="vignettes/Tutorial-2-CV-distribution-HousekeepingGenes.png" width="50%" height="50%"> <br>
 
 #### Find stable and variable features in longitudinal data
 
@@ -552,6 +549,14 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     var_gene <- VarFeatures(ann=ann, group_oi=group_oi, meanThreshold=meanThreshold, cvThreshold=cvThreshold, donorThreshold=donorThreshold, groupThreshold=groupThreshold, topFeatures=topFeatures, filePATH=filePATH, fileName=fileName)
 
     stable_gene <- StableFeatures(ann=ann, group_oi=group_oi, meanThreshold=meanThreshold, cvThreshold=cvThreshold, donorThreshold=donorThreshold, groupThreshold=groupThreshold, topFeatures=topFeatures, filePATH=filePATH, fileName=fileName)
+
+    #Variable genes observed in longitidinal data (CV>10%)
+
+<br> <img src="vignettes/Tutorial-2-Variable-Plot.png" width="100%" height="100%"> <br>
+    
+    #Stable genes observed in longitidinal data (CV<10%)
+
+<br> <img src="vignettes/Tutorial-2-Stable-Plot.png" width="100%" height="100%"> <br>
 
 #### UMAP Plot
 
