@@ -352,6 +352,8 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     p1 <- DimPlot(object = pbmc, reduction = 'umap', group.by = "Sample", label = F)
     p2 <- DimPlot(object = pbmc, reduction = 'umap', group.by = "celltype", label = F)
     print(plot_grid(p1, p2, align="hv", ncol=2))
+    
+<br><br> <img src="vignettes/Tutorial-2-UMAPPlot.png" width="50%" height="50%"> <br><br>
 
 #### 
 
@@ -365,8 +367,9 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     avgGroup="celltype"
     housekeeping_genes <- c("GAPDH", "ACTB")
 
-    #Celltypes to be considered
+    #Celltypes observed in dataset
     cell_type <- sort(unique(pbmc@meta.data$celltype))
+    #Celltypes selected for analysis consisting atleast >5% of cells in each celltype.
     group_oi <- c("CD4_Naive","CD4_TEM","CD4_TCM","CD4_CTL","CD8_Naive","CD8_TEM","CD8_TCM","Treg","MAIT","gdT",
               "NK", "NK_CD56bright",
               "B_naive", "B_memory", "B_intermediate",
@@ -430,7 +433,7 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     Overlap <- intersect(colnames(mat), row.names(ann))
     ann <- ann[Overlap,]
     mat <- mat[,Overlap]
-    write.table(sort(unique(ann$group)), file=paste(filePATH,"/",fileName,"-group.txt", sep=""), row.names = F, col.names=F, quote=F)
+    write.table(sort(unique(ann$group)), file=paste(filePATH,"/scRNA-group.txt", sep=""), row.names = F, col.names=F, quote=F)
 
 #### 2.3: CV profile
 
@@ -458,10 +461,12 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
 #### Variance decomposition
 
     meanThreshold <- 0.1
-    lmem_res <- lmeVariance(ann=ann, mat=mat, features=c(features,"group"), meanThreshold=meanThreshold, fileName=fileName, filePATH=filePATH)
+    lmem_res <- lmeVariance(ann=ann, mat=mat, featureSet=c(featureSet,"group"), meanThreshold=meanThreshold, fileName=fileName, filePATH=filePATH)
     res <- lmem_res[,c("PTID","Time","group","Residual")]
-    colnames(res) <- c("donor","week","celltype","Residuals")
+    colnames(res) <- c("PTID","Time","celltype","Residuals")
     res <- res*100 #in percentage
+    
+<br><br> <img src="vignettes/Tutorial-2-variancePlot.png" width="50%" height="50%"> <br><br>
     
 #### Donor-specific variance
 
@@ -476,6 +481,9 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
       theme_bw() + theme(axis.text.x = element_text(angle=90, hjust = 0.5, vjust = 1),legend.position = "right") +
       coord_flip()
     print(p1)  
+
+<br><br> <img src="vignettes/Tutorial-2-Donor-variancePlot.png" width="50%" height="50%"> <br><br>
+<br><br> <img src="vignettes/Tutorial-2-Donor-variancePlot2.png" width="100%" height="100%"> <br><br>
 
 #### Plot the variables
 
@@ -507,10 +515,15 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
       return(list(plot1=plot1, plot2=plot2))
     }
     
-    plots <- plotFunction(ann, mat, geneName="MTRNR2L8")
+    plots <- plotFunction(ann, mat, geneName="LILRA4")
     print(plots$plot1)
+    
+<br><br> <img src="vignettes/Tutorial-2-celltype-LILRA4-1.png" width="50%" height="50%"> <br><br>
+    
     plots <- plotFunction(ann, mat, geneName="LILRA4")
     print(plots$plot2)
+    
+<br><br> <img src="vignettes/Tutorial-2-celltype-LILRA4-2.png" width="50%" height="50%"> <br><br>
     
 #### 2.5: Intra-donor variations over time
 #### Calculate CV
@@ -518,6 +531,15 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     meanThreshold=0.1
     cvThreshold=10
     cv_res <- cvCalcSC(mat=mat, ann=ann, meanThreshold=meanThreshold, cvThreshold=cvThreshold, housekeeping_genes=housekeeping_genes, filePATH=filePATH, fileName="scrna")
+    
+    #Plots saved in user-defined output directory
+    #Variable genes observed in longitidinal data (CV>10%)
+
+<br><br> <img src="vignettes/Tutorial-2-Variable-Plot.png" width="50%" height="50%"> <br><br>
+    
+    #Stable genes observed in longitidinal data (CV<10%)
+
+<br><br> <img src="vignettes/Tutorial-2-Stable-Plot.png" width="50%" height="50%"> <br><br>
 
 #### Find stable and variable features in longitudinal data
 
@@ -530,20 +552,23 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
 
 #### UMAP Plot
 
-    nPC <- 15
-    plot1 <- DimPlot(object = pbmc, reduction = 'umap', group.by = "celltype", label = T)
+    #Top variable and stable features used for UMAP
     rnaObj <- dimUMAPPlot(rnaObj=dataObj, nPC=nPC, gene_oi=var_gene, groupName=avgGroup, plotname="variable", filePATH=filePATH, fileName=fileName)
+    
+<br><br> <img src="vignettes/Tutorial-2-scRNA-UMAP-variable-Genes.png" width="50%" height="50%"> <br><br>
+    
     rnaObj <- dimUMAPPlot(rnaObj=dataObj, nPC=nPC, gene_oi=stable_gene, groupName=avgGroup, plotname="stable", filePATH=filePATH, fileName=fileName)
 
-#### gene Plot
+<br><br> <img src="vignettes/Tutorial-2-scRNA-UMAP-stable-Genes.png" width="50%" height="50%"> <br><br>
 
-    plots <- genePlot(ann=ann, data=mat, geneName="IL7R", groupName="group")
 
 #### Circular gene expression plot
 
     load("output/scrna-CV-allgenes-raw.Rda")
     geneList <- c("IL32","CCL5","TCF7","IL7R","LEF1") #T-cell
     res <- genecircosPlot(data=cv_res, geneList=geneList, group_oi=group_oi)
+    
+<br><br> <img src="vignettes/Tutorial-2-Tcelltype-circularPlot.png" width="50%" height="50%"> <br><br>
 
 ### <a name="example3"></a> Tutorial-3: scATAC Longitudinal data (n=4 and 6 weeks follow-up)
 This tutorial allows users to explore single cell ATACseq genscore data measured from 4 healthy donors over 6 timepoints (week 2-7). Single cell ATAC data available at GEOXXX. (1) pbmc_scatac_archr_genescore_longitudinal_data (2) data_Annotation.Rda (clinical metadata). Longitudinal dataset have 4 donors (2 male and 2 females). Please follow following steps.
