@@ -274,13 +274,13 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
     stable_genes <- cv_res$stable_genes
 
 #### 1.5:  Outlier analysis
-#### Calculate IQR
+#### Detect outliers (if any)
 
-    IQR_res <- iqrBulk(ann=metadata, mat=datamatrix)
+    outlier_res <- outlierDetect(ann=metadata, mat=datamatrix)
 
 <br><br> <img src="vignettes/Tutorial-1-IQRplot.png" width="100%" height="100%"> <br><br>
 
-#### IQR Plot
+#### Z-score Plot
     
     df <- melt(data.matrix(IQR_res))
     df <- df[df$value != 0,]
@@ -289,12 +289,12 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
     head(df)
     
     #Var1     Var2    value
-    #NAA10 PB1194W6 9.003908
-    #IFI30 PB1194W6 8.340474
-    #PRTFDC1 PB1194W6 7.946629
-    #FCAR PB1194W6 7.004890
-    #TNFRSF13C PB1194W6 6.605767
-    #DPEP2 PB1194W6 6.595705
+    #IFI30 PB1194W6 2.845471
+    #DPEP2 PB1194W6 2.844629
+    #FCAR PB1194W6 2.844607
+    #DPEP1 PB1194W6 2.844574
+    #TNFRSF13C PB1194W6 2.844410
+    #KIR2DL3 PB1194W6 2.844018
     
     plot1 <- ggplot(df, aes(x=Var2, y=value)) +
         geom_violin(scale="width") +
@@ -306,7 +306,7 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 
 #### Gene plot (probable outliers)
 
-    genelist <- c("NAA10", "IFI30", "FCAR", "TNFRSF13C", "IL15", "IFNL1")
+    genelist <- c("IFI30", "DPEP2","FCAR", "TNFRSF13C", "IL15", "IL32")
     splots <- list()
     for(i in 1:length(genelist)) {
        geneName <- genelist[i]
@@ -320,7 +320,23 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 
 <br><br> <img src="vignettes/Tutorial-1-IQRgeneplot.png" width="100%" height="100%"> <br><br>
     
-
+    #Stringent SD
+    outlier_res <- outlierDetect(ann=metadata, mat=datamatrix, SD_threshold= 2.5)
+    df <- melt(data.matrix(outlier_res))
+    df <- df[df$value != 0,]
+    df <- df[!is.na(df$Var1),]
+    df <- data.frame(table(df$Var2))
+    df <- df[order(df$Freq, decreasing = T),]
+    
+    head(df)
+    #Var1 Freq
+    #PB1194W6   71
+    #PB5206W9   28
+    #PB2216W5   20
+    #PB1051W1   17
+    #PB1051W8   12
+    #PB7626W1    7
+    
 ### <a name="example2"></a> Tutorial-2: scRNA longitudinal data (n=4 and 6 weeks follow-up)
 
 This tutorial allows users to explore single cell RNAseq data measured from 4 healthy donors over 6 timepoints (week 2-7). Single cell data available at **GEOXXX**. (1) pbmc_longitudinal_data (Normalized scRNA seurat object) (2) data_Annotation.Rda (clinical metadata). Longitudinal dataset have 4 donors (2 male and 2 females). Please follow following steps.
