@@ -341,6 +341,7 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     library("longitudinalDynamics")
     library("Hmisc")
     library("ggpubr")
+    library("Seurat")
     
 #### Load data and assign paramaters
 
