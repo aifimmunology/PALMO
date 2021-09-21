@@ -135,32 +135,36 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 
 #### 1.1: Load Library
    
-    #Load Library
+    #Load Library and other vizualization packages
     library("longitudinalDynamics")
     library("Hmisc")
     library("ggpubr")
     
 #### Load data and assign paramaters
 
+The annotation table `metadata` must consist of column `Sample` (Participant sample name), `PTID` (Participant), `Time` (longitudinal time points). The datamatrix is an Expression data frame, where rows represents gene/proteins and column represents participant samples (same as annotation table `Sample` column).
+
     load("Olink_NPX_log2_Protein.Rda")
     load("data_Annotation.Rda")
     #assign rownames with sample name
     row.names(ann) <- ann$Sample
+    
     #Parameters
     metadata=ann
     datamatrix=data
-    features=c("PTID", "Time")
-    meanThreshold=1
-    cvThreshold=5
-    housekeeping_genes <- c("GAPDH", "ACTB")
+    featureSet=c("PTID", "Time") #variation look-up featureset
     
 #### Create output directory
+
+The output directory where user can save the result files. Default `output` directory is created.
 
     outputDirectory <- "output"
     filePATH <- paste(getwd(), "/",outputDirectory, sep="")
     dir.create(file.path(getwd(), outputDirectory), showWarnings = FALSE)
     
 #### Sample overlap
+
+The amtrix were overlapped for available samples only.
 
     overlap <- intersect(metadata$Sample, colnames(datamatrix))
     metadata <- metadata[overlap,]
@@ -170,16 +174,19 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 #### 1.2:  Check data
 #### PCA Plot
 
+Reduce number dimentions of data for quick check with PCA (principle component analysis) analysis. For PCA remove the genes with missing values.
+
     row.has.na <- apply(datamatrix,1,function(x){any(is.na(x))})
     datamatrix_nonNA <- datamatrix[!row.has.na,]
     res.pca <- prcomp(t(datamatrix_nonNA),  center=T, scale = TRUE)
     library("factoextra")
-    plot1 <- fviz_pca_ind(res.pca, col.ind = metadata$PTID, geom.ind =c("point", "text"),  labelsize = 3, addEllipses=FALSE, ellipse.level=0.95) +
+    fviz_pca_ind(res.pca, col.ind = metadata$PTID, geom.ind =c("point", "text"),  labelsize = 3, addEllipses=FALSE, ellipse.level=0.95) +
              theme(axis.text.x=element_text(size=12, color="black"), axis.text.y=element_text(size=12, color="black"), legend.position = "none") +
              theme_classic()
-    print(plot1)
 
 #### Sample variability (Correlation)
+
+Perform the sample correlation to find out overall correlation between longitudinal samples.
 
     cor_mat <- rcorr(as.matrix(datamatrix_nonNA), type="pearson")
     res <- cor_mat$r
@@ -199,6 +206,8 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 
 #### Remove genes with >40%NAs (optional)
 
+For downstream analysis select genes/proteins with less than 40% of missing values. Users can select cut-off for missing values as necessary.
+
     row.na <- apply(datamatrix,1,function(x) { sum(is.na(x)) })
     row.non.na <- row.na[row.na < (0.4*ncol(datamatrix))] #select features with NAs <40%
     datamatrix <- datamatrix[names(row.non.na),]
@@ -207,7 +216,9 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 #### 1.3:  Features contributing towards donor variations
 #### Variance decomposition
 
-    lmem_res <- lmeVariance(ann=metadata, mat=datamatrix, features=features, meanThreshold=meanThreshold)
+The perform variance decomposition apply `lmeVariance` function with input metadata, and datamatrix. The `featureSet` is a list of variables to which freaction variance explained by each gene is attributed. `meanThreshold` defines the minimum average expression threshold to be used for ongitudinal dataset. Here we used normalized protein expression 1 based on mean expression profile of each gene across longitudinal samples. Residuals suggest the variance can not be explained by available feature set. The variance explained by each gene towards the featureSet of interest given in percentage.
+
+    lmem_res <- lmeVariance(ann=metadata, mat=datamatrix, featureSet=featureSet, meanThreshold=1)
 
 <br><br> <img src="vignettes/Tutorial-1-variance.png" width="50%" height="50%"> <br><br>
 
@@ -226,7 +237,7 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
     #XPNPEP2 98.67628 0.0000000 1.32372323
     
 #### Donor-specific variance contrubuting features
-    
+
     df1 <- filter(res, donor>week & Residuals < 50)
     df1 <- df1[order(df1$donor, decreasing = T),]
     df <- melt(data.matrix(df1[1:15,]))
@@ -242,7 +253,7 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
 <br><br> <img src="vignettes/Tutorial-1-DonorVariance.png" width="50%" height="50%"> <br><br>
 
 
-#### Plot the variables
+#### Plot the Top variables
 
     genelist <- c("FOLR3", "MICA", "EIF4G1", "SRC")
     uniSample <- as.character(unique(metadata$PTID))
