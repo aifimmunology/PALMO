@@ -297,8 +297,21 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
     print(plot1)
 
 <br><br> <img src="vignettes/Tutorial-1-IQRplot.png" width="100%" height="100%"> <br><br>
-
-#### Gene plot (probable outliers)
+    
+    #Stringent SD
+    outlier_res <- outlierDetect(ann=metadata, mat=datamatrix, SD_threshold= 2.5)
+    df <- data.frame(table(outlier_res$sample))
+    df <- df[order(df$Freq, decreasing = T),]
+    head(df)
+    #Var1 Freq
+    #PB1194W6   71
+    #PB5206W9   28
+    #PB2216W5   20
+    #PB1051W1   17
+    #PB1051W8   12
+    #PB7626W1    7
+    
+    #### Gene plot (probable outliers)
 
     genelist <- c("IFI30", "DPEP2","FCAR", "TNFRSF13C", "IL15", "IL32")
     splots <- list()
@@ -313,20 +326,6 @@ This tutorial allows users to explore bulk plasma proteome measured from 6 healt
     plot_grid(plotlist=splots, ncol= 3, align="hv")
 
 <br><br> <img src="vignettes/Tutorial-1-IQRgeneplot.png" width="100%" height="100%"> <br><br>
-    
-    #Stringent SD
-    outlier_res <- outlierDetect(ann=metadata, mat=datamatrix, SD_threshold= 2.5)
-    df <- data.frame(table(outlier_res$sample))
-    df <- df[order(df$Freq, decreasing = T),]
-    head(df)
-
-    #Var1 Freq
-    #PB1194W6   71
-    #PB5206W9   28
-    #PB2216W5   20
-    #PB1051W1   17
-    #PB1051W8   12
-    #PB7626W1    7
     
 ### <a name="example2"></a> Tutorial-2: scRNA longitudinal data (n=4 and 6 weeks follow-up)
 
