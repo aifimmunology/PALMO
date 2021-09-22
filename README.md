@@ -1057,7 +1057,7 @@ This tutorial allows users to explore single cell RNAseq data variability across
     cvThreshold=25
     cv_res <- cvCalcSC(mat=mat, ann=ann, meanThreshold=meanThreshold, cvThreshold=cvThreshold, housekeeping_genes=housekeeping_genes, filePATH=filePATH, fileName=fileName)
 
-<br> <img src="vignettes/Tutorial-4-cvDistribution.png" width="50%" height="50%"> <br>
+<br> <img src="vignettes/Tutorial-4-cvDistribution.png" width="100%" height="100%"> <br>
 
 #### Find stable and variable features in longitudinal data
 
@@ -1066,23 +1066,23 @@ This tutorial allows users to explore single cell RNAseq data variability across
     topFeatures <- 25
     stable_gene <- StableFeatures(ann=ann, meanThreshold=meanThreshold, cvThreshold=cvThreshold, donorThreshold=donorThreshold, groupThreshold=groupThreshold, topFeatures=topFeatures, filePATH=filePATH, fileName=fileName)
     
-<br> <img src="vignettes/Tutorial-4-Stable-Plot.png" width="50%" height="50%"> <br>
+<br> <img src="vignettes/Tutorial-4-Stable-Plot.png" width="100%" height="100%"> <br>
 
     var_gene <- VarFeatures(ann=ann, meanThreshold=meanThreshold, cvThreshold=cvThreshold, donorThreshold=donorThreshold, groupThreshold=groupThreshold, topFeatures=topFeatures, filePATH=filePATH, fileName=fileName)
     
-<br> <img src="vignettes/Tutorial-4-Variable-Plot.png" width="50%" height="50%"> <br>
+<br> <img src="vignettes/Tutorial-4-Variable-Plot.png" width="100%" height="100%"> <br>
 
 #### UMAP Plot
 
     #Stable genes UMAP
     dimUMAPPlot(rnaObj=dataObj, nPC=15, gene_oi=unique(stable_gene$gene), groupName=avgGroup, plotname="stable", filePATH=filePATH, fileName=fileName)
 
-<br> <img src="vignettes/Tutorial-4-Stable-Plot.png" width="50%" height="50%"> <br>
+<br> <img src="vignettes/Tutorial-4-scRNA-UMAP-stable-Genes.png" width="50%" height="50%"> <br>
     
     #Variable genes UMAP
     dimUMAPPlot(rnaObj=dataObj, nPC=15, gene_oi=unique(var_gene$gene), groupName=avgGroup, plotname="variable", filePATH=filePATH, fileName=fileName)
 
-<br> <img src="vignettes/Tutorial-4-Stable-Plot.png" width="50%" height="50%"> <br>
+<br> <img src="vignettes/Tutorial-4-scRNA-UMAP-variable-Genes.png" width="50%" height="50%"> <br>
 
 #### Gene Plot
 
