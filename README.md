@@ -439,26 +439,19 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
 
 #### 2.3: CV profile
 
-    exp_profile <- cvSampleprofile(mat=mat, ann=ann)
-    #Mean Plot
-    ggplot(exp_profile, aes(x=mean)) +
-      geom_histogram(binwidth=0.1, color="black", fill="white") +
-      scale_x_continuous(trans='log10')
+    #Check the mean expression and CV cross groups (celltypes)
+    cv_profile <- cvprofile(mat=mat, ann=ann)
 
-    ggplot(exp_profile, aes(x=mean)) +
-      geom_histogram(binwidth=0.1, color="black", fill="white") +
-      scale_x_continuous(trans='log10') +
-      facet_wrap(~group)
+<br> <img src="vignettes/Tutorial-2-CVPlot-1.png" width="50%" height="50%"> <br>
 
-    #CV plot
-    ggplot(exp_profile, aes(x=cv)) +
-      geom_histogram(binwidth=1, color="black", fill="white")
+    #Lowly expressed genes show abnormal CV, which needs to be filtered.
+    cv_profile <- cvprofile(mat=mat, ann=ann, meanThreshold = 0.1)
+
+<br> <img src="vignettes/Tutorial-2-CVPlot-2.png" width="50%" height="50%"> <br>
+
+    #Sample Celltype Mean-CV plot (check output folder)
+    cvSampleprofile(mat=mat, ann=ann, meanThreshold = 0.1, cvThreshold = 10)
     
-    #Housekeeping genes data
-    exp_profile <- exp_profile[exp_profile$gene %in% c("ACTB","GAPDH"),]
-    ggplot(exp_profile, aes(x=mean, y=cv)) + geom_point() +
-      facet_wrap(~gene)
-
 #### 2.4: Features contributing towards donor variations
 #### Variance decomposition
 
