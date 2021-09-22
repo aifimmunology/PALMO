@@ -1038,7 +1038,7 @@ This tutorial allows users to explore single cell RNAseq data variability across
     #Plot
     plot_grid(p1,p2,p3, align="hv", ncol=3) 
     
-<br> <img src="vignettes/Tutorial-4-Donor-variancePlot.png" width="50%" height="50%"> <br>
+<br> <img src="vignettes/Tutorial-4-Donor-variancePlot.png" width="100%" height="100%"> <br>
 
 
 #### Plot the variables
@@ -1048,7 +1048,7 @@ This tutorial allows users to explore single cell RNAseq data variability across
     print(plots$plot2)
     print(plots$plot3)
     
-<br> <img src="vignettes/Tutorial-4-celltype-MKI67.png" width="50%" height="50%"> <br>
+<br> <img src="vignettes/Tutorial-4-celltype-MKI67.png" width="100%" height="100%"> <br>
     
 #### 4.5: Intra-donor variations over time
 #### Calculate CV
