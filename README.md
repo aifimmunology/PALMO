@@ -1038,7 +1038,8 @@ This tutorial allows users to explore single cell RNAseq data variability across
     #Plot
     plot_grid(p1,p2,p3, align="hv", ncol=3) 
     
-<br> <img src="vignettes/Tutorial-4-variancePlot.png" width="50%" height="50%"> <br>
+<br> <img src="vignettes/Tutorial-4-Donor-variancePlot.png" width="50%" height="50%"> <br>![Tutorial-2-Donor-variancePlot](https://user-images.githubusercontent.com/73250895/134427393-3e0d2cbb-27f8-428b-84cb-3be82a1d6eb5.png)
+
 
 #### Plot the variables
 
