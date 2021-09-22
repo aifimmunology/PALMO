@@ -1091,7 +1091,7 @@ This tutorial allows users to explore single cell RNAseq data variability across
     geneList <- c("HMGN2", "IFI16", "PTGES3", "SH3KBP1", "PTBP1") #Cycling T-cells
     res <- genecircosPlot(data=cv_res, geneList=geneList, colorThreshold=cvThreshold)
     
-<br> <img src="vignettes/Tutorial-4-celltype-circularPlot.png" width="50%" height="50%"> <br>
+<br> <img src="vignettes/Tutorial-4-celltype-circularPlot.png" width="100%" height="100%"> <br>
     
 ### <a name="example5"></a> Tutorial-5: Differential Genes from longitudinal data]
 
