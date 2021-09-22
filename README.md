@@ -874,14 +874,16 @@ This tutorial allows users to explore single cell RNAseq data variability across
     library("longitudinalDynamics")
     library("Hmisc")
     library("ggpubr")
+    library("Seurat")
     
 #### Load data and assign paramaters
 
     #scRNA
-    pbmc <- readRDS(".data/CNP0001102_Final_nCoV_0716_upload.RDS")
+    pbmc <- readRDS("data/CNP0001102_Final_nCoV_0716_upload.RDS")
     pbmc@meta.data$Sample <- pbmc@meta.data$batch
     pbmc@meta.data$celltype <- gsub(" ", "_", pbmc@meta.data$cell_type)
         
+    #Clinical annotations (Table S1. Clinical data of the enrolled subjects)
     metadata <- read.csv("data/CNP0001102-annotation.csv", stringsAsFactors = F)
     row.names(metadata) <- metadata$Sample
 
@@ -892,12 +894,13 @@ This tutorial allows users to explore single cell RNAseq data variability across
         
     #Parameters
     dataObj <- pbmc
-    features=c("PTID", "Time") 
+    featureSet=c("PTID", "Time") 
     avgGroup="celltype"
     housekeeping_genes <- c("GAPDH", "ACTB")
     cell_type <- sort(unique(pbmc@meta.data$celltype))
+    fileName="CNP0001102"
     
-#### Create output directory
+#### Create output directory (optional)
 
     outputDirectory <- "output"
     filePATH <- paste(getwd(), "/",outputDirectory, sep="")
@@ -954,116 +957,141 @@ This tutorial allows users to explore single cell RNAseq data variability across
     Overlap <- intersect(colnames(mat), row.names(ann))
     ann <- ann[Overlap,]
     mat <- mat[,Overlap]
-    write.table(sort(unique(ann$group)), file=paste(filePATH,"/",fileName,"-group.txt", sep=""), row.names = F, col.names=F, quote=F)
+    print(unique(ann$group))
+    
+    #[1] "Activated_CD4_T_cells" "Cycling_Plasma"        "Cycling_T_cells"       "Cytotoxic_CD8_T_cells"
+    #[5] "MAIT"                  "Megakaryocytes"        "Memory_B_cells"        "Naive_B_cells"        
+    #[9] "Naive_T_cells"         "NKs"                   "Plasma"                "Stem_cells"           
+    #[13] "XCL+_NKs"              "DCs"                   "Monocytes" 
 
 #### 4.3: CV profile
 
-    exp_profile <- cvSampleprofile(mat=mat, ann=ann)
-    #Mean Plot
-    ggplot(exp_profile, aes(x=mean)) +
-      geom_histogram(binwidth=0.1, color="black", fill="white") +
-      scale_x_continuous(trans='log10')
+    cv_profile <- cvprofile(mat=mat, ann=ann)
 
-    ggplot(exp_profile, aes(x=mean)) +
-      geom_histogram(binwidth=0.1, color="black", fill="white") +
-      scale_x_continuous(trans='log10') +
-      facet_wrap(~group)
+<br> <img src="vignettes/Tutorial-4-cvDistribution.png" width="100%" height="100%"> <br>
 
-    #CV plot
-    ggplot(exp_profile, aes(x=cv)) +
-      geom_histogram(binwidth=1, color="black", fill="white")
-    
-    #Housekeeping genes data
-    exp_profile <- exp_profile[exp_profile$gene %in% c("ACTB","GAPDH"),]
-    ggplot(exp_profile, aes(x=mean, y=cv)) + geom_point() +
-      facet_wrap(~gene)
+    #Sample Celltype Mean-CV plot (output directory)
+    cv_sample_profile <- cvSampleprofile(mat=mat, ann=ann, meanThreshold = 0.1, cvThreshold = 25)
 
 #### 4.4: Features contributing towards donor variations
 #### Variance decomposition
 
     meanThreshold <- 0.1
-    lmem_res <- lmeVariance(ann=ann, mat=mat, features=c(features,"group"), meanThreshold=meanThreshold, fileName=fileName, filePATH=filePATH)
+    lmem_res <- lmeVariance(ann=ann, mat=mat, featureSet=c(featureSet,"group"), meanThreshold=meanThreshold, fileName=fileName, filePATH=filePATH)
     res <- lmem_res[,c("PTID","Time","group","Residual")]
-    colnames(res) <- c("donor","week","celltype","Residuals")
+    colnames(res) <- c("PTID","Time","celltype","Residuals")
     res <- res*100 #in percentage
     
-#### Donor-specific variance
+<br> <img src="vignettes/Tutorial-4-variancePlot.png" width="50%" height="50%"> <br>
+    
+    head(res[order(res$celltype, decreasing = T),])
+    #        PTID         Time celltype Residuals
+    #MZB1    3.634604e-08 1.242595e-09 93.91550  6.084498
+    #JCHAIN  0.000000e+00 0.000000e+00 93.67179  6.328213
+    #MKI67   3.013979e-01 1.236726e-01 92.19240  7.382530
+    #MANF    3.197369e-01 0.000000e+00 91.82359  7.856671
+    #SDF2L1  5.210284e-02 1.019559e-01 90.75454  9.091404
+    #POU2AF1 2.432974e-01 3.463273e-01 90.24514  9.165233
 
-    df1 <- filter(res, donor>week & donor>celltype & Residuals < 50)
-    df1 <- df1[order(df1$donor, decreasing = T),]
+#### Variance explained
+
+    #Donor-specific
+    df1 <- filter(res, PTID>Time & PTID>celltype & Residuals < 50)
+    df1 <- df1[order(df1$PTID, decreasing = T),]
     df <- melt(data.matrix(df1))
-    df$Var2 <- factor(df$Var2, levels = rev(c("donor","week", "celltype", "Residuals")))
+    df$Var2 <- factor(df$Var2, levels = rev(colnames(res)))
     df$Var1 <- factor(df$Var1, levels = rev(unique(df$Var1)))
     p1 <- ggplot(df, aes(x=Var1, y=value, fill=Var2)) +
-      geom_bar(stat="identity", position="stack") +
-      scale_fill_manual(values = c("donor"="#C77CFF", "celltype"="#00BFC4", "week"="#7CAE00", "Residuals"="grey")) +
+      geom_bar(stat="identity", position="stack") + labs(x="Features", y="% Variance explained") +
+      scale_fill_manual(values = c("PTID"="#C77CFF", "celltype"="#00BFC4", "Time"="#7CAE00", "Residuals"="grey")) +
       theme_bw() + theme(axis.text.x = element_text(angle=90, hjust = 0.5, vjust = 1),legend.position = "right") +
       coord_flip()
-    print(p1)  
+    
+    #Time-specific
+    df2 <- filter(res, Time>PTID & Time>celltype & Residuals < 50)
+    #df2 <- res[order(res$Time, decreasing = T),]
+    #select Top15
+    df2 <- df2[1:15,]
+    df <- melt(data.matrix(df2))
+    df$Var2 <- factor(df$Var2, levels = rev(colnames(res)))
+    df$Var1 <- factor(df$Var1, levels = rev(unique(df$Var1)))
+    p2 <- ggplot(df, aes(x=Var1, y=value, fill=Var2)) +
+      geom_bar(stat="identity", position="stack") + labs(x="Features", y="% Variance explained") +
+      scale_fill_manual(values = c("PTID"="#C77CFF", "celltype"="#00BFC4", "Time"="#7CAE00", "Residuals"="grey")) +
+      theme_bw() + theme(axis.text.x = element_text(angle=90, hjust = 0.5, vjust = 1),legend.position = "right") +
+      coord_flip()
+    
+    #celltype-specific
+    df3 <- filter(res, celltype>PTID & celltype>Time & Residuals < 50)
+    df3 <- df3[order(df3$celltype, decreasing = T),]
+    #select Top15
+    df3 <- df3[1:15,]
+    df <- melt(data.matrix(df3))
+    df$Var2 <- factor(df$Var2, levels = rev(colnames(res)))
+    df$Var1 <- factor(df$Var1, levels = rev(unique(df$Var1)))
+    p3 <- ggplot(df, aes(x=Var1, y=value, fill=Var2)) +
+      geom_bar(stat="identity", position="stack") + labs(x="Features", y="% Variance explained") +
+      scale_fill_manual(values = c("PTID"="#C77CFF", "celltype"="#00BFC4", "Time"="#7CAE00", "Residuals"="grey")) +
+      theme_bw() + theme(axis.text.x = element_text(angle=90, hjust = 0.5, vjust = 1),legend.position = "right") +
+      coord_flip()
+    
+    #Plot
+    plot_grid(p1,p2,p3, align="hv", ncol=3) 
+    
+<br> <img src="vignettes/Tutorial-4-variancePlot.png" width="50%" height="50%"> <br>
 
 #### Plot the variables
 
-    genelist <- c("MTRNR2L8", "XIST", "RPS4Y1", "RPS26",
-                  "JUN", "DAXX", "FOSB", "STAT1",
-                  "LILRA4", "CLEC9A", "CST3", "BANK1")
-    plotFunction <- function(ann, mat, geneName) {
-      df <- data.frame(exp=as.numeric(mat[geneName,]), ann, stringsAsFactors = F)
-      wk <- c("W2","W3","W4","W5","W6","W7")
-      col <- colorRampPalette(c("cyan", "grey", "black"))(6)
-      names(col) <- wk
-      df$Time <- factor(df$Time, levels = wk)
-      plot1 <- ggplot(df, aes(x=PTID, y=exp, fill=Time)) +
-          #geom_bar(stat="identity", position="dodge") +
-          #geom_point(position=position_dodge(width=0.9), aes(y=exp), size=0.2) +
-          geom_boxplot(outlier.size = 0.1) +
-          scale_fill_manual(values = col) +
-          labs(x="", y="RNA expression", title=geneName) +
-          theme_classic() + theme(axis.text.x = element_text(angle=0, hjust = 0.5, vjust = 1),legend.position = "right")
-        
-      plot2 <- ggplot(df, aes(x=PTID, y=exp, fill=Time)) +
-          #geom_bar(stat="identity", position="dodge") +
-          #geom_point(position=position_dodge(width=0.9), aes(y=exp), size=0.2) +
-          geom_boxplot(outlier.size = 0.1) +
-          scale_fill_manual(values = col) +
-          facet_wrap(~group) +
-          labs(x="", y="RNA expression", title=geneName) +
-          theme_classic() + theme(axis.text.x = element_text(angle=90, hjust = 0.5, vjust = 1),legend.position = "right")
-      return(list(plot1=plot1, plot2=plot2))
-    }
-    
-    plots <- plotFunction(ann, mat, geneName="MTRNR2L8")
+    plots <- plotFunction(ann, mat, geneName="MKI67", groupName="group")
     print(plots$plot1)
-    plots <- plotFunction(ann, mat, geneName="LILRA4")
     print(plots$plot2)
+    print(plots$plot3)
+    
+<br> <img src="vignettes/Tutorial-4-celltype-MKI67.png" width="50%" height="50%"> <br>
     
 #### 4.5: Intra-donor variations over time
 #### Calculate CV
 
     meanThreshold=0.1
-    cvThreshold=10
-    cv_res <- cvCalcSC(mat=mat, ann=ann, meanThreshold=meanThreshold, cvThreshold=cvThreshold, housekeeping_genes=housekeeping_genes, filePATH=filePATH, fileName="scrna")
+    cvThreshold=25
+    cv_res <- cvCalcSC(mat=mat, ann=ann, meanThreshold=meanThreshold, cvThreshold=cvThreshold, housekeeping_genes=housekeeping_genes, filePATH=filePATH, fileName=fileName)
+
+<br> <img src="vignettes/Tutorial-4-cvDistribution.png" width="50%" height="50%"> <br>
 
 #### Find stable and variable features in longitudinal data
 
-    donorThreshold <- 4
-    groupThreshold <- 40 #number of donors * number of celltypes/2 (4x19/2)
+    donorThreshold <- 5 #number of donors
+    groupThreshold <- 38 #number of donors * number of celltypes/2 (5x15/2)
     topFeatures <- 25
-    var_gene <- VarFeatures(ann=ann, group_oi=group_oi, meanThreshold=meanThreshold, cvThreshold=cvThreshold, donorThreshold=donorThreshold, groupThreshold=groupThreshold, topFeatures=topFeatures, filePATH=filePATH, fileName=fileName)
+    stable_gene <- StableFeatures(ann=ann, meanThreshold=meanThreshold, cvThreshold=cvThreshold, donorThreshold=donorThreshold, groupThreshold=groupThreshold, topFeatures=topFeatures, filePATH=filePATH, fileName=fileName)
+    
+<br> <img src="vignettes/Tutorial-4-Stable-Plot.png" width="50%" height="50%"> <br>
 
-    stable_gene <- StableFeatures(ann=ann, group_oi=group_oi, meanThreshold=meanThreshold, cvThreshold=cvThreshold, donorThreshold=donorThreshold, groupThreshold=groupThreshold, topFeatures=topFeatures, filePATH=filePATH, fileName=fileName)
+    var_gene <- VarFeatures(ann=ann, meanThreshold=meanThreshold, cvThreshold=cvThreshold, donorThreshold=donorThreshold, groupThreshold=groupThreshold, topFeatures=topFeatures, filePATH=filePATH, fileName=fileName)
+    
+<br> <img src="vignettes/Tutorial-4-Variable-Plot.png" width="50%" height="50%"> <br>
 
 #### UMAP Plot
 
-    nPC <- 15
-    plot1 <- DimPlot(object = pbmc, reduction = 'umap', group.by = "celltype", label = T)
-    rnaObj <- dimUMAPPlot(rnaObj=dataObj, nPC=nPC, gene_oi=var_gene, groupName=avgGroup, plotname="variable", filePATH=filePATH, fileName=fileName)
-    rnaObj <- dimUMAPPlot(rnaObj=dataObj, nPC=nPC, gene_oi=stable_gene, groupName=avgGroup, plotname="stable", filePATH=filePATH, fileName=fileName)
+    #Stable genes UMAP
+    dimUMAPPlot(rnaObj=dataObj, nPC=15, gene_oi=unique(stable_gene$gene), groupName=avgGroup, plotname="stable", filePATH=filePATH, fileName=fileName)
 
-#### gene Plot
+<br> <img src="vignettes/Tutorial-4-Stable-Plot.png" width="50%" height="50%"> <br>
+    
+    #Variable genes UMAP
+    dimUMAPPlot(rnaObj=dataObj, nPC=15, gene_oi=unique(var_gene$gene), groupName=avgGroup, plotname="variable", filePATH=filePATH, fileName=fileName)
 
-    plots <- genePlot(ann=ann, data=mat, geneName="IL7R", groupName="group")
+<br> <img src="vignettes/Tutorial-4-Stable-Plot.png" width="50%" height="50%"> <br>
 
+#### Gene Plot
 
+    load(paste(filePATH,"/",fileName, "-CV-allgenes-raw.Rda", sep=""))
+    geneList <- c("IRF3","MAP4K4","XPC","DNAJB6", "KLF13") #Activated CD4 T-cells
+    geneList <- c("HMGN2", "IFI16", "PTGES3", "SH3KBP1", "PTBP1") #Cycling T-cells
+    res <- genecircosPlot(data=cv_res, geneList=geneList, colorThreshold=cvThreshold)
+    
+<br> <img src="vignettes/Tutorial-4-celltype-circularPlot.png" width="50%" height="50%"> <br>
+    
 ### <a name="example5"></a> Tutorial-5: Differential Genes from longitudinal data]
 
 This tutorial allows users to identify differential expressed genes in direction of time-points. As an example single cell data from [Zhu et al. 2020](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7368915/) downloaded from [here](https://db.cngb.org/search/project/CNP0001102/). Metadata is downloaded from table and can be found in the [data](https://github.com/aifimmunology/longitudinalDynamics/tree/main/data). The dataset consists of 5 Covid-19 donors, 2 Flu donors with longitudinal data and 3 controls. To explore differetial expressed gened in each celltype of each donor we used hurdle model based modeling on input data to retrive the DEGs. To infer DEGs in each celltype towards time progression (timepoints considered as continoues if more than 2), please follow following steps.
