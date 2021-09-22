@@ -1077,12 +1077,12 @@ This tutorial allows users to explore single cell RNAseq data variability across
     #Stable genes UMAP
     dimUMAPPlot(rnaObj=dataObj, nPC=15, gene_oi=unique(stable_gene$gene), groupName=avgGroup, plotname="stable", filePATH=filePATH, fileName=fileName)
 
-<br> <img src="vignettes/Tutorial-4-scRNA-UMAP-stable-Genes.png" width="50%" height="50%"> <br>
+<br> <img src="vignettes/Tutorial-4-scRNA-UMAP-stable-Genes.png" width="100%" height="100%"> <br>
     
     #Variable genes UMAP
     dimUMAPPlot(rnaObj=dataObj, nPC=15, gene_oi=unique(var_gene$gene), groupName=avgGroup, plotname="variable", filePATH=filePATH, fileName=fileName)
 
-<br> <img src="vignettes/Tutorial-4-scRNA-UMAP-variable-Genes.png" width="50%" height="50%"> <br>
+<br> <img src="vignettes/Tutorial-4-scRNA-UMAP-variable-Genes.png" width="100%" height="100%"> <br>
 
 #### Gene Plot
 
