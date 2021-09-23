@@ -172,31 +172,6 @@ The data matrix were overlapped with metadata for selecting available samples on
     datamatrix <- datamatrix[,overlap]
 
 #### 1.2:  Check data
-#### Missing values
-
-    row.has.na <- apply(datamatrix,1,function(x){any(is.na(x))})
-    datamatrix_nonNA <- datamatrix[!row.has.na,]
-    
-#### Sample variability (Correlation)
-
-Perform the sample correlation to find out overall correlation between longitudinal samples.
-
-    cor_mat <- rcorr(as.matrix(datamatrix_nonNA), type="pearson")
-    res <- cor_mat$r
-    #Plot heatmap
-    ha_col <- HeatmapAnnotation(df=data.frame(PTID=metadata$PTID))
-    ht1 <- Heatmap(data.matrix(res), cluster_rows =F,  
-               cluster_columns = F,
-               row_split = as.character(metadata$PTID), column_split = as.character(metadata$PTID),
-               na_col = "grey", col = colorRamp2(c(-1,0,0.9,1), c("black","white","pink","red")),
-               row_names_max_width=unit(10, "cm"),
-               column_names_gp = gpar(fontsize = 6), row_names_gp = gpar(fontsize =6),
-               top_annotation = ha_col,
-               heatmap_legend_param = list(title = "Pearson",heatmap_legend_side = "right") )
-    draw(ht1)
-    
-<br> <img src="vignettes/Tutorial-1-samplecorrelation.png" width="50%" height="50%"> <br>
-
 #### Remove genes with >40%NAs (optional)
 
 For downstream analysis select genes/proteins with less than 40% of missing values. Users can select cut-off for missing values as necessary.
@@ -278,6 +253,26 @@ To perform variance decomposition apply `lmeVariance` function with input metada
     stable_genes <- cv_res$stable_genes
 
 #### 1.5:  Outlier analysis
+#### Sample variability (Correlation)
+
+Perform the sample correlation to find out overall correlation between longitudinal samples.
+
+    cor_mat <- rcorr(as.matrix(datamatrix_nonNA), type="pearson")
+    res <- cor_mat$r
+    #Plot heatmap
+    ha_col <- HeatmapAnnotation(df=data.frame(PTID=metadata$PTID))
+    ht1 <- Heatmap(data.matrix(res), cluster_rows =F,  
+               cluster_columns = F,
+               row_split = as.character(metadata$PTID), column_split = as.character(metadata$PTID),
+               na_col = "grey", col = colorRamp2(c(-1,0,0.9,1), c("black","white","pink","red")),
+               row_names_max_width=unit(10, "cm"),
+               column_names_gp = gpar(fontsize = 6), row_names_gp = gpar(fontsize =6),
+               top_annotation = ha_col,
+               heatmap_legend_param = list(title = "Pearson",heatmap_legend_side = "right") )
+    draw(ht1)
+    
+<br> <img src="vignettes/Tutorial-1-samplecorrelation.png" width="50%" height="50%"> <br>
+
 #### Detect outliers (if any)
 
     outlier_res <- outlierDetect(ann=metadata, mat=datamatrix)
