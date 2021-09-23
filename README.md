@@ -29,7 +29,7 @@ Table of Contents
 LongitudinalDynamics `(longitudinalDynamics)` is a platform for anayzing longitudinal data from bulk as well as single cell. It allows to identify inter-, intra-donor variations in genes over longitudinal time points. The analysis can be done on bulk expression dataset without known celltype information or single cell with celltype/user-defined groups. It allows to infer stable and variable features in given donor and each celltype (or user defined group). The outlier analysis can be performed to identify techinical/biological perturbed samples in donor/participant. Further, differential analysis can be performed to deciher time-wise changes in gene expression in a celtype.
 
 <br> ![img](vignettes/LongitudinalDynamics-workflow.png) <br>
-Fig.1 General workflow and analysis schema of **LongitudinalDynamics**. It can work with longitudinal data obtained from bulk such as clinical, bulk RNAseq, proteomic or single cell dataset from scRNAseq, scATACseq and scADT.
+General workflow and analysis schema of **LongitudinalDynamics**. It can work with longitudinal data obtained from bulk such as clinical, bulk RNAseq, proteomic or single cell dataset from scRNAseq, and scATACseq.
 
 
 ## <a name="library"></a> Install package and load library
@@ -333,7 +333,7 @@ To perform variance decomposition apply `lmeVariance` function with input metada
     
 ### <a name="example2"></a> Tutorial-2: scRNA longitudinal data (n=4 and 6 weeks follow-up)
 
-This tutorial allows users to explore single cell RNAseq data measured from 4 healthy donors over 6 time points (week 2-7). Single cell data available at **GEOXXX**. (1) pbmc_longitudinal_data (Normalized scRNA seurat object) (2) data_Annotation.Rda (clinical metadata). Longitudinal data set includes 4 donors (2 male and 2 females). To infer iner-donor, intra-donor variations, and stable features, please follow following steps.
+This tutorial allows users to explore single cell RNAseq data measured from 4 healthy donors over 6 time points (week 2-7). Single cell data available at **GEOXXX**. (1) pbmc_longitudinal_data (Normalized scRNA seurat object) (2) data_Annotation.Rda (clinical metadata). Longitudinal data set includes 4 donors and 24 samples. To infer iner-donor, intra-donor variations, and stable features, please follow following steps.
 
 #### 2.1: Load Library
    
@@ -544,7 +544,7 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
 <br> <img src="vignettes/Tutorial-2-Tcelltype-circularPlot.png" width="50%" height="50%"> <br>
 
 ### <a name="example3"></a> Tutorial-3: scATAC Longitudinal data (n=4 and 6 weeks follow-up)
-This tutorial allows users to explore single cell ATACseq genscore data measured from 4 healthy donors over 6 timepoints (week 2-7). Single cell ATAC data available at GEOXXX. (1) pbmc_scatac_archr_genescore_longitudinal_data (2) data_Annotation.Rda (clinical metadata). Longitudinal dataset have 4 donors (2 male and 2 females). Please follow following steps.
+This tutorial allows users to explore single cell ATACseq genscore data measured from 4 healthy donors over 6 timepoints (week 2-7). Single cell ATAC data available at GEOXXX. (1) pbmc_scatac_archr_genescore_longitudinal_data (2) data_Annotation.Rda (clinical metadata). Longitudinal dataset have 4 donors and 18 samples. To infer the variations at single cell ATAC please follow following steps.
 
 #### 3.1: Load Library
 
@@ -629,13 +629,13 @@ This tutorial allows users to explore single cell ATACseq genscore data measured
 #### 3.3: CV profile
 #### CV profile
 
-    cv_profile <- cvprofile(mat=mat, ann=ann)
+    cv_profile <- cvprofile(mat=mat, ann=ann, housekeeping_genes=housekeeping_genes)
     
 <br> <img src="vignettes/Tutorial-3-cvDistribution-1.png" width="100%" height="100%"> <br>
 
-    cv_profile <- cvprofile(mat=mat, ann=ann, meanThreshold = 0.1)
+    cv_profile <- cvprofile(mat=mat, ann=ann, housekeeping_genes=housekeeping_genes, meanThreshold = 0.1)
     
-<br> <img src="vignettes/Tutorial-3-variancePlot.png" width="50%" height="50%"> <br>
+<br> <img src="vignettes/Tutorial-3-cvDistribution-2.png" width="50%" height="50%"> <br>
 
     #Sample Celltype Mean-CV plot
     cv_sample_profile <- cvSampleprofile(mat=mat, ann=ann, meanThreshold = 0.1, cvThreshold = 10)
@@ -649,7 +649,7 @@ This tutorial allows users to explore single cell ATACseq genscore data measured
     colnames(res) <- c("PTID","Time","celltype","Residuals")
     res <- res*100 #in percentage
 
-<br> <img src="vignettes/Tutorial-3-cvDistribution-2.png" width="100%" height="100%"> <br> 
+<br> <img src="vignettes/Tutorial-3-variancePlot.png" width="100%" height="100%"> <br> 
 
 #### Donor-specific
     df1 <- filter(res, PTID>Time & PTID>celltype & Residuals < 50)
@@ -961,7 +961,7 @@ This tutorial allows users to explore single cell RNAseq data variability across
 
 <br> <img src="vignettes/Tutorial-4-scRNA-UMAP-variable-Genes.png" width="100%" height="100%"> <br>
 
-#### Gene Plot
+#### Circos CV Plot
 
     load(paste(filePATH,"/",fileName, "-CV-allgenes-raw.Rda", sep=""))
     geneList <- c("IRF3","MAP4K4","XPC","DNAJB6", "KLF13") #Activated CD4 T-cells
@@ -1012,8 +1012,9 @@ This tutorial allows users to identify differential expressed genes in direction
     #IGHG1   TimeD9 1.292885e-16 2.219146 8.608601e-15   IAV-2   Plasma upregulated at D9
     #SYNE2   TimeD4 7.249010e-13 2.209541 1.215659e-09   COV-4 XCL+_NKs upregulated at D4
 
+General analysis schema and differential results in each donor over timepoints in celltype Cytotoxic CD8 T-cells using **LongitudinalDynamics** shown.
+
 <br><br> ![](vignettes/img5a-CNP0001102-DEGs.png) <br><br>
-Fig.5 General analysis schema and differential results for celltype Cytotoxic CD8 T-cells using **LongitudinalDynamics**.
 
 ## <a name="authors"></a> Authors
 
