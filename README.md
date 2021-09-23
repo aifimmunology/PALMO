@@ -1012,7 +1012,7 @@ This tutorial allows users to identify differential expressed genes in direction
     #IGHG1   TimeD9 1.292885e-16 2.219146 8.608601e-15   IAV-2   Plasma upregulated at D9
     #SYNE2   TimeD4 7.249010e-13 2.209541 1.215659e-09   COV-4 XCL+_NKs upregulated at D4
 
-General analysis schema and differential results in each donor over timepoints in celltype Cytotoxic CD8 T-cells using **LongitudinalDynamics** shown.
+General analysis schema and differential results in each donor over timepoints in celltype Cytotoxic CD8 T-cells using `longitudinalDynamics` shown.
 
 <br><br> ![](vignettes/img5a-CNP0001102-DEGs.png) <br><br>
 
