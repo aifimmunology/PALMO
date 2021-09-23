@@ -635,7 +635,7 @@ This tutorial allows users to explore single cell ATACseq genscore data measured
 
     cv_profile <- cvprofile(mat=mat, ann=ann, housekeeping_genes=housekeeping_genes, meanThreshold = 0.1)
     
-<br> <img src="vignettes/Tutorial-3-cvDistribution-2.png" width="50%" height="50%"> <br>
+<br> <img src="vignettes/Tutorial-3-cvDistribution-2.png" width="100%" height="100%"> <br>
 
     #Sample Celltype Mean-CV plot
     cv_sample_profile <- cvSampleprofile(mat=mat, ann=ann, meanThreshold = 0.1, cvThreshold = 10)
@@ -649,7 +649,7 @@ This tutorial allows users to explore single cell ATACseq genscore data measured
     colnames(res) <- c("PTID","Time","celltype","Residuals")
     res <- res*100 #in percentage
 
-<br> <img src="vignettes/Tutorial-3-variancePlot.png" width="100%" height="100%"> <br> 
+<br> <img src="vignettes/Tutorial-3-variancePlot.png" width="50%" height="50%"> <br> 
 
 #### Donor-specific
     df1 <- filter(res, PTID>Time & PTID>celltype & Residuals < 50)
