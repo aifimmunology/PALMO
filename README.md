@@ -188,8 +188,7 @@ To perform variance decomposition apply `lmeVariance` function with input metada
 
     lmem_res <- lmeVariance(ann=metadata, mat=datamatrix, featureSet=featureSet, meanThreshold=1)
 
-<br> ![img](vignettes/Tutorial-1-variance.png){width:50%; height:50%} <br>
-<br> ![img](vignettes/Tutorial-1-variance.png){width:50%} <br>
+<div style="width:50%; height:50%">![img](vignettes/Tutorial-1-variance.png)<br></div>
     
     res <- lmem_res[,c("PTID","Time","Residual")]
     colnames(res) <- c("donor","week","Residuals")
