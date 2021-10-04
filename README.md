@@ -1012,7 +1012,7 @@ General analysis schema and differential results in each donor over timepoints i
 
 ## <a name="contact"></a> Contact
 
-[Suhas Vasaikar](https://github.com/suhasaii), [Aarthi talla](https://github.com/aarthitallaAI) and [Xiaojun Li](https://github.com/Xiaojun-Li) designed and implemented the longitudinalDynamics package. Please contact for [Suhas Vasaikar](https://github.com/suhasaii) questions.
+[Suhas Vasaikar](https://github.com/suhasaii), [Aarthi talla](https://github.com/aarthitallaAI) and [Xiaojun Li](https://github.com/Xiaojun-Li) designed and implemented the longitudinalDynamics package. Please contact [Suhas Vasaikar](https://github.com/suhasaii) for questions.
 
 ## <a name="license"></a> License
 
