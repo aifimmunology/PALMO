@@ -20,7 +20,7 @@ Table of Contents
     * [Tutorial-3: scATAC longitudinal data](#example3)
     * [Tutorial-4: CNP0001102 data longitudinal data](#example4)
     * [Tutorial-5: Differential Genes from longitudinal data](#example5)
-* [Authors](#authors)
+* [Contact](#contact)
 * [License](#license)
 
 * * *
@@ -1010,9 +1010,9 @@ General analysis schema and differential results in each donor over timepoints i
 
 <br><br> ![](vignettes/img5a-CNP0001102-DEGs.png) <br><br>
 
-## <a name="authors"></a> Authors
+## <a name="contact"></a> Contact
 
-[Suhas Vasaikar](https://github.com/suhasaii), [Aarthi talla](https://github.com/aarthitallaAI) and [Xiaojun Li](https://github.com/Xiaojun-Li) designed the longitudinalDynamics algorithm. [Suhas Vasaikar](https://github.com/suhasaii) implemented the longitudinalDynamics package.
+[Suhas Vasaikar](https://github.com/suhasaii), [Aarthi talla](https://github.com/aarthitallaAI) and [Xiaojun Li](https://github.com/Xiaojun-Li) designed and implemented the longitudinalDynamics package. Please contact for [Suhas Vasaikar](https://github.com/suhasaii) questions.
 
 ## <a name="license"></a> License
 
