@@ -37,10 +37,6 @@ To install library, simply run
     install.packages("longitudinalDynamics_0.1.0.tar.gz", repos = NULL, type ="source")
     library("longitudinalDynamics")
 
-```{r setup}
-library(longitudinalDynamics)
-```
-
 # <a name="example-main"></a> Tutorials
 ## <a name="example1"></a> Tutorial-1: Plasma proteome [Bulk dataset]
 
