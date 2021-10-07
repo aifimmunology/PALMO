@@ -8,43 +8,20 @@ Table of Contents
 
 * [Introduction](#introduction)
 * [Install package and load library](#library)
-* [Quick Usage (Longitudinal data)](#usage)
-    * [Plasma proteome](#olink)
-    * [Flow cell-proportion](#flow)
-    * [Blood count data](#cbc)
-    * [Single cell RNA data](#scrna)
-    * [Single cell ATAC data](#scatac)
 * [Tutorials](#example-main)
     * [Tutorial-1: Plasma proteome longitudinal data](#example1)
     * [Tutorial-2: scRNA longitudinal data](#example2)
     * [Tutorial-3: scATAC longitudinal data](#example3)
     * [Tutorial-4: CNP0001102 data longitudinal data](#example4)
     * [Tutorial-5: Differential Genes from longitudinal data](#example5)
+* [Quick Usage (Longitudinal data)](#usage)
+    * [Plasma proteome](#olink)
+    * [Single cell RNA data](#scrna)
+    * [Single cell ATAC data](#scatac)
 * [Contact](#contact)
 * [License](#license)
 
 * * *
-
----
-title: "LongitudinalDynamics : Longitudinal data analysis package"
-#author: Suhas Vasaikar, PhD
-date: 10/01/2021
-output: 
-  pdf_document:
-    toc: true
-    number_sections: true
-vignette: >
-  %\VignetteIndexEntry{ReferenceManual}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
----
-
-```{r, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
-)
-```
 
 # <a name="introduction"></a> Introduction
 LongitudinalDynamics `(longitudinalDynamics)` is a platform for anayzing longitudinal data from bulk as well as single cell. It allows to identify inter-, intra-donor variations in genes over longitudinal time points. The analysis can be done on bulk expression dataset without known celltype information or single cell with celltype/user-defined groups. It allows to infer stable and variable features in given donor and each celltype (or user defined group). The outlier analysis can be performed to identify techinical/biological perturbed samples in donor/participant. Further, differential analysis can be performed to deciher time-wise changes in gene expression in a celtype.
@@ -1208,7 +1185,3 @@ Load genescorematrix from archR or relevant tools (Aggregate data at celltypes (
 # <a name="license"></a> License
 longitudinalDynamics is licensed under the [MIT-License](https://github.com/git/git-scm.com/blob/main/MIT-LICENSE.txt).
 
-# <a name="session"></a> Session info
-```{r session}
-sessionInfo()
-```
