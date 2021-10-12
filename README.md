@@ -288,7 +288,7 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     #in-case subset of samples only
     dataObj <- subset(x = dataObj, subset = Sample %in% overlap)
  
-### Aggregate data at celltypes (psuedo-bulk)
+### Aggregate data at celltypes (pseudo-bulk)
 ### For single cell data merge annotation and single cell metadata
 
     metaData <- dataObj@meta.data
