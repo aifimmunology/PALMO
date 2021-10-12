@@ -500,7 +500,7 @@ This tutorial allows users to explore single cell ATACseq genscore data measured
 ### Load data and assign paramaters
 
     #scATAC object
-    #Load genescorematrix from archR or relevant tools (Aggregate data at celltypes (psuedo-bulk))
+    #Load genescorematrix from archR or relevant tools (Aggregate data at celltypes (pseudo-bulk))
     load("data/AIFI-scATAC-PBMC-FinalData.Rda")
     boxplot(log2(scatac_gm[,1:50]+1), las=2)
     
@@ -810,7 +810,7 @@ This tutorial allows users to explore single cell RNAseq data variability across
     #in-case subset of samples only
     dataObj <- subset(x = dataObj, subset = Sample %in% overlap)
  
-### Aggregate data at celltypes (psuedo-bulk)
+### Aggregate data at celltypes (pseudo-bulk)
 
     #For single cell data merge annotation and single cell metadata
     metaData <- dataObj@meta.data
@@ -1149,7 +1149,7 @@ General analysis schema and differential results in each donor over timepoints i
     
 ## <a name="scatac"></a> Single cell ATAC data
 
-Load genescorematrix from archR or relevant tools (Aggregate data at celltypes (psuedo-bulk)) 
+Load genescorematrix from archR or relevant tools (Aggregate data at celltypes (pseudo-bulk)) 
 
     #scATAC object
     load("data/AIFI-scATAC-PBMC-FinalData.Rda") #aggregated genescore
