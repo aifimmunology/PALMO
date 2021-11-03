@@ -1,4 +1,6 @@
 Sample,PTID,Time,Severity,Age,Gender,Exposure to infection sources,Symptom onset date,Hospitalization date,"Pneumonia (No:0, Mild:1, Severe:2)",Discharge date,SARS-CoV-2,Infuenza A,Infuenza B,Respiratory syncytial virus,Adenovirus
+Ctrl-1,Ctrl-1,D0,NA,NA,NA,NA,NA,NA,NA,NA,Negative,Negative,Negative,Negative,Negative
+Ctrl-2,Ctrl-2,D0,NA,NA,NA,NA,NA,NA,NA,NA,Negative,Negative,Negative,Negative,Negative
 Flu-1-D1,IAV-1,D1,Severe,68,Male,-,-,1/23/18,2,2/15/18,Negative,Positive,Negative,Negative,Negative
 Flu-1-D14,IAV-1,D14,Severe,68,Male,-,-,1/23/18,2,2/15/18,Negative,Positive,Negative,Negative,Negative
 Flu-2-D1,IAV-2,D1,Severe,74,Female,-,-,1/18/18,2,2/2/18,Negative,Positive,Negative,Negative,Negative
