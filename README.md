@@ -37,10 +37,14 @@ To install library, simply run
     install.packages("longitudinalDynamics_0.1.0.tar.gz", repos = NULL, type ="source")
     library("longitudinalDynamics")
 
+```{r setup}
+library(longitudinalDynamics)
+```
+
 # <a name="example-main"></a> Tutorials
 ## <a name="example1"></a> Tutorial-1: Plasma proteome [Bulk dataset]
 
-This tutorial allows users to explore bulk plasma proteome measured from 6 healthy donors over 10 timepoints. Plasma proteomic data available at github. 1. [Olink_NPX_log2_Protein.Rda](https://github.com/aifimmunology/longitudinalDynamics/blob/main/data/Olink_NPX_log2_Protein.Rda) (Normalized protein expression data) 2. [data_Metadata.Rda](https://github.com/aifimmunology/longitudinalDynamics/blob/main/data/data_Metadata.Rda) (clinical metadata). Longitudinal dataset includes 6 donors (3 male and 3 females). PBMC samples were collected from 6 donors over 10 weeks. To interrogate longitudinal data, please follow following steps.
+This tutorial allows users to explore bulk plasma proteome measured from 6 healthy donors over 10 timepoints. Plasma proteomic data available at github. 1. [Olink_NPX_log2_Protein.Rda](https://github.com/aifimmunology/longitudinalDynamics/blob/main/data/Olink_NPX_log2_Protein.Rda) (Normalized protein expression data) 2. [data_Annotation.Rda](https://github.com/aifimmunology/longitudinalDynamics/blob/main/data/data_Annotation.Rda) (clinical metadata). Longitudinal dataset includes 6 donors (3 male and 3 females). PBMC samples were collected from 6 donors over 10 weeks. To interrogate longitudinal data, please follow following steps.
 
 ### Load Library
    
@@ -116,6 +120,7 @@ To perform variance decomposition apply `lmeVariance` function with input metada
         geom_bar(stat="identity", position="stack") +
         scale_fill_manual(values = c("donor"="#C77CFF", "celltype"="#00BFC4",
         "week"="#7CAE00", "Residuals"="grey")) +
+        labs(x="Features", y="% Variance Explained") +
         theme_bw() + theme(axis.text.x = element_text(angle=90, hjust = 0.5,
         vjust = 1),legend.position = "right") +
         coord_flip()
@@ -138,7 +143,7 @@ To perform variance decomposition apply `lmeVariance` function with input metada
                 outlier.shape = NA) + scale_shape_manual(values = 0:10)
       splots[[i]] <- plot1
     }
-    plot_grid(plotlist=splots, ncol= 3, align="hv")
+    plot_grid(plotlist=splots, ncol= 2, align="hv")
 
 <br> ![img](vignettes/imgs/Tutorial-1-geneplot.png)<br>
 
@@ -167,45 +172,40 @@ Perform the sample correlation to find out overall correlation between longitudi
 <br> ![img](vignettes/imgs/Tutorial-1-samplecorrelation.png){width="50%" height="50%"} <br>
 
     #Detect outliers (if any)
-    outlier_res <- outlierDetect(ann=metadata, mat=datamatrix)
+    outlier_res <- outlierDetect(ann=metadata, mat=datamatrix, z_cutoff=2)
     
     head(outlier_res)
-    #  exp  Sample  PTID Time    Sex      gene  meanDev        z  outlier
-    #PTID3W643 10.729880 PTID3W6 PTID3   W6 Female     IFI30 8.340474 2.845471 2.845471
-    #PTID3W627 10.133645 PTID3W6 PTID3   W6 Female     DPEP2 6.595705 2.844629 2.844629
-    #PTID3W631 10.188437 PTID3W6 PTID3   W6 Female      FCAR 7.004890 2.844607 2.844607
-    #PTID3W626  7.656418 PTID3W6 PTID3   W6 Female     DPEP1 4.574449 2.844574 2.844574
+    #  exp  Sample  PTID Time    Sex      gene  meanDev        z
+    #PTID3W643 10.729880 PTID3W6 PTID3   W6 Female     IFI30 8.340474 2.845471
+    #PTID3W627 10.133645 PTID3W6 PTID3   W6 Female     DPEP2 6.595705 2.844629
+    #PTID3W631 10.188437 PTID3W6 PTID3   W6 Female      FCAR 7.004890 2.844607
+    #PTID3W626  7.656418 PTID3W6 PTID3   W6 Female     DPEP1 4.574449 2.844574
     #PTID3W685  9.129149 PTID3W6 PTID3   W6 Female TNFRSF13C 6.605767 2.844410 2.844410
-    #PTID3W652  8.031215 PTID3W6 PTID3   W6 Female   KIR2DL3 5.156982 2.844018 2.844018
-    
-    #Z-score Plot
-    plot1 <- ggplot(outlier_res, aes(x=PTID, y=z)) +
-      geom_violin(scale="width") +
-      #geom_boxplot(width=0.1, fill="white") +
-      labs(x="", y="Z-score (>2SD)") +
-      ggforce::geom_sina(size=0.5) +
-      theme_classic() +
-      theme(axis.text.x = element_text(angle=90, hjust = 1, vjust = 1, size=6),
-      axis.text.y = element_text(size=6), legend.position = "right")
-    print(plot1)
+    #PTID3W652  8.031215 PTID3W6 PTID3   W6 Female   KIR2DL3 5.156982 2.844018
 
-<br> ![img](vignettes/imgs/Tutorial-1-Z-plot.png){width="100%" height="100%"}<br>
-    
     #Stringent SD
-    outlier_res <- outlierDetect(ann=metadata, mat=datamatrix, SD_threshold= 2.5)
+    outlier_res <- outlierDetect(ann=metadata, mat=datamatrix, z_cutoff= 2.5)
     df <- data.frame(table(outlier_res$Sample))
     df <- df[order(df$Freq, decreasing = T),]
     head(df)
     #Var1 Freq
-    #PB1194W6   71
-    #PB5206W9   28
-    #PB2216W5   20
-    #PB1051W1   17
-    #PB1051W8   12
-    #PB7626W1    7
+    #PTID3W6   71
+    #PTID5W9   28
+    #PTID4W5   20
+    #PTID1W1   17
+    #PTID1W8   12
+    #PTID6W1    7
+    
+<br> ![img](vignettes/imgs/Tutorial-1-Z-plot.png){width="100%" height="100%"}<br>
+
+    #Calculate p value
+    outlierDetectP(outlier_events=outlier_res, z_cutoff=2.5, nGenes=1042)
+    
+<br> ![img](vignettes/imgs/Tutorial-1-outlier-pvalue.png){width="100%" height="100%"}<br>
     
     #### Gene plot (probable outliers)
     plots <- genePlot(ann=metadata, data=datamatrix, geneName="IFI30")
+    plots[[5]]
     
     #or
     genelist <- c("IFI30", "DPEP2","FCAR", "TNFRSF13C", "IL15", "IL32")
@@ -228,7 +228,7 @@ Perform the sample correlation to find out overall correlation between longitudi
     
 ## <a name="example2"></a> Tutorial-2: scRNA longitudinal data (n=4 and 6 weeks follow-up)
 
-This tutorial allows users to explore single cell RNAseq data measured from 4 healthy donors over 6 time points (week 2-7). Single cell data available at **GEOXXX**. (1) pbmc_longitudinal_data (Normalized scRNA seurat object) (2) data_Metadata.Rda (clinical metadata). Longitudinal data set includes 4 donors and 24 samples. To infer iner-donor, intra-donor variations, and stable features, please follow following steps.
+This tutorial allows users to explore single cell RNAseq data measured from 4 healthy donors over 6 time points (week 2-7). Single cell data available at **GEOXXX**. (1) pbmc_longitudinal_data (Normalized scRNA seurat object) (2) data_Annotation.Rda (clinical metadata). Longitudinal data set includes 4 donors and 24 samples. To infer iner-donor, intra-donor variations, and stable features, please follow following steps.
 
 ### Load Library
    
@@ -376,19 +376,18 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
     
 ### Donor-specific variance
 
-    df1 <- filter(res, donor>week & donor>celltype & Residuals < 50)
-    df1 <- df1[order(df1$donor, decreasing = T),]
-    df <- melt(data.matrix(df1[1:15,)) #Top15
-    df$Var2 <- factor(df$Var2, levels = rev(c("donor","week", "celltype", "Residuals")))
+    #Donor-specific
+    df1 <- filter(res, PTID>Time & PTID>celltype & Residuals < 50)
+    df1 <- df1[order(df1$PTID, decreasing = T),]
+    df <- melt(data.matrix(df1[1:15,]))
+    df$Var2 <- factor(df$Var2, levels = rev(colnames(res)))
     df$Var1 <- factor(df$Var1, levels = rev(unique(df$Var1)))
-    p1 <- ggplot(df, aes(x=Var1, y=value, fill=Var2)) +
-      geom_bar(stat="identity", position="stack") +
-      scale_fill_manual(values = c("donor"="#C77CFF", "celltype"="#00BFC4",
-      "week"="#7CAE00", "Residuals"="grey")) +
-      theme_bw() + theme(axis.text.x = element_text(angle=90, hjust = 0.5,
-      vjust = 1),legend.position = "right") +
+    plot1 <- ggplot(df, aes(x=Var1, y=value, fill=Var2)) +
+      geom_bar(stat="identity", position="stack") + labs(x="Features", y="% Variance explained") +
+      scale_fill_manual(values = c("PTID"="#C77CFF", "celltype"="#00BFC4", "Time"="#7CAE00", "Residuals"="grey")) +
+      theme_bw() + theme(axis.text.x = element_text(angle=90, hjust = 0.5, vjust = 1),legend.position = "right") +
       coord_flip()
-    print(p1)  
+    print(plot1)
 
 <br> ![img](vignettes/imgs/Tutorial-2-Donor-variancePlot2.png){width="50%" height="50%"}<br>
 
@@ -399,12 +398,12 @@ This tutorial allows users to explore single cell RNAseq data measured from 4 he
 ### Plot the top features
 
     plots <- genePlot(ann=ann, data=mat, geneName="LILRA4", groupName="Time")
-    print(plots$plot1)
+    print(plots$plot4)
     
 <br> ![img](vignettes/imgs/Tutorial-2-celltype-LILRA4-1.png){width="50%" height="50%"}<br>
     
     plots <- genePlot(ann=ann, data=mat, geneName="LILRA4", groupName="group")
-    print(plots$plot2)
+    print(plots$plot5)
     
 <br> ![img](vignettes/imgs/Tutorial-2-celltype-LILRA4-2.png)<br>
     
@@ -441,11 +440,11 @@ CV profile in celltypes (black) as well as CV for house-keeping genes (blue). Ba
                     topFeatures=topFeatures,
                     fileName="scrna", filePATH=filePATH)
 
-Variable genes observed in longitidinal data (CV>10%)
+Variable genes observed in longitudinal data (CV>10%)
 
 <br> ![img](vignettes/imgs/Tutorial-2-Variable-Plot.png) <br>
     
-Stable genes observed in longitidinal data (CV<10%)
+Stable genes observed in longitudinal data (CV<10%)
 
 <br> ![img](vignettes/imgs/Tutorial-2-Stable-Plot.png) <br>
 
@@ -475,20 +474,9 @@ Stable genes observed in longitidinal data (CV<10%)
     
 <br> ![img](vignettes/imgs/Tutorial-2-Tcelltype-circularPlot.png){width="50%" height="50%"} <br>
 
-### Sample correlation and outlier plot
-
-Identifying outlier's in scRNA data is complex. However the function below provides a overview of sample correlation and group wise (celltype) correlation to explore abnormal samples. The results only shows the genes/features with Z-score >2SD (Standard deviation is user-defined). The results should be inferred accordingly and further evaluated.
-
-    cor_res <- sample_correlation(data=mat, column_sep = ":", 
-                method="spearman", clusterBy = "group")
-    outlier_res <- outlierDetect(ann=ann, mat=mat,
-                    SD_threshold=2, groupBy=TRUE)
-    
-<br> ![img](vignettes/imgs/Tutorial-2-OutlierAnalysis.png) <br>
-
 ## <a name="example3"></a> Tutorial-3: scATAC Longitudinal data (n=4 and 6 weeks follow-up)
 This tutorial allows users to explore single cell ATACseq genscore data measured from 4 healthy donors over 6 timepoints (week 2-7). Single cell ATAC data available at GEOXXX.
-(1) pbmc_scatac_archr_genescore_longitudinal_data (2) data_Metadata.Rda (clinical metadata). Longitudinal dataset have 4 donors and 18 samples. To infer the variations at single cell ATAC please follow following steps.
+(1) pbmc_scatac_archr_genescore_longitudinal_data (2) data_Annotation.Rda (clinical metadata). Longitudinal dataset have 4 donors and 18 samples. To infer the variations at single cell ATAC please follow following steps.
 
 ###  Load Library
 
@@ -710,15 +698,15 @@ This tutorial allows users to explore single cell ATACseq genscore data measured
                   "HLA-DRA","HLA-DPA1","HLA-DRB1",
                   "ACTB","GAPDH")
     res <- genecircosPlot(data=cv_res, geneList=geneList, colorThreshold=10)
-    #Can use threshold 15 based on housekeeping genes 
     
+    #Can use threshold 15 based on housekeeping genes 
     group_oi <- c("CD4_Naive","CD4_TEM","CD4_TCM","CD4_CTL",
                   "CD8_Naive","CD8_TEM","CD8_TCM","Treg","MAIT","gdT",
                   "NK", "NK_CD56bright",
                   "B_naive","B_memory", "B_intermediate",
                   "CD14_Mono","CD16_Mono",
                   "cDC2","pDC")
-    res <- genecircosPlot(data=cv_res, geneList=geneList, groupBy=group_oi, colorThreshold=10)
+    res <- genecircosPlot(data=cv_res, geneList=geneList, groupBy=group_oi, colorThreshold=15)
     
 <br> ![img](vignettes/imgs/Tutorial-3-celltype-circularPlot.png) <br>
 
@@ -1051,7 +1039,7 @@ Single cell object CNP0001102
 
     library("longitudinalDynamics")
     #run
-    DEGres <- sclongitudinalDGE(ann=metadata, dataObj=pbmc, scassay="RNA", celltypecol="celltype")
+    DEGres <- sclongitudinalDEG(ann=metadata, dataObj=pbmc, scassay="RNA", celltypecol="celltype")
     
     >Fitting a ZLM model for donorID:  COV-1 
     >Fitting a ZLM model for donorID:  COV-2 
@@ -1100,7 +1088,7 @@ General analysis schema and differential results in each donor over timepoints i
                                column_sep="W",
                                method="spearman",
                                clusterBy="donor",
-                               SD_threshold=2,
+                               z_cutoff=2,
                                doOutlier=TRUE,
                                fileName="proteome",
                                outputDirectory="output")
@@ -1143,7 +1131,7 @@ General analysis schema and differential results in each donor over timepoints i
                                donorThreshold=4, groupThreshold=40,
                                topFeatures=25,
                                method="spearman", column_sep=":",
-                               clusterBy="group", SD_threshold=2,
+                               clusterBy="group", z_cutoff=2,
                                fileName="scrna",
                                outputDirectory="output")
     
@@ -1153,7 +1141,7 @@ Load genescorematrix from archR or relevant tools (Aggregate data at celltypes (
 
     #scATAC object
     load("data/AIFI-scATAC-PBMC-FinalData.Rda") #aggregated genescore
-    data <- log2(scatac_gm+1) #log2
+    data <- log2(scatac_gm+1) #log2 
     #Load annotation data
     load("data/data_Metadata.Rda")
     
@@ -1169,7 +1157,7 @@ Load genescorematrix from archR or relevant tools (Aggregate data at celltypes (
                                donorThreshold=4, groupThreshold=28,
                                topFeatures=25,
                                column_sep=":", method="spearman",
-                               clusterBy="group", SD_threshold=2,
+                               clusterBy="group", z_cutoff=2,
                                fileName="scatac",
                                outputDirectory="output")
 
@@ -1180,4 +1168,3 @@ Load genescorematrix from archR or relevant tools (Aggregate data at celltypes (
 
 # <a name="license"></a> License
 longitudinalDynamics is licensed under the [MIT-License](https://github.com/git/git-scm.com/blob/main/MIT-LICENSE.txt).
-
