@@ -1,6 +1,5 @@
-README for PALM (Platform for Analyzing Longitudinal Multi-omics data)
+# README for PALM (Platform for Analyzing Longitudinal Multi-omics data)
 
-===============
 
 * * *
 
