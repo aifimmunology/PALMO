@@ -1017,7 +1017,7 @@ This tutorial allows users to explore single cell RNAseq data variability across
     
 <br> ![img](vignettes/imgs/Tutorial-5-celltype-circularPlot.png) <br>
 
-## <a name="example6"></a> Tutorial-6: Differential Gene analysis in longitudinal data]
+## <a name="example6"></a> Tutorial-6: Differential Gene analysis in longitudinal data
 
 This tutorial allows users to identify differential expressed genes in direction of time-points. As an example single cell data from [Zhu et al. 2020](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7368915/) downloaded from [here](https://db.cngb.org/search/project/CNP0001102/). Metadata is downloaded from table and can be found in the [data](https://github.com/aifimmunology/PALM/tree/main/data). The dataset consists of 5 Covid-19 donors, 2 Flu donors with longitudinal data and 3 controls. To explore differetial expressed gened in each celltype of each donor we used hurdle model based modeling on input data to retrive the DEGs. To infer DEGs in each celltype towards time progression (timepoints considered as continoues if more than 2), please follow following steps.
 
@@ -1060,11 +1060,11 @@ Single cell object CNP0001102
     #IGHG1   TimeD9 1.292885e-16 2.219146 8.608601e-15   IAV-2   Plasma upregulated at D9
     #SYNE2   TimeD4 7.249010e-13 2.209541 1.215659e-09   COV-4 XCL+_NKs upregulated at D4
 
-General analysis schema and differential results in each donor over timepoints in celltype Cytotoxic CD8 T-cells using `longitudinalDynamics` shown.
+General analysis schema and differential results in each donor over timepoints in celltype Cytotoxic CD8 T-cells using `PALM` shown below.
 
 <br><br> ![img](vignettes/imgs/Tutorial-6-CNP0001102-DEG.png) <br><br>
 
-# <a name="usage"></a> Quick Usage (Longitudinal data)
+# <a name="usage"></a> Quick Usage
 
     #Load libraries
     library("PALM")
