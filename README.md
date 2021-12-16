@@ -228,7 +228,7 @@ Perform the sample correlation to find out overall correlation between longitudi
     
 ## <a name="example2"></a> Tutorial-2: scRNA longitudinal data (n=4 and 6 weeks follow-up)
 
-This tutorial allows users to explore single cell RNAseq data measured from 4 healthy donors over 6 time points (week 2-7). Single cell data available at (GSE190992)[https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE190992]. (1) pbmc_longitudinal_data (Normalized scRNA seurat object) (2) data_Annotation.Rda (clinical metadata). Longitudinal data set includes 4 donors and 24 samples. To infer iner-donor, intra-donor variations, and stable features, please follow following steps.
+This tutorial allows users to explore single cell RNAseq data measured from 4 healthy donors over 6 time points (week 2-7). Single cell data available at [GSE190992](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE190992). (1) pbmc_longitudinal_data (Normalized scRNA seurat object) (2) data_Annotation.Rda (clinical metadata). Longitudinal data set includes 4 donors and 24 samples. To infer iner-donor, intra-donor variations, and stable features, please follow following steps.
 
 ### Load Library
    
@@ -475,7 +475,7 @@ Stable genes observed in longitudinal data (CV<10%)
 <br> ![img](vignettes/imgs/Tutorial-2-Tcelltype-circularPlot.png){width="50%" height="50%"} <br>
 
 ## <a name="example3"></a> Tutorial-3: scATAC Longitudinal data (n=4 and 6 weeks follow-up)
-This tutorial allows users to explore single cell ATACseq genscore data measured from 4 healthy donors over 6 timepoints (week 2-7). Single cell ATAC data available at (GSE190992)[https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE190992].
+This tutorial allows users to explore single cell ATACseq genscore data measured from 4 healthy donors over 6 timepoints (week 2-7). Single cell ATAC data available at [GSE190992](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE190992).
 (1) pbmc_scatac_archr_genescore_longitudinal_data (2) data_Annotation.Rda (clinical metadata). Longitudinal dataset have 4 donors and 18 samples. To infer the variations at single cell ATAC please follow following steps.
 
 ###  Load Library
