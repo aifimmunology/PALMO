@@ -26,30 +26,30 @@ Table of Contents
 # <a name="introduction"></a> Introduction
 PALM `(Platform for Analyzing Longitudinal Multi-omics data)` is a platform for anayzing longitudinal data from bulk as well as single cell. It allows to identify inter-, intra-donor variations in genes over longitudinal time points. The analysis can be done on bulk expression dataset without known celltype information or single cell with celltype/user-defined groups. It allows to infer stable and variable features in given donor and each celltype (or user defined group). The outlier analysis can be performed to identify techinical/biological perturbed samples in donor/participant. Further, differential analysis can be performed to deciher time-wise changes in gene expression in a celtype.
 
-<br> ![img](vignettes/imgs/LongitudinalDynamics-workflow.png) <br>
-General workflow and analysis schema of **LongitudinalDynamics**. It can work with longitudinal data obtained from bulk such as clinical, bulk RNAseq, proteomic or single cell dataset from scRNAseq, and scATACseq.
+<br> ![img](vignettes/imgs/PALM-workflow.png) <br>
+General workflow and analysis schema of **PALM**. It can work with longitudinal data obtained from bulk such as clinical, bulk RNAseq, proteomic or single cell dataset from scRNAseq, and scATACseq.
 
 
 # <a name="library"></a> Install package and load library
 
 To install library, simply run
    
-    install.packages("longitudinalDynamics_0.1.0.tar.gz", repos = NULL, type ="source")
-    library("longitudinalDynamics")
+    install.packages("PALM_0.1.0.tar.gz", repos = NULL, type ="source")
+    library("PALM")
 
 ```{r setup}
-library(longitudinalDynamics)
+library(PALM)
 ```
 
 # <a name="example-main"></a> Tutorials
 ## <a name="example1"></a> Tutorial-1: Plasma proteome [Bulk dataset]
 
-This tutorial allows users to explore bulk plasma proteome measured from 6 healthy donors over 10 timepoints. Plasma proteomic data available at github. 1. [Olink_NPX_log2_Protein.Rda](https://github.com/aifimmunology/longitudinalDynamics/blob/main/data/Olink_NPX_log2_Protein.Rda) (Normalized protein expression data) 2. [data_Annotation.Rda](https://github.com/aifimmunology/longitudinalDynamics/blob/main/data/data_Annotation.Rda) (clinical metadata). Longitudinal dataset includes 6 donors (3 male and 3 females). PBMC samples were collected from 6 donors over 10 weeks. To interrogate longitudinal data, please follow following steps.
+This tutorial allows users to explore bulk plasma proteome measured from 6 healthy donors over 10 timepoints. Plasma proteomic data available at github. 1. [Olink_NPX_log2_Protein.Rda](https://github.com/aifimmunology/PALM/blob/main/data/Olink_NPX_log2_Protein.Rda) (Normalized protein expression data) 2. [data_Annotation.Rda](https://github.com/aifimmunology/PALM/blob/main/data/data_Annotation.Rda) (clinical metadata). Longitudinal dataset includes 6 donors (3 male and 3 females). PBMC samples were collected from 6 donors over 10 weeks. To interrogate longitudinal data, please follow following steps.
 
 ### Load Library
    
     #Load Library and other vizualization packages
-    library("longitudinalDynamics")
+    library("PALM")
     library("Hmisc")
     library("ggpubr")
     
@@ -228,12 +228,12 @@ Perform the sample correlation to find out overall correlation between longitudi
     
 ## <a name="example2"></a> Tutorial-2: scRNA longitudinal data (n=4 and 6 weeks follow-up)
 
-This tutorial allows users to explore single cell RNAseq data measured from 4 healthy donors over 6 time points (week 2-7). Single cell data available at **GEOXXX**. (1) pbmc_longitudinal_data (Normalized scRNA seurat object) (2) data_Annotation.Rda (clinical metadata). Longitudinal data set includes 4 donors and 24 samples. To infer iner-donor, intra-donor variations, and stable features, please follow following steps.
+This tutorial allows users to explore single cell RNAseq data measured from 4 healthy donors over 6 time points (week 2-7). Single cell data available at (GSE190992)[https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE190992]. (1) pbmc_longitudinal_data (Normalized scRNA seurat object) (2) data_Annotation.Rda (clinical metadata). Longitudinal data set includes 4 donors and 24 samples. To infer iner-donor, intra-donor variations, and stable features, please follow following steps.
 
 ### Load Library
    
     #Load Library
-    library("longitudinalDynamics")
+    library("PALM")
     library("Hmisc")
     library("ggpubr")
     library("Seurat")
@@ -475,13 +475,13 @@ Stable genes observed in longitudinal data (CV<10%)
 <br> ![img](vignettes/imgs/Tutorial-2-Tcelltype-circularPlot.png){width="50%" height="50%"} <br>
 
 ## <a name="example3"></a> Tutorial-3: scATAC Longitudinal data (n=4 and 6 weeks follow-up)
-This tutorial allows users to explore single cell ATACseq genscore data measured from 4 healthy donors over 6 timepoints (week 2-7). Single cell ATAC data available at GEOXXX.
+This tutorial allows users to explore single cell ATACseq genscore data measured from 4 healthy donors over 6 timepoints (week 2-7). Single cell ATAC data available at (GSE190992)[https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE190992].
 (1) pbmc_scatac_archr_genescore_longitudinal_data (2) data_Annotation.Rda (clinical metadata). Longitudinal dataset have 4 donors and 18 samples. To infer the variations at single cell ATAC please follow following steps.
 
 ###  Load Library
 
     #Load Library
-    library("longitudinalDynamics")
+    library("PALM")
     library("Hmisc")
     library("ggpubr")
 
@@ -716,7 +716,7 @@ This tutorial allows users to combine intra-donor variation value between differ
 ### Load Library
    
     #Load Library
-    library("longitudinalDynamics")
+    library("PALM")
     library("Hmisc")
     library("ggpubr")
     library("Seurat")
@@ -751,12 +751,12 @@ This tutorial allows users to combine intra-donor variation value between differ
 <br> ![img](vignettes/imgs/Tutorial-4-Multimodal-circularPlot.png){width="50%" height="50%"} <br>
     
 ## <a name="example5"></a> Tutorial-5: CNP0001102 data
-This tutorial allows users to explore single cell RNAseq data variability across COVID and FLU donors. PBMC from the patients were collected longitudinally. Single cell data from [Zhu et al. 2020](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7368915/) downloaded from [here](https://db.cngb.org/search/project/CNP0001102/). Metadata is downloaded from table and can be found in the [data](https://github.com/aifimmunology/longitudinalDynamics/tree/main/data). To infer variability (inter- and Intra-) and identify stable genes, please follow following steps.
+This tutorial allows users to explore single cell RNAseq data variability across COVID and FLU donors. PBMC from the patients were collected longitudinally. Single cell data from [Zhu et al. 2020](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7368915/) downloaded from [here](https://db.cngb.org/search/project/CNP0001102/). Metadata is downloaded from table and can be found in the [data](https://github.com/aifimmunology/PALM/tree/main/data). To infer variability (inter- and Intra-) and identify stable genes, please follow following steps.
 
 ### Load Library
    
     #Load Library
-    library("longitudinalDynamics")
+    library("PALM")
     library("Hmisc")
     library("ggpubr")
     library("Seurat")
@@ -1019,7 +1019,7 @@ This tutorial allows users to explore single cell RNAseq data variability across
 
 ## <a name="example6"></a> Tutorial-6: Differential Gene analysis in longitudinal data]
 
-This tutorial allows users to identify differential expressed genes in direction of time-points. As an example single cell data from [Zhu et al. 2020](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7368915/) downloaded from [here](https://db.cngb.org/search/project/CNP0001102/). Metadata is downloaded from table and can be found in the [data](https://github.com/aifimmunology/longitudinalDynamics/tree/main/data). The dataset consists of 5 Covid-19 donors, 2 Flu donors with longitudinal data and 3 controls. To explore differetial expressed gened in each celltype of each donor we used hurdle model based modeling on input data to retrive the DEGs. To infer DEGs in each celltype towards time progression (timepoints considered as continoues if more than 2), please follow following steps.
+This tutorial allows users to identify differential expressed genes in direction of time-points. As an example single cell data from [Zhu et al. 2020](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7368915/) downloaded from [here](https://db.cngb.org/search/project/CNP0001102/). Metadata is downloaded from table and can be found in the [data](https://github.com/aifimmunology/PALM/tree/main/data). The dataset consists of 5 Covid-19 donors, 2 Flu donors with longitudinal data and 3 controls. To explore differetial expressed gened in each celltype of each donor we used hurdle model based modeling on input data to retrive the DEGs. To infer DEGs in each celltype towards time progression (timepoints considered as continoues if more than 2), please follow following steps.
 
 ### load data and clinical metadata
 
@@ -1037,7 +1037,7 @@ Single cell object CNP0001102
     
 ### Load library and run
 
-    library("longitudinalDynamics")
+    library("PALM")
     #run
     DEGres <- sclongitudinalDEG(ann=metadata, dataObj=pbmc, scassay="RNA", celltypecol="celltype")
     
@@ -1067,7 +1067,7 @@ General analysis schema and differential results in each donor over timepoints i
 # <a name="usage"></a> Quick Usage (Longitudinal data)
 
     #Load libraries
-    library("longitudinalDynamics")
+    library("PALM")
     library("Hmisc")
     library("ggpubr")
 
@@ -1078,7 +1078,7 @@ General analysis schema and differential results in each donor over timepoints i
     #Clinical Metdata/annotation
     load("data/data_Metadata.Rda")
     #Run longuitudinal analysis
-    ld_res <- longitudinalDynamics(metadata=ann,
+    ld_res <- PALM(metadata=ann,
                                data=data,
                                datatype="bulk",
                                omics="plasmaproteome",
@@ -1120,7 +1120,7 @@ General analysis schema and differential results in each donor over timepoints i
                   "cDC2","pDC")
     
     #Run longuitudinal analysis
-    ld_res <- longitudinalDynamics(metadata=ann, 
+    ld_res <- PALM(metadata=ann, 
                                data=pbmc, 
                                datatype="singlecell", omics="rna",
                                featureSet=c("PTID", "Time"),
@@ -1146,7 +1146,7 @@ Load genescorematrix from archR or relevant tools (Aggregate data at celltypes (
     load("data/data_Metadata.Rda")
     
     #Run longuitudinal analysis
-    ld_res <- longitudinalDynamics(metadata=ann,
+    ld_res <- PALM(metadata=ann,
                                data=data,
                                datatype="singlecell", omics="atac",
                                featureSet=c("PTID", "Time"),
@@ -1164,7 +1164,7 @@ Load genescorematrix from archR or relevant tools (Aggregate data at celltypes (
 
 # <a name="authors"></a> Authors
 
-[Suhas Vasaikar](https://github.com/suhasaii), [Aarthi talla](https://github.com/aarthitallaAI) and [Xiaojun Li](https://github.com/Xiaojun-Li) designed the longitudinalDynamics algorithm. [Suhas Vasaikar](https://github.com/suhasaii) implemented the longitudinalDynamics package.
+[Suhas Vasaikar](https://github.com/suhasaii), [Aarthi talla](https://github.com/aarthitallaAI) and [Xiaojun Li](https://github.com/Xiaojun-Li) designed the PALM algorithm. [Suhas Vasaikar](https://github.com/suhasaii) implemented the PALM package.
 
 # <a name="license"></a> License
-longitudinalDynamics is licensed under the [MIT-License](https://github.com/git/git-scm.com/blob/main/MIT-LICENSE.txt).
+PALM is licensed under the [MIT-License](https://github.com/git/git-scm.com/blob/main/MIT-LICENSE.txt).
