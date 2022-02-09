@@ -14,6 +14,7 @@ Table of Contents
     * [Tutorial-3: scATAC longitudinal data](#example3)
     * [Tutorial-4: CNP0001102 data longitudinal data](#example4)
     * [Tutorial-5: Differential Gene analysis in longitudinal data](#example5)
+    * [Tutorial-6: Differential Gene analysis in longitudinal data](#example6)
 * [Quick Usage (Longitudinal data)](#usage)
     * [Plasma proteome](#olink)
     * [Single cell RNA data](#scrna)
