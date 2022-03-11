@@ -43,33 +43,6 @@ app = JupyterDash(__name__, external_stylesheets=external_stylesheets)
 server = app.server
 pio.templates.default = "plotly_white"
 
-# additional libraries that wasn't handled properly in prep code 
-from jupyter_dash import JupyterDash
-from plotly.subplots import make_subplots 
-import rpy2.robjects as robjects 
-from rpy2.robjects.conversion import localconverter
-import rpy2.robjects as ro
-from rpy2.robjects import pandas2ri
-import numpy as np 
-
-import dash
-from dash import html, dcc
-from dash import dash_table
-import plotly.express as px
-import plotly.graph_objects as go
-import plotly.io as pio
-from dash.dependencies import Input, Output, State
-import pandas as pd
-import socket
-# import prep module 
-import DashPalm_prep as dpp 
-
-
-external_stylesheets = ['https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css']
-app = JupyterDash(__name__, external_stylesheets=external_stylesheets)
-server = app.server
-pio.templates.default = "plotly_white"
-
 # hard-coded value I need to get back to 
 cvThreshold = 1 
 
