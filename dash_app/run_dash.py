@@ -29,12 +29,68 @@ import numpy as np
 # import prep module 
 import DashPalm_prep as dpp 
 
+# argument handler 
+import argparse 
+import pathlib
+
+# TODO: wrap this in its' own function 
+parser = argparse.ArgumentParser() 
+# create arguments 
+parser.add_argument('--metadata', '-m',  required=True, 
+                    help='Annotation table. Table must consist column Sample (Participant sample name), PTID (Participant), Time (longitudinal timepoints)') 
+parser.add_argument('--data', '-d', required=True, 
+                    help='Expression matrix or data frame. Rows represents gene/proteins column represents participant samples (same as annotation table Sample column). For single cell, Single cell RNA Seurat object, if datatype is single cell RNA and Single cell ATAC genescore matrix or data frame')
+parser.add_argument('--datatype', '-dt', nargs='?', default='bulk',
+                    choices=['bulk', 'singlecell'],
+                    help='Data input can be bulk or singlecell')
+parser.add_argument('--do_outlier', '-out', type=bool, 
+                    help='Specify whether to perform outlier analysis')
+parser.add_argument('--z_cutoff', '-zo', type=float, 
+                    help='|z| cutoff threshold to find potential outliers')
+parser.add_argument('--mean_threshold', '-mt', nargs='?', type=float,
+                    help='Average expression threshold to filter lowly expressed') 
+parser.add_argument('--cv_threshold', '-cvt', nargs='?',  type=float,
+                    help='Coefficient of variation threshold to select variable and stable genes Default is 10 for single cell RNA (100*SD/mean)')
+parser.add_argument('--na_threshold', '-nat', nargs='?', type=float, default=0.4,
+                    help='Number of NAs in data (numeric value or NULL). Default, 40% * number of columns.')
+parser.add_argument('--output_dir', '-o', 
+                    help='user-defined output directory') 
+parser.add_argument('--feature_set', '-fs', nargs='*', type=str, default=["PTID", "Time"],
+                    help='Variance analysis carried out on the featureSet provided such as c("PTID", "Time", "Sex")') 
+
+
+""" other arguments 
+parser.add_argument('--omics', '-o', nargs='?', default="plasmaproteome"
+                    help='User defined name like RNA, ATAC, Proteomics, FLOW') 
+parser.add_argument('--filename', '-fn', nargs='?', 
+                    help='User defined filename') 
+parser.add_argument('--column_sep', '-cs', nargs='?',
+                   help='Separator of "PTID" and "Time" in "Sample" column of Annotation table like column_sep="W" for PTID1W1, column_sep=":" for PTID1W1:Tcell)'
+parser.add_argument('--cluster_by', '-cb', nargs='?',
+                   help='for sample correlation cluster columns by ("donor", "group")')
+parser.add_argument('--coding_genes', '-cg', nargs='?',
+                   help='Selecting protein coding/user-defined gene list only') 
+parser.add_argument('--avg_group', '-ag', nargs='?',
+                   help='Group label to be used to calculate average gene expression by group label') 
+parser.add_argument('--housekeeping_genes', '-hg', nargs='?',
+                   help='Optional list of housekeeping genes to focus on Default is NULL)') 
+parser.add_argument('--group_oi', '-go', nargs='?',
+                   help='Group of interest to focus on, Default is NULL') 
+parser.add_argument('--
+"""
+
+# assign defaults 
+                    
+                    
+args = parser.parse_args() 
 
 # run prep 
-import sys 
-d_fp = sys.argv[1] # '/home/jupyter/PALM_Dash/PALM/data/Olink_NPX_log2_Protein.Rda'
-m_fp = sys.argv[2] # '/home/jupyter/PALM_Dash/PALM/data/data_Metadata.Rda'
-(datamatrix, metadata, lmem_py, outlier_res_py) = dpp.run(d_fp, m_fp)
+#import sys 
+#d_fp = sys.argv[1] # '/home/jupyter/PALM_Dash/PALM/data/Olink_NPX_log2_Protein.Rda'
+#m_fp = sys.argv[2] # '/home/jupyter/PALM_Dash/PALM/data/data_Metadata.Rda'
+print(args.data) 
+print(args.metadata) 
+(datamatrix, metadata, lmem_py, outlier_res_py) = dpp.run(args.data, args.metadata)
 outdir = '' 
 
 
