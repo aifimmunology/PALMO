@@ -59,11 +59,11 @@ def apply_na_threshold(data, threshold=0.4):
     '''
     # calculate how many NA's in each row 
     data['number_NA'] = data.isna().sum(axis=1) 
-    filtered_data = data.loc[data['number_NA'] <= len(data.columns)*0.4, ]
+    filtered_data = data.loc[data['number_NA'] <= len(data.columns)*threshold, ]
     filtered_data.drop(columns=['number_NA'],inplace=True)
     return filtered_data 
 
-def load_data(matrix_fp, meta_fp): 
+def load_data(matrix_fp, meta_fp, na_threshold): 
     ''' 
     '''
     # create bridging robject 
@@ -80,20 +80,23 @@ def load_data(matrix_fp, meta_fp):
     
     # TODO: should this cut-off be added to dash app UI? 
     # DEFAULT - 0.4 of number of columns 
-    datamatrix = apply_na_threshold(datamatrix) 
+    datamatrix = apply_na_threshold(datamatrix, na_threshold) 
 
     return(datamatrix, metadata)  
 
 
-def run_lmeVariance(matrix, metadata, featureSet): 
+def run_lmeVariance(matrix, metadata, mean_threshold, feature_set): 
     '''
     '''
     # load lmeVariance object function and run 
     lmeVariance = ro.r['lmeVariance'] 
+    
+    # convert to R StrVector 
+    featureSet = ro.StrVector(feature_set)
     lmem_res = rpy_2py(lmeVariance(ann=py2_rpy(metadata), 
                            mat=py2_rpy(matrix), 
                            featureSet=featureSet, 
-                           meanThreshold=1
+                           meanThreshold= mean_threshold
                           ))
     mean_vals = lmem_res.loc[:, 'mean'] 
     lmem_res['mean_log10'] = np.log10(lmem_res['mean'] + 1) 
@@ -125,23 +128,25 @@ def gen_dash_app():
     pass 
 
 
-def run(datamatrix_filepath, metadata_filepath): 
+def run(datamatrix_filepath,
+        metadata_filepath, 
+        datatype,
+        do_outlier, 
+        z_cutoff, 
+        mean_threshold, 
+        cv_threshold, 
+        na_threshold, 
+        feature_set,
+        output_dir=None): 
     ''' main function 
         1. load datasets 
-        2. setting up; running custom functions 
-        3. generate App in new tab 
-    '''
-    # TODO: some variables to be set be user. 
-    # maybe move these to app UI?
-    featureSet=ro.StrVector(('PTID', 'Time'))
-    meanThreshold = 1
-    z_cutoff = 2 
-    
-    datamatrix, metadata = load_data(datamatrix_filepath, metadata_filepath)
-    lmem_df = run_lmeVariance(datamatrix, metadata, featureSet) 
+        2. run variance custom function 
+        3. run outlier detection custom function  
+    '''  
+    datamatrix, metadata = load_data(datamatrix_filepath, metadata_filepath, na_threshold)
+    lmem_df = run_lmeVariance(datamatrix, metadata, mean_threshold, feature_set) 
     outlier_res_py = run_outlier_detection(metadata, datamatrix, z_cutoff) 
     
-    #import pdb; pdb.set_trace() 
     #gen_dash_app()
     return (datamatrix, metadata, lmem_df, outlier_res_py)  
 
@@ -150,6 +155,22 @@ if __name__ == "__main__":
     import sys
     datamatrix_filepath = sys.argv[1] 
     metadata_filepath = sys.argv[2] 
-    out_dir = sys.argv[3] 
-    run(datamatrix_filepath, metadata_filepath) 
+    datatype = sys.argv[3]
+    do_outlier = bool(sys.argv[4])
+    z_cutoff = float(sys.argv[5])
+    mean_threshold = float(sys.argv[6])
+    cv_threshold = float(sys.argv[7])
+    na_threshold = float(sys.argv[8])
+    outpur_dir = sys.argv[9]
+    run(datamatrix_filepath= datamatrix_filepath, 
+        metadata_filepath= metadata_filepath, 
+        datatype= datatype, 
+        do_outlier= do_outlier,
+        z_cutoff= z_cutoff,
+        mean_threshold= mean_threshold, 
+        cv_threshold= cv_threshold, 
+        na_threshold= na_threshold, 
+        output_dir= output_dir, 
+        feature_set= feature_set
+       ) 
     
