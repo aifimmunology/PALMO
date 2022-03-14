@@ -85,7 +85,7 @@ def load_data(matrix_fp, meta_fp, na_threshold):
     return(datamatrix, metadata)  
 
 
-def run_lmeVariance(matrix, metadata, mean_threshold, feature_set): 
+def run_lmeVariance(matrix, metadata, mean_threshold, feature_set, output_dir): 
     '''
     '''
     # load lmeVariance object function and run 
@@ -96,21 +96,23 @@ def run_lmeVariance(matrix, metadata, mean_threshold, feature_set):
     lmem_res = rpy_2py(lmeVariance(ann=py2_rpy(metadata), 
                            mat=py2_rpy(matrix), 
                            featureSet=featureSet, 
-                           meanThreshold= mean_threshold
+                           meanThreshold= mean_threshold,
+                           filePATH=output_dir
                           ))
     mean_vals = lmem_res.loc[:, 'mean'] 
     lmem_res['mean_log10'] = np.log10(lmem_res['mean'] + 1) 
     return lmem_res 
 
 
-def run_outlier_detection(metadata, datamatrix, z_cutoff=2): 
+def run_outlier_detection(metadata, datamatrix, z_cutoff=2, output_dir): 
     '''
     '''
     # robject of outlierDetect function 
     outlierDetect = ro.r['outlierDetect']
     outlier_res = outlierDetect(ann = py2_rpy(metadata), 
                                 mat = py2_rpy(datamatrix), 
-                                z_cutoff=z_cutoff
+                                z_cutoff=z_cutoff,
+                                filePATH=output_dir
                                )
     outlier_res_py = rpy_2py(outlier_res) 
     
@@ -143,11 +145,11 @@ def run(datamatrix_filepath,
         2. run variance custom function 
         3. run outlier detection custom function  
     '''  
+    import pdb; pdb.set_trace() 
     datamatrix, metadata = load_data(datamatrix_filepath, metadata_filepath, na_threshold)
-    lmem_df = run_lmeVariance(datamatrix, metadata, mean_threshold, feature_set) 
-    outlier_res_py = run_outlier_detection(metadata, datamatrix, z_cutoff) 
+    lmem_df = run_lmeVariance(datamatrix, metadata, mean_threshold, feature_set, output_dir) 
+    outlier_res_py = run_outlier_detection(metadata, datamatrix, z_cutoff, output_dir) 
     
-    #gen_dash_app()
     return (datamatrix, metadata, lmem_df, outlier_res_py)  
 
 
