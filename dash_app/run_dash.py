@@ -2,8 +2,6 @@
 
 '''
 
-
-
 # load libraries 
 from jupyter_dash import JupyterDash
 import hisepy as hp
@@ -33,32 +31,21 @@ import DashPalm_prep as dpp
 import argparse 
 import pathlib
 
-# TODO: wrap this in its' own function 
-parser = argparse.ArgumentParser() 
-# create arguments 
-parser.add_argument('--metadata', '-m',  required=True, 
-                    help='Annotation table. Table must consist column Sample (Participant sample name), PTID (Participant), Time (longitudinal timepoints)') 
-parser.add_argument('--data', '-d', required=True, 
-                    help='Expression matrix or data frame. Rows represents gene/proteins column represents participant samples (same as annotation table Sample column). For single cell, Single cell RNA Seurat object, if datatype is single cell RNA and Single cell ATAC genescore matrix or data frame')
-parser.add_argument('--datatype', '-dt', nargs='?', default='bulk',
-                    choices=['bulk', 'singlecell'],
-                    help='Data input can be bulk or singlecell')
-parser.add_argument('--do_outlier', '-out', type=bool, 
-                    help='Specify whether to perform outlier analysis')
-parser.add_argument('--z_cutoff', '-zo', type=float, 
-                    help='|z| cutoff threshold to find potential outliers')
-parser.add_argument('--mean_threshold', '-mt', nargs='?', type=float,
-                    help='Average expression threshold to filter lowly expressed') 
-parser.add_argument('--cv_threshold', '-cvt', nargs='?',  type=float,
-                    help='Coefficient of variation threshold to select variable and stable genes Default is 10 for single cell RNA (100*SD/mean)')
-parser.add_argument('--na_threshold', '-nat', nargs='?', type=float, default=0.4,
-                    help='Number of NAs in data (numeric value or NULL). Default, 40% * number of columns.')
-parser.add_argument('--output_dir', '-o', 
-                    help='user-defined output directory') 
-parser.add_argument('--feature_set', '-fs', nargs='*', type=str, default=["PTID", "Time"],
-                    help='Variance analysis carried out on the featureSet provided such as c("PTID", "Time", "Sex")') 
+# bootstrap - style sheet 
+external_stylesheets = ['https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css']
+app = JupyterDash(__name__, external_stylesheets=external_stylesheets)
+server = app.server
+
+# default aesthetics for all plots 
+pio.templates.default = "plotly_white"
+
+# hard-coded value I need to get back to 
+cvThreshold = 1 
 
 
+######################
+# --- Arg Parser --- # 
+######################
 """ other arguments 
 parser.add_argument('--omics', '-o', nargs='?', default="plasmaproteome"
                     help='User defined name like RNA, ATAC, Proteomics, FLOW') 
@@ -78,29 +65,34 @@ parser.add_argument('--group_oi', '-go', nargs='?',
                    help='Group of interest to focus on, Default is NULL') 
 parser.add_argument('--
 """
+def parse_args(): 
+    
+    parser = argparse.ArgumentParser() 
 
-# assign defaults 
-                    
-                    
-args = parser.parse_args() 
+    # create arguments 
+    parser.add_argument('--metadata', '-m',  required=True, 
+                        help='Annotation table. Table must consist column Sample (Participant sample name), PTID (Participant), Time (longitudinal timepoints)') 
+    parser.add_argument('--data', '-d', required=True, 
+                        help='Expression matrix or data frame. Rows represents gene/proteins column represents participant samples (same as annotation table Sample column). For single cell, Single cell RNA Seurat object, if datatype is single cell RNA and Single cell ATAC genescore matrix or data frame')
+    parser.add_argument('--datatype', '-dt', nargs='?', default='bulk',
+                        choices=['bulk', 'singlecell'],
+                        help='Data input can be bulk or singlecell')
+    parser.add_argument('--do_outlier', '-out', type=bool, 
+                        help='Specify whether to perform outlier analysis')
+    parser.add_argument('--z_cutoff', '-zo', type=float, 
+                        help='|z| cutoff threshold to find potential outliers')
+    parser.add_argument('--mean_threshold', '-mt', nargs='?', type=float,
+                        help='Average expression threshold to filter lowly expressed') 
+    parser.add_argument('--cv_threshold', '-cvt', nargs='?',  type=float,
+                        help='Coefficient of variation threshold to select variable and stable genes Default is 10 for single cell RNA (100*SD/mean)')
+    parser.add_argument('--na_threshold', '-nat', nargs='?', type=float, default=0.4,
+                        help='Number of NAs in data (numeric value or NULL). Default, 40% * number of columns.')
+    parser.add_argument('--output_dir', '-o', 
+                        help='user-defined output directory') 
+    parser.add_argument('--feature_set', '-fs', nargs='*', type=str, default=["PTID", "Time"],
+                        help='Variance analysis carried out on the featureSet provided such as c("PTID", "Time", "Sex")') 
+    return parser.parse_args() 
 
-# run prep 
-#import sys 
-#d_fp = sys.argv[1] # '/home/jupyter/PALM_Dash/PALM/data/Olink_NPX_log2_Protein.Rda'
-#m_fp = sys.argv[2] # '/home/jupyter/PALM_Dash/PALM/data/data_Metadata.Rda'
-print(args.data) 
-print(args.metadata) 
-(datamatrix, metadata, lmem_py, outlier_res_py) = dpp.run(args.data, args.metadata)
-outdir = '' 
-
-
-external_stylesheets = ['https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css']
-app = JupyterDash(__name__, external_stylesheets=external_stylesheets)
-server = app.server
-pio.templates.default = "plotly_white"
-
-# hard-coded value I need to get back to 
-cvThreshold = 1 
 
 ########################## 
 # --- Variance Plots --- #
@@ -756,6 +748,18 @@ def run_app():
 
 if __name__ == '__main__':
     # run prep
+    args = parse_args() 
+    (datamatrix, metadata, lmem_py, outlier_res_py) = dpp.run(datamatrix_filepath= args.data, 
+                                                          metadata_filepath= args.metadata,
+                                                          datatype= args.datatype,
+                                                          do_outlier= args.do_outlier, 
+                                                          z_cutoff= args.z_cutoff,
+                                                          mean_threshold= args.mean_threshold, 
+                                                          cv_threshold= args.cv_threshold, 
+                                                          na_threshold= args.na_threshold, 
+                                                          output_dir= args.output_dir, 
+                                                          feature_set= args.feature_set)
+
     run_app()
 
 

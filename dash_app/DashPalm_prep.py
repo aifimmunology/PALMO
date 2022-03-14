@@ -104,7 +104,7 @@ def run_lmeVariance(matrix, metadata, mean_threshold, feature_set, output_dir):
     return lmem_res 
 
 
-def run_outlier_detection(metadata, datamatrix, z_cutoff=2, output_dir): 
+def run_outlier_detection(metadata, datamatrix, z_cutoff, output_dir): 
     '''
     '''
     # robject of outlierDetect function 
@@ -145,7 +145,6 @@ def run(datamatrix_filepath,
         2. run variance custom function 
         3. run outlier detection custom function  
     '''  
-    import pdb; pdb.set_trace() 
     datamatrix, metadata = load_data(datamatrix_filepath, metadata_filepath, na_threshold)
     lmem_df = run_lmeVariance(datamatrix, metadata, mean_threshold, feature_set, output_dir) 
     outlier_res_py = run_outlier_detection(metadata, datamatrix, z_cutoff, output_dir) 
