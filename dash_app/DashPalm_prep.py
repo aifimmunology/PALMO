@@ -11,7 +11,6 @@ from rpy2.robjects import pandas2ri
 from rpy2.robjects.vectors import StrVector 
 
 # TODO: suppress system warnings from imports 
-# some odd reason, I need to run thi
 from rpy2.robjects.packages import importr
 utils = importr('utils') 
 # getting ready to download these packages... 

@@ -91,6 +91,8 @@ def parse_args():
                         help='user-defined output directory') 
     parser.add_argument('--feature_set', '-fs', nargs='*', type=str, default=["PTID", "Time"],
                         help='Variance analysis carried out on the featureSet provided such as c("PTID", "Time", "Sex")') 
+    parser.add_argument('--method', type='str', default='spearman', 
+                        help='Sample correlation analysis') 
     return parser.parse_args() 
 
 
@@ -103,7 +105,7 @@ def prep_var_contribute_df(tbl : pd.DataFrame):
     '''
     rmelt = robjects.r['melt']
     rdata_matrix = robjects.r['data.matrix']
-    featureList = ['PTID', 'Time', 'Residual'] 
+    featureList = parse_args().feature_set + ['Residual'] 
     meanThreshold = 1 
     tbl = tbl.loc[tbl['max'] > meanThreshold, featureList]
     res_tbl = tbl.rename(columns={'PTID' : 'donor', 'Time':'week', 'Residual':'Residuals'})
@@ -154,7 +156,7 @@ def violin_box_plot():
     ''' creates violin with box plot overlayed 
     TODO: plot sigFeature datapoints 
     '''
-    featureList = ['PTID', 'Time', 'Residual'] 
+    featureList = parse_args().feature_set + ['Residual'] 
     meanThreshold = 1 
     rmelt = robjects.r['melt']
     rdata_matrix = robjects.r['data.matrix']
@@ -437,7 +439,7 @@ def geneplot(df):
 
 def correlation_matrix_plot(): 
     cols = datamatrix.columns.tolist() 
-    cor_res = datamatrix.corr(method='spearman') 
+    cor_res = datamatrix.corr(method=parse_args().method) 
     data_input = cor_res[cols].to_numpy().transpose() 
     fig = go.Figure(go.Heatmap(
             z=data_input, colorscale=[[0, 'white'], [0.5, 'rgb(250, 138, 130)'], [1.0, 'rgb(255, 17, 0)']],
@@ -557,7 +559,7 @@ def cvplot():
     '''
     mat_input = prep_cvcalc_bulk() # for now, just use the default 
     mat = mat_input.sort_values(by='Median', ascending=False)
-    mat = mat.loc[np.abs(mat['Median']) > cvThreshold, ]
+    mat = mat.loc[np.abs(mat['Median']) > parse_args().cv_threshold, ]
 
     # subset to first 50 entries then create heat map 
     mat = mat[0:50] 
@@ -614,9 +616,10 @@ def select_plot(viz_type):
     elif viz_type == 'variance': 
         return {'display':'none'}, {'display':'none'}, {'display':'block'}, {'display':'none'}, {'display':'none'}
     elif viz_type == 'correlation': 
-        return {'display':'none'}, {'display':'none'}, {'display':'none'}, {'display':'block'}, {'display':'none'} 
+        return {'display':'none'}, {'display':'none'}, {'display':'none'}, {'display':'block'}, {'display':'none'}
     elif viz_type == 'intra-donor-variation': 
-        return {'display':'none'}, {'display':'none'}, {'display':'none'}, {'display':'none'}, {'display':'block'} 
+        return {'display':'none'}, {'display':'none'}, {'display':'none'}, {'display':'none'}, {'display':'block'}
+
 
     
 ######################    
@@ -655,12 +658,6 @@ def run_app():
         # sample-picker state variable 
         html.Div(id = 'outlier-graph-container', className='row', children=[
             html.H1('Outlier Viz', style={'textAlign': 'center'}), 
-            dcc.Input(
-                id='z-score-input',
-                type='number',
-                placeholder='z-score cutoff',
-                style={'width':'10%'} 
-            ),
             dcc.Dropdown(
                 id='sample-selector',
                 options=outlier_res_py['Sample'].unique().tolist(),
@@ -679,13 +676,19 @@ def run_app():
                 ['meanDev', 'z'],
                 'z',
                 id='center-measure',
-                inline=True
+                labelStyle={'display': 'block'}
             ),
 
             dcc.Store(id='outlier-input'),   
                 # TODO: z-score cutoff text box 
                 # TODO: update plot button 
             html.Div(children=[
+                dcc.Input(
+                    id='z-score-input',
+                    type='number',
+                    placeholder='z-score cutoff',
+                    style={'width':'10%'} 
+                ),
                 dcc.Graph(id='outlier-plot', style={'display': 'inline-block'}),
                 # TODO: option to just graph all groups together 
                 dcc.Graph(id='number-features-bar', style={'display': 'inline-block'}),
