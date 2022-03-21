@@ -113,8 +113,8 @@ def prep_var_contribute_df(tbl : pd.DataFrame):
     '''
     rmelt = robjects.r['melt']
     rdata_matrix = robjects.r['data.matrix']
-    featureList = ['PTID', 'Time'] + ['Residual'] 
-    meanThreshold = 1 
+    featureList = args.feature_set + ['Residual'] 
+    meanThreshold = args.mean_threshold 
     tbl = tbl.loc[tbl['max'] > meanThreshold, featureList]
     res_tbl = tbl.rename(columns={'PTID' : 'donor', 'Time':'week', 'Residual':'Residuals'})
     res_tbl = res_tbl * 100 
@@ -166,8 +166,8 @@ def violin_box_plot():
     ''' creates violin with box plot overlayed 
     TODO: plot sigFeature datapoints 
     '''
-    featureList = ['PTID', 'Time'] + ['Residual'] 
-    meanThreshold = 1 
+    featureList = args.feature_set + ['Residual'] 
+    meanThreshold = args.mean_threshold 
     rmelt = robjects.r['melt']
     rdata_matrix = robjects.r['data.matrix']
     res = lmem_py.loc[lmem_py['max'] > meanThreshold, featureList]
@@ -483,7 +483,7 @@ def download_correlation(n_clicks, dff):
 ##################################
 
 # NOTE: hard-coded vars here 
-def prep_cvcalc_bulk(meanThreshold=1, cvThreshold=5): 
+def prep_cvcalc_bulk(meanThreshold, cvThreshold): 
     ''' Intro-donor variations over time 
     
     TODO: label top 10 genes, and most stable ones 
@@ -569,7 +569,7 @@ def cv_density_plot():
     '''
     '''
     uniSample = metadata['PTID'].unique().tolist()
-    input_data = prep_cvcalc_bulk()
+    input_data = prep_cvcalc_bulk(args.mean_threshold, args.cv_threshold)
     uniq_sample = list(set(uniSample).intersection(set(input_data.columns.tolist())))
     bar_plot_input = pd.wide_to_long(input_data[uniq_sample + ['gene']], stubnames='PTID', i='gene', j= 'var').reset_index()
     
@@ -586,14 +586,14 @@ def cvplot(gene_type):
     ''' here we can either pick the genes of interest for heatmap
         or we could explore by making the mean & cv threshold interactive. (think a slider) 
     '''
-    mat_input = prep_cvcalc_bulk() # for now, just use the default 
+    mat_input = prep_cvcalc_bulk(args.mean_threshold, args.cv_threshold) # for now, just use the default 
     
     if (gene_type == 'variable'): 
         mat = mat_input.sort_values(by='Median', ascending=False)
-        mat = mat.loc[np.abs(mat['Median']) > cvThreshold, ]
+        mat = mat.loc[np.abs(mat['Median']) > args.cv_threshold, ]
     elif (gene_type == 'stable'): 
         mat = mat_input.sort_values(by='Median', ascending=True) 
-        mat = mat.loc[np.abs(mat['Median']) <= cvThreshold, ]
+        mat = mat.loc[np.abs(mat['Median']) <= args.cv_threshold, ]
 
     # subset to first 50 entries then create heat map 
     mat = mat[0:50] 
