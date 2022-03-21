@@ -49,6 +49,8 @@ colors = {
 }
 
 
+cvThreshold = 1 
+
 ######################
 # --- Arg Parser --- # 
 ######################
@@ -567,7 +569,7 @@ def cv_density_plot():
     '''
     '''
     uniSample = metadata['PTID'].unique().tolist()
-    input_data = prep_cvcalc_bulk() 
+    input_data = prep_cvcalc_bulk()
     uniq_sample = list(set(uniSample).intersection(set(input_data.columns.tolist())))
     bar_plot_input = pd.wide_to_long(input_data[uniq_sample + ['gene']], stubnames='PTID', i='gene', j= 'var').reset_index()
     
@@ -575,20 +577,26 @@ def cv_density_plot():
     return fig  
 
 
-#@app.callback(
-#    Output('cvplot', 'figure'),
-#    Input()
-#)
-def cvplot(): 
+@app.callback(
+    Output('cvplot', 'figure'),
+    Output('gene-df', 'data'),
+    Input('gene-type', 'value')
+)
+def cvplot(gene_type): 
     ''' here we can either pick the genes of interest for heatmap
         or we could explore by making the mean & cv threshold interactive. (think a slider) 
     '''
     mat_input = prep_cvcalc_bulk() # for now, just use the default 
-    mat = mat_input.sort_values(by='Median', ascending=False)
-    mat = mat.loc[np.abs(mat['Median']) > 1, ]
+    
+    if (gene_type == 'variable'): 
+        mat = mat_input.sort_values(by='Median', ascending=False)
+        mat = mat.loc[np.abs(mat['Median']) > cvThreshold, ]
+    elif (gene_type == 'stable'): 
+        mat = mat_input.sort_values(by='Median', ascending=True) 
+        mat = mat.loc[np.abs(mat['Median']) <= cvThreshold, ]
 
     # subset to first 50 entries then create heat map 
-    #mat = mat[0:50] 
+    mat = mat[0:50] 
     
     heat_fig = go.Heatmap(
         z=mat[['PTID1','PTID2','PTID3','PTID4','PTID5','PTID6']].values,
@@ -619,124 +627,22 @@ def cvplot():
     master_fig.add_traces([b1,b2,b3,b4,b5,b6], rows=1, cols=1).update_layout(showlegend=False)
     master_fig.update_xaxes(showticklabels=False, row=1) 
     master_fig.add_traces([heat_fig], rows=2, cols=1) 
-    return master_fig
+    return master_fig, mat.to_json(orient='split')
 
-######################## 
-# --- Misc methods --- # 
-######################## 
-""" option to have this in a callback 
-@app.callback(Output('tabs-content-classes', 'children'), 
-              Input('tabs-graph', 'value'))
-def render_content(tab): 
-    if tab == 'expression_level': 
-        return html.Div([
-                html.Div(id= 'exp-graph-container', className='row', children=[
-                    html.Div(children=[
-                        dcc.Graph(id='var-gene-plot', style={'display': 'inline-block'}),     
-                        dcc.Graph(id='geneplot', style={'display': 'inline-block'})
-                    ]),
-                    dcc.Store(id='expression-out'), 
-                    dcc.Dropdown(datamatrix.index.unique(), 
-                                 'FOLR3',
-                                 id='this-gene',
-                                 style={'width':'75%'}),
-                    html.Button('Download CSV', id='expression_dl_button',
-                               style={'width': '75%'}), 
-                    dcc.Download(id='download-expression-df') 
-                ])
-        ])
-    elif tab == 'outliers': 
-        return html.Div([
-            html.Div(id = 'outlier-graph-container', className='row', children=[
-                html.H1('Outlier Viz', style={'textAlign': 'center',
-                                              'color' : colors['aiblue']}), 
-                dcc.Dropdown(
-                    id='sample-selector',
-                    options=outlier_res_py['Sample'].unique().tolist(),
-                    multi=True, 
-                    placeholder='Sample cutoff',
-                    style={'width':'50%'}
-                ),
-                # insert button
-                html.Button('Update Plots', 
-                            id='z-submit', 
-                            n_clicks=0,
-                            style={'width': '10%'}
-                           ), 
 
-                dcc.RadioItems(
-                    ['meanDev', 'z'],
-                    'z',
-                    id='center-measure',
-                    labelStyle={'display': 'block'}
-                ),
+@app.callback(
+    Output('download-cv-gene-df','data'),
+    Input('cv_gene_btn', 'n_clicks'),
+    State('gene-df', 'data')
+) 
+def download_cv_gene(n_clicks, dff):
+    '''
+    '''    
+    if n_clicks != None: 
+        dff = pd.read_json(dff, orient='split') 
+        # create json blob that will hold these values
+        return dcc.send_data_frame(dff.to_csv, 'correlation_matrix_viz_data.csv')
 
-                dcc.Store(id='outlier-input'),   
-                    # TODO: z-score cutoff text box 
-                    # TODO: update plot button 
-                html.Div(children=[
-                    dcc.Input(
-                        id='z-score-input',
-                        type='number',
-                        placeholder='z-score cutoff',
-                        style={'width':'10%'} 
-                    ),
-                    dcc.Graph(id='outlier-plot', style={'display': 'inline-block'}),
-                    # TODO: option to just graph all groups together 
-                    dcc.Graph(id='number-features-bar', style={'display': 'inline-block'}),
-                   # dcc.Graph(id='number-features-pbar'),
-                ]),
-                html.Div([
-                    dcc.RadioItems(
-                        ['below', 'above', 'all'],
-                        'all',
-                        id='z-score-cutoff',
-                        inline=True
-                    )]),
-                html.Div(children=[    
-                    dcc.Graph(id='p-scatter', style={'display': 'inline-block'}),
-                    dcc.Graph(id='p-bar', style={'display':'inline-block'}) 
-                ]),
-                html.Button('Download CSV', id='outlier_dl_button'), 
-                dcc.Download(id='download-outlier-df') 
-            ])
-        ])
-    elif tab == 'variance': 
-        return html.Div([
-            html.Div(id = 'variance-graph-container', className='row', children=[
-                html.H1('Variance Viz', style={'textAlign': 'center'}), 
-                dcc.Graph(figure=violin_box_plot()),
-
-                html.Div([
-                    dcc.Dropdown(id = 'dropdown-select',
-                                 options= prep_var_contribute_df(lmem_py)['Var1'].unique().tolist(), 
-                                 multi=True, value=['FOLR3']),
-                    html.Button(id='feature-button', n_clicks=0, children='Update feature plot'),
-                    dcc.Graph(id='variance-contribution'),
-                    dcc.Store(id='variance-out'),
-                    dcc.Store(id='var-dl-counter') 
-                ]),
-                html.Button("Download CSV", id='var_btn'), 
-                dcc.Download(id='download-var-df'), 
-
-            ])
-        ])
-    elif tab == 'correlation': 
-        return html.Div([
-                   html.Div(id='correlation-graph-container', className='row', children=[
-                        html.H1('Correlation Viz', style={'textAlign': 'center'}),
-                        dcc.Graph(figure=correlation_matrix_plot())
-                    ])
-        ])
-    elif tab == 'intra-donor-variation': 
-            return html.Div([
-                html.Div(id='intra-donor-var-graph-container', className='row', children=[
-                    html.H1('Intra-donor Variation Viz', style={'textAlign': 'center'}),
-                    dcc.Graph(figure=cv_density_plot()),
-                    dcc.Graph(figure=cvplot())
-                ])
-            ])
-"""
     
 ######################    
 # --- App Layout --- #  
@@ -983,8 +889,33 @@ def run_app():
             dcc.Tab(label='intra-donor variation', value='intra-donor-variation', style=tab_style, selected_style=tab_selected_style, children=[
                 html.Div([
                     html.Div(id='intra-donor-var-graph-container', className='row', children=[
+                        html.H4("Choose to plot variable or stable genes", style={'textAlign' : 'Center', 
+                                                                                 'color' : colors['aiblue'], 
+                                                                                 'padding-top' : '40px',
+                                                                                 'display':'grid',
+                                                                                 'justify-content' : 'center'}), 
+                        dcc.RadioItems(['stable','variable'],
+                                'stable',
+                                id='gene-type',
+                                style={'width': '200px', 
+                                       'margin' : '0 auto',
+                                       'align-items' : 'center'}),
+
+                        html.H4("Download input dataset", style={'textAlign' : 'Center', 
+                                                                 'color' : colors['aiblue'], 
+                                                                 'padding-top' : '40px',
+                                                                 'display':'grid',
+                                                                 'justify-content' : 'center'}), 
+                        html.Button("Download CSV", id='cv_gene_btn', style={'align-items' : 'center',
+                                                                           'width': '200px',
+                                                                           'display':'grid',
+                                                                           'justify-content' : 'center',
+                                                                           'margin' : '0 auto',
+                                                                           'background' : colors['aigreen']}), 
+                        dcc.Download(id='download-cv-gene-df'), 
+                        dcc.Graph(id='cvplot', style={'height': '150vh'}),
                         dcc.Graph(figure=cv_density_plot()),
-                        dcc.Graph(figure=cvplot(), style={'height': '150vh'})
+                        dcc.Store(id='gene-df')
                     ])
                 ])
             ])],
@@ -999,6 +930,12 @@ def run_app():
     del app.config._read_only["requests_pathname_prefix"]
     app.run_server(mode="Jupyterlab", debug=True)
     return 
+
+
+
+
+
+
 
 
 if __name__ == "__main__": 
