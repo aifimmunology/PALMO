@@ -49,8 +49,8 @@ colors = {
 }
 
 
-cvThreshold = 1 
-
+cvThreshold = 5 
+meanThreshold = 1
 ######################
 # --- Arg Parser --- # 
 ######################
@@ -113,8 +113,8 @@ def prep_var_contribute_df(tbl : pd.DataFrame):
     '''
     rmelt = robjects.r['melt']
     rdata_matrix = robjects.r['data.matrix']
-    featureList = args.feature_set + ['Residual'] 
-    meanThreshold = args.mean_threshold 
+    featureList = ['PTID', 'Time'] + ['Residual'] # args.here
+    # meanThreshold = meanThreshold 
     tbl = tbl.loc[tbl['max'] > meanThreshold, featureList]
     res_tbl = tbl.rename(columns={'PTID' : 'donor', 'Time':'week', 'Residual':'Residuals'})
     res_tbl = res_tbl * 100 
@@ -140,7 +140,11 @@ def subset_var_df(n, var_chosen):
     '''
     var_df = prep_var_contribute_df(lmem_py) 
     var_df.sort_values(by='value', ascending=False, inplace=True) 
-    dff = var_df[var_df['Var1'].isin(var_chosen)]
+    if n == 0: 
+        top_vars = var_df[0:15]['Var1'].unique().tolist()
+        dff = var_df[var_df['Var1'].isin(top_vars)] 
+    elif n > 0: 
+        dff = var_df[var_df['Var1'].isin(var_chosen)]
     return dff.to_json(date_format='iso', orient='split') 
 
 
@@ -155,9 +159,15 @@ def var_contribute_plot(dff):
     '''
     dff = pd.read_json(dff, orient='split') 
     
+    # sort by donor # 
+    donors_sorted = dff.loc[dff['Var2'].eq('donor'), ]
+    donors_sorted.sort_values(by='value', ascending=False, inplace=True) 
+    # dff.sort_values(by='value', ascending=True, inplace=True) 
     var_fig = px.bar(dff, x='value', y='Var1', color='Var2', orientation='h', 
-                    labels= {'Var1' : 'Features',
-                            'value' : '% variance explained'}) 
+                     category_orders = {'Var1': donors_sorted['Var1'].tolist()},
+                     labels= {'Var1' : 'Features',
+                            'value' : '% variance explained'}
+                    ) 
     var_fig.update_traces().update_layout(title_x=0.5, legend_title_text='FeatureList') 
     return (var_fig)
 
@@ -166,8 +176,8 @@ def violin_box_plot():
     ''' creates violin with box plot overlayed 
     TODO: plot sigFeature datapoints 
     '''
-    featureList = args.feature_set + ['Residual'] 
-    meanThreshold = args.mean_threshold 
+    featureList = ['PTID', 'Time'] + ['Residual'] 
+    # meanThreshold = meanThreshold 
     rmelt = robjects.r['melt']
     rdata_matrix = robjects.r['data.matrix']
     res = lmem_py.loc[lmem_py['max'] > meanThreshold, featureList]
@@ -181,12 +191,25 @@ def violin_box_plot():
         df_py = ro.conversion.rpy2py(df)
 
     df_py['value'] = df_py['value'] * 100 
+
     df_py['feature'] = df_py[['Var1', 'Var2']].agg('_'.join, axis=1)
-    fig = px.violin(df_py, x='Var2', y='value', color='Var2', box=True,
-                   labels={'Var2': 'FeatureList', 
-                           'value' : 'Variance Explained (%)'}
-                   ) 
+    #df_py.to_csv('/home/jupyter/dash_var.csv') 
+    
+    # list features 
+    feature_list = df_py['Var2'].unique().tolist() 
+    fig= go.Figure()
+    for f in feature_list: 
+        fig.add_trace(go.Violin(x=df_py.loc[df_py['Var2'].eq(f), 'Var2'],
+                                y = df_py.loc[df_py['Var2'].eq(f), 'value'],
+                                name = f,
+                                box_visible=True, 
+                                opacity=0.6,
+                                spanmode='hard',
+                                showlegend=True
+                               )) 
     fig.update_traces(width=0.5) 
+    fig.update_layout(legend_title_text='featureList')
+    
     return fig 
 
 
@@ -264,19 +287,15 @@ def prep_outlierP_data(outlier_df, z_cutoff, z_score_subset, nGenes, groupby):
 
 @app.callback( 
     Output('outlier-input', 'data'),
-    Input('z-submit','n_clicks'),
-    State('z-score-input', 'value')
+    Input('z-submit','n_clicks')
 )
-def run_and_cache_outlier_input(n_clicks, z_cutoff): 
+def run_and_cache_outlier_input(n_clicks): 
     '''
         TODO: add some signaling to all methods that utilize this as input 
         TODO: cache results by just appending to this df 
     '''
     if n_clicks == 0: 
         return outlier_res_py.to_json(date_format='iso', orient='split') 
-    elif (n_clicks > 0) & (z_cutoff != None): 
-        dff = dpp.run_outlier_detection(metadata, datamatrix, z_cutoff)   
-        return dff.to_json(date_format='iso', orient='split')
     else: 
         return outlier_res_py.to_json(date_format='iso', orient='split') 
 
@@ -312,20 +331,15 @@ def plot_no_features(df, select_samples):
     Output('p-scatter', 'figure'), 
     Input('outlier-input', 'data'),
     Input('z-score-cutoff','value'),
-    State('z-score-input', 'value'),
     [State('sample-selector', 'value')]
 )
-def outlier_p_scatter_plot(data_input, z_subset, z_cutoff, select_samples): 
+def outlier_p_scatter_plot(data_input, z_subset, select_samples): 
     '''
     '''
     d_input = pd.read_json(data_input, orient='split') 
     
     # if none, we can assume the df is from the initial callback. which should only have a single value under z cut-off column
-    if z_cutoff == None: 
-        zc = int(d_input['z_cutoff'].unique())
-    else: 
-        zc = z_cutoff
-    input_df = prep_outlierP_data(d_input, z_cutoff=zc, z_score_subset=z_subset, nGenes=1042, groupby="PTID")
+    input_df = prep_outlierP_data(d_input, z_cutoff=2, z_score_subset=z_subset, nGenes=1042, groupby="PTID")
     if select_samples != None: 
         input_df = input_df.loc[input_df['id'].isin(select_samples), ]
     fig = px.scatter(input_df, x='Freq', y='signP', hover_name='id',
@@ -339,19 +353,15 @@ def outlier_p_scatter_plot(data_input, z_subset, z_cutoff, select_samples):
     Output('p-bar', 'figure'),
     Input('outlier-input', 'data'),
     Input('z-score-cutoff', 'value'),
-    State('z-score-input', 'value'),
     [State('sample-selector', 'value')]
 )
-def outlier_p_bar_plot(data_input, z_subset, z_cutoff, select_samples): 
+def outlier_p_bar_plot(data_input, z_subset,  select_samples): 
     '''
     '''
     d_input = pd.read_json(data_input, orient='split') 
     # if none, we can assume the df is from the initial callback. which should only have a single value under z cut-off column
-    if z_cutoff == None: 
-        zc = int(d_input['z_cutoff'].unique())
-    else: 
-        zc = z_cutoff
-    input_df = prep_outlierP_data(d_input, z_cutoff=zc, z_score_subset=z_subset, nGenes=1042, groupby="PTID")
+ 
+    input_df = prep_outlierP_data(d_input, z_cutoff=2, z_score_subset=z_subset, nGenes=1042, groupby="PTID")
     input_df['sample_time'] =  input_df[['Sample','Time']].agg(''.join, axis=1) 
     input_df.sort_values(by=['sample_time'],inplace=True) 
     
@@ -377,11 +387,32 @@ def outlier_detect_plot(measure_col, data_input, these_samples):
     '''
     # sort values 
     d_input = pd.read_json(data_input, orient='split') 
-    d_input.sort_values(by='Sample', inplace=True) 
+    d_input.sort_values(by='Sample', inplace=True)
     if these_samples != None: 
          d_input = d_input.loc[d_input['Sample'].isin(these_samples), ]
-    out_fig = px.violin(d_input, x='Sample', y=measure_col, color='zgroup', box=True) 
+    
+    out_fig = go.Figure() 
+    z_group_list = list(d_input['zgroup'].unique())
+    z_group_list.sort() 
+    for this_group in z_group_list: 
+        violin_input = d_input.loc[d_input['zgroup'].eq(this_group), ].sort_values(by='Sample') 
+        
+        out_fig.add_trace(go.Violin(x=violin_input['Sample'],
+                                    y=violin_input[measure_col],
+                                    legendgroup=this_group,
+                                    name=this_group,
+                                    box_visible=True,
+                                    spanmode='hard',
+                                    opacity=0.6,
+
+                 ))
+    
+    #out_fig = px.violin(d_input, x='Sample', y=measure_col, color='zgroup', box=True) 
     out_fig.update_traces(width=0.5) 
+    sample_order = d_input['Sample'].unique().tolist() 
+    sample_order.sort()
+    out_fig.update_xaxes(categoryorder='array', categoryarray=sample_order) 
+    # out_fig.update_layout(legend_traceorder="reversed")
     return out_fig 
 
 
@@ -564,14 +595,18 @@ def prep_cvcalc_bulk(meanThreshold, cvThreshold):
     res_var['Median'] = res_var[uniq_sample].median(axis=1) 
     return res_var
 
-
-def cv_density_plot(): 
+@app.callback(
+    Output('cv-density', 'figure'), 
+    Input('gene-df', 'data') 
+)
+def cv_density_plot(gene_df): 
     '''
     '''
+    dff = pd.read_json(gene_df, orient='split') 
     uniSample = metadata['PTID'].unique().tolist()
-    input_data = prep_cvcalc_bulk(args.mean_threshold, args.cv_threshold)
-    uniq_sample = list(set(uniSample).intersection(set(input_data.columns.tolist())))
-    bar_plot_input = pd.wide_to_long(input_data[uniq_sample + ['gene']], stubnames='PTID', i='gene', j= 'var').reset_index()
+    #input_data = prep_cvcalc_bulk(meanThreshold, cvThreshold)
+    # uniq_sample = list(set(uniSample).intersection(set(gene_df.columns.tolist())))
+    bar_plot_input = pd.wide_to_long(dff, stubnames='PTID', i='gene', j= 'var').reset_index()
     
     fig = px.histogram(bar_plot_input, x='PTID',labels={'PTID':'CV'}).update_layout(yaxis_title='density')
     return fig  
@@ -586,23 +621,24 @@ def cvplot(gene_type):
     ''' here we can either pick the genes of interest for heatmap
         or we could explore by making the mean & cv threshold interactive. (think a slider) 
     '''
-    mat_input = prep_cvcalc_bulk(args.mean_threshold, args.cv_threshold) # for now, just use the default 
+    mat_input = prep_cvcalc_bulk(meanThreshold, cvThreshold) # for now, just use the default 
     
     if (gene_type == 'variable'): 
         mat = mat_input.sort_values(by='Median', ascending=False)
-        mat = mat.loc[np.abs(mat['Median']) > args.cv_threshold, ]
+        mat = mat.loc[np.abs(mat['Median']) > cvThreshold, ]
+        col_scale = [[0, 'rgb(210, 201, 242)'], [0.1, 'rgb(233, 237, 14)'], [0.2, 'rgb(224, 36, 29)'], [1, 'rgb(82, 22, 20)']]
     elif (gene_type == 'stable'): 
         mat = mat_input.sort_values(by='Median', ascending=True) 
-        mat = mat.loc[np.abs(mat['Median']) <= args.cv_threshold, ]
-
+        mat = mat.loc[np.abs(mat['Median']) <= cvThreshold, ]
+        col_scale = [[0, 'rgb(210, 201, 242)'], [0.3,'rgb(100, 79, 179)'],  [0.7, 'rgb(82, 68, 242)'], [0.9, 'rgb(233, 237, 14)'], [1, 'rgb(82, 22, 20)']]
+    
     # subset to first 50 entries then create heat map 
     mat = mat[0:50] 
-    
     heat_fig = go.Heatmap(
         z=mat[['PTID1','PTID2','PTID3','PTID4','PTID5','PTID6']].values,
         x=['PTID1','PTID2','PTID3','PTID4','PTID5','PTID6'],
         y=mat['gene'].unique().tolist(),
-        colorscale=[[0, 'rgb(82, 68, 242)'], [0.1, 'rgb(245, 241, 29)'], [0.2, 'rgb(209, 31, 25)'], [0.4, 'rgb(163, 40, 36)'], [1, 'rgb(82, 22, 20)']]
+        colorscale=col_scale
     )
     d1 = mat['PTID1'].values 
     d2 = mat['PTID2'].values
@@ -668,15 +704,52 @@ tab_selected_style = {
     'padding': '6px'
 }
 
-def run_app():
+def run_app(): 
     app.layout = html.Div(children=[
         html.H2('Platform for Analyzing Longitudinal Multi-omics data',
                 style={
                     'textAlign': 'Center',
                     'color': colors['aigreen']
                 }),  
-        dcc.Tabs(id='tabs-graph', value='expression level', children=[
-            dcc.Tab(label='expression level', value='expression level', style=tab_style, selected_style=tab_selected_style, children=[
+        dcc.Tabs(id='tabs-graph', value='correlation', children=[
+            dcc.Tab(label='Correlation', value='correlation', style=tab_style, selected_style=tab_selected_style, children=[
+                html.Div([
+                       html.Div(id='correlation-graph-container', className='row', children=[
+                            html.H4("Choose the correlation coefficient method", style={'textAlign' : 'Center', 
+                                                                                        'color' : colors['aiblue'], 
+                                                                                        'padding-top' : '20px',
+                                                                                        'display':'grid',
+                                                                                        'justify-content' : 'center'}), 
+                            dcc.Dropdown(id='corr-dropdown', 
+                                         options = ['pearson','spearman'],
+                                         value='spearman',
+                                         style={'width':'200px',
+                                                'margin' : '0 auto',
+                                                'align-items' : 'center'}
+                                        ),
+                            html.H4("Download dataset", style={'textAlign' : 'Center', 
+                                                                     'color' : colors['aiblue'], 
+                                                                     'padding-top' : '40px',
+                                                                     'display':'grid',
+                                                                     'justify-content' : 'center'}), 
+                            html.Button("Download CSV", id='corr_btn', style={'align-items' : 'center',
+                                                                               'width': '200px',
+                                                                               'display':'grid',
+                                                                               'justify-content' : 'center',
+                                                                               'margin' : '0 auto',
+                                                                               'background' : colors['aigreen']}), 
+                            dcc.Download(id='download-corr-df'), 
+                            dcc.Store(id='corr-matrix'), 
+
+
+                        ]),
+                        dcc.Graph(id='corr-fig', style={'height': '800px',
+                                                        'width': '800px',
+                                                        'margin' : '0 auto'}),
+                ])
+            ]),
+
+            dcc.Tab(label='Expression Level', value='expression level', style=tab_style, selected_style=tab_selected_style, children=[
                 html.H4('Pick gene of interest', style={'textAlign' : 'Center', 
                                                         'color' : colors['aiblue'],
                                                         'padding-top' : '20px'}), 
@@ -685,7 +758,7 @@ def run_app():
                                      id='this-gene',
                                      style={'width': '200px', 'margin' : '0 auto'}),  
 
-                html.H4("Download input dataset", style={'textAlign' : 'Center', 
+                html.H4("Download dataset", style={'textAlign' : 'Center', 
                                                          'color' : colors['aiblue'], 
                                                          'padding-top' : '20px',
                                                          'display':'grid',
@@ -711,7 +784,87 @@ def run_app():
                     dcc.Store(id='expression-out'), 
                 ])
             ]),
-            dcc.Tab(label='outliers', value='outliers', style=tab_style, selected_style=tab_selected_style, children=[
+
+            dcc.Tab(label='Variance', value='variance', style=tab_style, selected_style=tab_selected_style, children=[
+                html.Div([
+                    html.Div(id = 'variance-graph-container', className='row', children=[
+
+                        html.H4("Select feature(s) of interest", style={'textAlign' : 'Center', 
+                                                                   'color' : colors['aiblue'], 
+                                                                   'padding-top' : '20px',
+                                                                   'display':'grid',
+                                                                   'justify-content' : 'center'}), 
+
+                        dcc.Dropdown(id = 'dropdown-select',
+                                     options= prep_var_contribute_df(lmem_py)['Var1'].unique().tolist(), 
+                                     multi=True),
+                        html.Button(id='feature-button', n_clicks=0, children='Update feature plot',
+                                    style={'align-items' : 'center',
+                                           'width': '200px',
+                                           'display':'grid',
+                                           'justify-content' : 'center',
+                                           'margin' : '0 auto',
+                                           'background' : colors['aigreen']}),
+
+                        html.H4("Download dataset", style={'textAlign' : 'Center', 
+                                                                 'color' : colors['aiblue'], 
+                                                                 'padding-top' : '40px',
+                                                                 'display':'grid',
+                                                                 'justify-content' : 'center'}), 
+                        html.Button("Download CSV", id='var_btn', style={'align-items' : 'center',
+                                                                       'width': '200px',
+                                                                       'display':'grid',
+                                                                       'justify-content' : 'center',
+                                                                       'margin' : '0 auto',
+                                                                       'background' : colors['aigreen']}), 
+                        dcc.Download(id='download-var-df'), 
+
+
+                        dcc.Graph(id='variance-contribution'),
+                        dcc.Graph(figure=violin_box_plot()),
+                        dcc.Store(id='variance-out'),
+                        dcc.Store(id='var-dl-counter'),
+
+
+
+                    ])
+                ])
+            ]),
+
+            dcc.Tab(label='Intra-donor Variation', value='intra-donor-variation', style=tab_style, selected_style=tab_selected_style, children=[
+                html.Div([
+                    html.Div(id='intra-donor-var-graph-container', className='row', children=[
+                        html.H4("Choose to plot variable or stable genes", style={'textAlign' : 'Center', 
+                                                                                 'color' : colors['aiblue'], 
+                                                                                 'padding-top' : '40px',
+                                                                                 'display':'grid',
+                                                                                 'justify-content' : 'center'}), 
+                        dcc.RadioItems(['stable','variable'],
+                                'stable',
+                                id='gene-type',
+                                style={'width': '200px', 
+                                       'margin' : '0 auto',
+                                       'align-items' : 'center'}),
+
+                        html.H4("Download dataset", style={'textAlign' : 'Center', 
+                                                                 'color' : colors['aiblue'], 
+                                                                 'padding-top' : '40px',
+                                                                 'display':'grid',
+                                                                 'justify-content' : 'center'}), 
+                        html.Button("Download CSV", id='cv_gene_btn', style={'align-items' : 'center',
+                                                                           'width': '200px',
+                                                                           'display':'grid',
+                                                                           'justify-content' : 'center',
+                                                                           'margin' : '0 auto',
+                                                                           'background' : colors['aigreen']}), 
+                        dcc.Download(id='download-cv-gene-df'), 
+                        dcc.Graph(id='cvplot', style={'height': '150vh'}),
+                        dcc.Graph(id='cv-density'),
+                        dcc.Store(id='gene-df')
+                    ])
+                ])
+            ]),
+            dcc.Tab(label='Outliers', value='outliers', style=tab_style, selected_style=tab_selected_style, children=[
                 html.Div([
                     html.H4('Select a sample of interest', style= {'textAlign' : 'Center', 
                                                                    'color' : colors['aiblue'], 
@@ -728,18 +881,7 @@ def run_app():
                                'align-items' : 'center'
                               }
                     ),
-                    html.H4("Choose a different z-score cut-off (note: this might be refactored)", style={'textAlign' : 'Center', 
-                                                                   'color' : colors['aiblue'], 
-                                                                   'padding-top' : '20px',
-                                                                   'display':'grid',
-                                                                   'justify-content' : 'center'}), 
-                    dcc.Input(id='z-score-input',
-                                type='number',
-                                placeholder='z-score cutoff',
-                                style={'width' : '200px', 
-                                       'margin' : '0 auto', 
-                                       'display' : 'grid'}
-                            ),
+
 
                     # insert button
                     html.Button('Update Plots', 
@@ -753,7 +895,7 @@ def run_app():
                     ),
 
 
-                    html.H4("Download input dataset", style={'textAlign' : 'Center', 
+                    html.H4("Download dataset", style={'textAlign' : 'Center', 
                                                      'color' : colors['aiblue'], 
                                                      'padding-top' : '20px',
                                                      'display':'grid',
@@ -807,118 +949,10 @@ def run_app():
                     ])
                 ])
             ]),
-            dcc.Tab(label='variance', value='variance', style=tab_style, selected_style=tab_selected_style, children=[
-                html.Div([
-                    html.Div(id = 'variance-graph-container', className='row', children=[
-
-                        html.H4("Select feature(s) of interest", style={'textAlign' : 'Center', 
-                                                                   'color' : colors['aiblue'], 
-                                                                   'padding-top' : '20px',
-                                                                   'display':'grid',
-                                                                   'justify-content' : 'center'}), 
-
-                        dcc.Dropdown(id = 'dropdown-select',
-                                     options= prep_var_contribute_df(lmem_py)['Var1'].unique().tolist(), 
-                                     multi=True, value=['FOLR3']),
-                        html.Button(id='feature-button', n_clicks=0, children='Update feature plot',
-                                    style={'align-items' : 'center',
-                                           'width': '200px',
-                                           'display':'grid',
-                                           'justify-content' : 'center',
-                                           'margin' : '0 auto',
-                                           'background' : colors['aigreen']}),
-
-                        html.H4("Download input dataset", style={'textAlign' : 'Center', 
-                                                                 'color' : colors['aiblue'], 
-                                                                 'padding-top' : '40px',
-                                                                 'display':'grid',
-                                                                 'justify-content' : 'center'}), 
-                        html.Button("Download CSV", id='var_btn', style={'align-items' : 'center',
-                                                                       'width': '200px',
-                                                                       'display':'grid',
-                                                                       'justify-content' : 'center',
-                                                                       'margin' : '0 auto',
-                                                                       'background' : colors['aigreen']}), 
-                        dcc.Download(id='download-var-df'), 
-
-
-                        dcc.Graph(id='variance-contribution'),
-                        dcc.Graph(figure=violin_box_plot()),
-                        dcc.Store(id='variance-out'),
-                        dcc.Store(id='var-dl-counter'),
 
 
 
-                    ])
-                ])
-            ]),
-            dcc.Tab(label='correlation', value='correlation', style=tab_style, selected_style=tab_selected_style, children=[
-                html.Div([
-                       html.Div(id='correlation-graph-container', className='row', children=[
-                            html.H4("Choose the correlation coefficient method", style={'textAlign' : 'Center', 
-                                                                                        'color' : colors['aiblue'], 
-                                                                                        'padding-top' : '20px',
-                                                                                        'display':'grid',
-                                                                                        'justify-content' : 'center'}), 
-                            dcc.Dropdown(id='corr-dropdown', 
-                                         options = ['pearson','spearman'],
-                                         value='spearman',
-                                         style={'width':'200px',
-                                                'margin' : '0 auto',
-                                                'align-items' : 'center'}
-                                        ),
-                            html.H4("Download input dataset", style={'textAlign' : 'Center', 
-                                                                     'color' : colors['aiblue'], 
-                                                                     'padding-top' : '40px',
-                                                                     'display':'grid',
-                                                                     'justify-content' : 'center'}), 
-                            html.Button("Download CSV", id='corr_btn', style={'align-items' : 'center',
-                                                                               'width': '200px',
-                                                                               'display':'grid',
-                                                                               'justify-content' : 'center',
-                                                                               'margin' : '0 auto',
-                                                                               'background' : colors['aigreen']}), 
-                            dcc.Download(id='download-corr-df'), 
-                            dcc.Graph(id='corr-fig', style={'height': '90vh'}),
-                            dcc.Store(id='corr-matrix'), 
-
-
-                        ])
-                ])
-            ]),
-            dcc.Tab(label='intra-donor variation', value='intra-donor-variation', style=tab_style, selected_style=tab_selected_style, children=[
-                html.Div([
-                    html.Div(id='intra-donor-var-graph-container', className='row', children=[
-                        html.H4("Choose to plot variable or stable genes", style={'textAlign' : 'Center', 
-                                                                                 'color' : colors['aiblue'], 
-                                                                                 'padding-top' : '40px',
-                                                                                 'display':'grid',
-                                                                                 'justify-content' : 'center'}), 
-                        dcc.RadioItems(['stable','variable'],
-                                'stable',
-                                id='gene-type',
-                                style={'width': '200px', 
-                                       'margin' : '0 auto',
-                                       'align-items' : 'center'}),
-
-                        html.H4("Download input dataset", style={'textAlign' : 'Center', 
-                                                                 'color' : colors['aiblue'], 
-                                                                 'padding-top' : '40px',
-                                                                 'display':'grid',
-                                                                 'justify-content' : 'center'}), 
-                        html.Button("Download CSV", id='cv_gene_btn', style={'align-items' : 'center',
-                                                                           'width': '200px',
-                                                                           'display':'grid',
-                                                                           'justify-content' : 'center',
-                                                                           'margin' : '0 auto',
-                                                                           'background' : colors['aigreen']}), 
-                        dcc.Download(id='download-cv-gene-df'), 
-                        dcc.Graph(id='cvplot', style={'height': '150vh'}),
-                        dcc.Graph(figure=cv_density_plot()),
-                        dcc.Store(id='gene-df')
-                    ])
-                ])
-            ])],
+        ],
                 colors={
                     'border':colors['aiwhite'],
                     'primary' : colors['aiwhite'], 
@@ -929,13 +963,7 @@ def run_app():
 
     del app.config._read_only["requests_pathname_prefix"]
     app.run_server(mode="Jupyterlab", debug=True)
-    return 
-
-
-
-
-
-
+    return
 
 
 if __name__ == "__main__": 
@@ -952,6 +980,10 @@ if __name__ == "__main__":
                                                           feature_set= args.feature_set)
 
     run_app()
+
+
+
+
 
 
 
