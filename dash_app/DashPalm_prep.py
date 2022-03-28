@@ -113,14 +113,14 @@ def run_outlier_detection(metadata, datamatrix, z_cutoff, output_dir):
                                 z_cutoff=z_cutoff,
                                 filePATH=output_dir
                                )
-    outlier_res_py = rpy_2py(outlier_res) 
+    outlier_respy = rpy_2py(outlier_res) 
     
     # add categorical variables 
-    outlier_res_py.loc[outlier_res_py['z'] > 0, 'zgroup'] = "> Z" 
-    outlier_res_py.loc[outlier_res_py['z'] < 0, 'zgroup'] = "< -Z" 
+    outlier_respy.loc[outlier_respy['z'] > 0, 'zgroup'] = "> Z" 
+    outlier_respy.loc[outlier_respy['z'] < 0, 'zgroup'] = "< -Z" 
     
-    outlier_res_py['z_cutoff'] = z_cutoff 
-    return outlier_res_py  
+    outlier_respy['z_cutoff'] = z_cutoff 
+    return outlier_respy  
 
 
 def gen_dash_app():

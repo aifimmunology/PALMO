@@ -679,6 +679,64 @@ def download_cv_gene(n_clicks, dff):
         # create json blob that will hold these values
         return dcc.send_data_frame(dff.to_csv, 'correlation_matrix_viz_data.csv')
 
+
+############################   
+# --- Run Prep & Store --- # 
+############################
+import DashPalm_prep as dpp 
+
+
+@app.callback(
+    Output('input-datamatrix', 'data'), 
+    Output('input-metadata', 'data'), 
+    Output('input-var', 'data'), 
+    Output('input-outlier', 'data'),
+    Input('run_app_btn' ,'n_clicks'),
+    State('metadata-entry', 'value'), 
+    State('datamatrix-entry', 'value'), 
+    State('params-dtype', 'value'), 
+    State('params-outlier', 'value'), 
+    State('params-z-score', 'value'), 
+    State('params-mean', 'value'), 
+    State('params-cv', 'value'), 
+    State('params-na', 'value'), 
+    State('params-features', 'value'), 
+    State('params-output', 'value'),
+    prevent_initial_call=True
+)
+def parse_params(run_n_clicks, 
+                 metadata_fpath, 
+                 datamatrix_fpath, 
+                 datatype, 
+                 run_outlier, 
+                 z_score_cutoff, 
+                 mean_cutoff, 
+                 cv_cutoff, 
+                 na_cutoff, 
+                 feature_list, 
+                 output_dir):
+
+    if run_n_clicks != None: 
+        print(run_n_clicks) 
+        print(datatype)
+        # TODO: function to check valid parameters 
+        print('about to run Dash prep...') 
+        global datamatrix, metadata, lmem_py, outlier_res_py 
+        (datamatrix, metadata, lmem_py, outlier_res_py) = dpp.run(datamatrix_filepath= datamatrix_fpath, 
+                                                                  metadata_filepath= metadata_fpath,
+                                                                  datatype= datatype,
+                                                                  do_outlier= run_outlier, 
+                                                                  z_cutoff= z_score_cutoff,
+                                                                  mean_threshold= mean_cutoff, 
+                                                                  cv_threshold= cv_cutoff, 
+                                                                  na_threshold= na_cutoff, 
+                                                                  output_dir= output_dir, 
+                                                                  feature_set= ['PTID','Time'])
+
+        # convert objects to json and return 
+        return (datamatrix.to_json(orient='split'), metadata.to_json(orient='split'), lmem_py.to_json(orient='split'), outlier_res_py.to_json(orient='split'))
+    else: 
+        return pd.DataFrame().to_json(), pd.DataFrame().to_json(), pd.DataFrame().to_json(), pd.DataFrame().to_json()
     
 ######################    
 # --- App Layout --- #  
@@ -704,14 +762,109 @@ tab_selected_style = {
     'padding': '6px'
 }
 
+header_button_text = {'textAlign' : 'Center', 
+                       'color' : colors['aiblue'], 
+                       'padding-top' : '20px',
+                       'display':'grid',
+                       'justify-content' : 'center'}
+
+center_component_style = {'width':'200px',
+                          'margin' : '0 auto',
+                          'align-items' : 'center',
+                          'display':'grid',}
+
 def run_app(): 
     app.layout = html.Div(children=[
         html.H2('Platform for Analyzing Longitudinal Multi-omics data',
                 style={
                     'textAlign': 'Center',
                     'color': colors['aigreen']
-                }),  
-        dcc.Tabs(id='tabs-graph', value='correlation', children=[
+                }),
+        dcc.Tabs(id='tabs-graph', value='parameters', children=[
+            dcc.Tab(label='Submit Parameters', value='parameters', style=tab_style, selected_style=tab_selected_style, children=[
+                html.H4("Metadata filepath entry", style=header_button_text),     
+                dcc.Input(
+                    value='/home/jupyter/PALM_DASHv2/PALM/data/data_Metadata.Rda',
+                    id='metadata-entry',
+                    type='text', 
+                    style=center_component_style
+                ),
+
+                html.H4("data matrix filepath entry", style=header_button_text),
+                dcc.Input(
+                    value='/home/jupyter/PALM_DASHv2/PALM/data/Olink_NPX_log2_Protein.Rda',
+                    id='datamatrix-entry', 
+                    type='text',
+                    style=center_component_style
+                ),
+
+                html.H4("Choose datatype", style=header_button_text), 
+                dcc.RadioItems(options=['bulk'],
+                               value='bulk',
+                               id='params-dtype',
+                               style=center_component_style),
+
+                html.H4("Choose whether to run outlier analysis", style=header_button_text), 
+                dcc.RadioItems(options=['True', 'False'],
+                               id='params-outlier', 
+                               value='True',
+                               style=center_component_style),
+
+                html.H4("Choose z-score cutoff", style=header_button_text),
+                dcc.Input( 
+                    id='params-z-score',
+                    type='number',
+                    value=2,
+                    style=center_component_style
+                ),
+
+                html.H4("Choose mean threshold", style=header_button_text), 
+                dcc.Input( 
+                    id='params-mean',
+                    type='number', 
+                    value=1,
+                    style=center_component_style),
+
+                html.H4("Choose CV threshold", style=header_button_text),
+                dcc.Input(
+                    id='params-cv',
+                    type='number',
+                    value=5,
+                    style=center_component_style), 
+
+                html.H4("Choose NA Threshold", style=header_button_text), 
+                dcc.Input(
+                    id='params-na',
+                    type='number', 
+                    value=0.4,
+                    style=center_component_style), 
+
+                html.H4("Choose name of feature set", style=header_button_text), 
+                dcc.Input(
+                    id='params-features', 
+                    type='text',
+                    value='PTID Time',
+                    style=center_component_style), 
+
+                html.H4("Choose where to save outputs", style=header_button_text), 
+                dcc.Input(
+                    id='params-output',
+                    type='text',
+                    value='/home/jupyter',
+                    style=center_component_style),
+
+                html.Button("Run App", id='run_app_btn', style={'align-items' : 'center',
+                                                           'width': '200px',
+                                                           'display':'grid',
+                                                           'justify-content' : 'center',
+                                                           'margin' : '0 auto',
+                                                           'background' : colors['aigreen']}),
+                dcc.Store(id='input-datamatrix'),
+                dcc.Store(id='input-metadata'), 
+                dcc.Store(id='input-var'),
+                dcc.Store(id='input-outlier')
+            ]),
+
             dcc.Tab(label='Correlation', value='correlation', style=tab_style, selected_style=tab_selected_style, children=[
                 html.Div([
                        html.Div(id='correlation-graph-container', className='row', children=[
@@ -963,7 +1116,7 @@ def run_app():
 
     del app.config._read_only["requests_pathname_prefix"]
     app.run_server(mode="Jupyterlab", debug=True)
-    return
+    return 
 
 
 if __name__ == "__main__": 
