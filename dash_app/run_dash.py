@@ -116,6 +116,7 @@ def parse_args():
 def prep_var_contribute_df(tbl : pd.DataFrame): 
     ''' Takes table of residuals and does some formatting and subsetting
     '''
+    print('prepping variance stuff')
     rmelt = robjects.r['melt']
     rdata_matrix = robjects.r['data.matrix']
     featureList = ['PTID', 'Time'] + ['Residual'] # args.here
@@ -125,8 +126,9 @@ def prep_var_contribute_df(tbl : pd.DataFrame):
     res_tbl = res_tbl * 100 
     df1 = res_tbl.loc[(res_tbl['donor'] > res_tbl['week']) & (res_tbl['Residuals'] < 50), ]
     df1.sort_values(by='donor', ascending=False, inplace=True) 
-
     # convert object and perform R's melt, and data.matrix functions 
+    
+    '''
     with localconverter(ro.default_converter + pandas2ri.converter):
         df1_r = ro.conversion.py2rpy(df1)
     var_df_r = rmelt(rdata_matrix(df1_r))
@@ -134,23 +136,30 @@ def prep_var_contribute_df(tbl : pd.DataFrame):
     # convert back to pandas data.frame 
     with localconverter(ro.default_converter + pandas2ri.converter):
         return(ro.conversion.rpy2py(var_df_r)) 
+    '''
+    df1['genes'] = df1.index
+    var_df = pd.melt(df1, id_vars='genes', value_vars=['donor','week','Residuals'])
+    return(var_df)
 
 @app.callback(
     Output('variance-out', 'data'),
     Input('feature-button', 'n_clicks'),
+    Input('input-var', 'data'),
     [State('dropdown-select', 'value')]
 )
-def subset_var_df(n, var_chosen): 
+def subset_var_df(n, input_var, var_chosen): 
     '''
     '''
+    lmem_py = pd.read_json(input_var, orient='split')
     var_df = prep_var_contribute_df(lmem_py) 
-    var_df.sort_values(by='value', ascending=False, inplace=True) 
+    var_df.sort_values(by='value', ascending=False, inplace=True)
+
     if n == 0: 
-        top_vars = var_df[0:15]['Var1'].unique().tolist()
-        dff = var_df[var_df['Var1'].isin(top_vars)] 
+        top_vars = var_df[0:15]['genes'].unique().tolist()
+        dff = var_df[var_df['genes'].isin(top_vars)] 
     elif n > 0: 
-        dff = var_df[var_df['Var1'].isin(var_chosen)]
-    return dff.to_json(date_format='iso', orient='split') 
+        dff = var_df[var_df['genes'].isin(var_chosen)]
+    return dff.to_json(orient='split') 
 
 
 @app.callback(
@@ -163,49 +172,43 @@ def var_contribute_plot(dff):
     ''' separate function that renames and subsets data 
     '''
     dff = pd.read_json(dff, orient='split') 
-    
+    dff.to_csv('/Users/james.harvey/workplace/var_contr.csv')
     # sort by donor # 
-    donors_sorted = dff.loc[dff['Var2'].eq('donor'), ]
+    donors_sorted = dff.loc[dff['variable'].eq('donor'), ]
     donors_sorted.sort_values(by='value', ascending=False, inplace=True) 
     # dff.sort_values(by='value', ascending=True, inplace=True) 
-    var_fig = px.bar(dff, x='value', y='Var1', color='Var2', orientation='h', 
-                     category_orders = {'Var1': donors_sorted['Var1'].tolist()},
-                     labels= {'Var1' : 'Features',
+    var_fig = px.bar(dff, x='value', y='genes', color='variable', orientation='h', 
+                     category_orders = {'genes': donors_sorted['genes'].tolist()},
+                     labels= {'genes' : 'Features',
                             'value' : '% variance explained'}
                     ) 
     var_fig.update_traces().update_layout(title_x=0.5, legend_title_text='FeatureList') 
     return (var_fig)
 
-
-def violin_box_plot(): 
+@app.callback(
+    Output('violin-box-var-plot', 'figure'),
+    Input('input-var', 'data'),
+)
+def violin_box_plot(input_var): 
     ''' creates violin with box plot overlayed 
     TODO: plot sigFeature datapoints 
     '''
+    lmem_py = pd.read_json(input_var, orient='split')
     featureList = ['PTID', 'Time'] + ['Residual'] 
     # meanThreshold = meanThreshold 
-    rmelt = robjects.r['melt']
-    rdata_matrix = robjects.r['data.matrix']
     res = lmem_py.loc[lmem_py['max'] > meanThreshold, featureList]
-
-    # convert object to r 
-    with localconverter(ro.default_converter + pandas2ri.converter):
-        res_r = ro.conversion.py2rpy(res)
-    df = rmelt(rdata_matrix(res_r))
-
-    with localconverter(ro.default_converter + pandas2ri.converter):
-        df_py = ro.conversion.rpy2py(df)
-
+    res.to_csv('/Users/james.harvey/workplace/violin_box.csv') 
+    res['genes'] = res.index
+    df_py = pd.melt(res, id_vars='genes', value_vars=['PTID','Time','Residual'])
     df_py['value'] = df_py['value'] * 100 
-
-    df_py['feature'] = df_py[['Var1', 'Var2']].agg('_'.join, axis=1)
-    #df_py.to_csv('/home/jupyter/dash_var.csv') 
+    df_py['feature'] = df_py[['genes', 'variable']].agg('_'.join, axis=1)
     
     # list features 
-    feature_list = df_py['Var2'].unique().tolist() 
+    feature_list = df_py['variable'].unique().tolist() 
     fig= go.Figure()
     for f in feature_list: 
-        fig.add_trace(go.Violin(x=df_py.loc[df_py['Var2'].eq(f), 'Var2'],
-                                y = df_py.loc[df_py['Var2'].eq(f), 'value'],
+        fig.add_trace(go.Violin(x=df_py.loc[df_py['variable'].eq(f), 'variable'],
+                                y = df_py.loc[df_py['variable'].eq(f), 'value'],
                                 name = f,
                                 box_visible=True, 
                                 opacity=0.6,
@@ -293,17 +296,15 @@ def prep_outlierP_data(outlier_df, z_cutoff, z_score_subset, nGenes, groupby):
 @app.callback( 
     Output('outlier-input-state', 'data'),
     Input('z-submit','n_clicks'),
-    Input('input-outlier', 'data')
+    Input('input-outlier', 'data'),
+    [State('sample-selector', 'value')]
 )
-def run_and_cache_outlier_input(n_clicks, data_input): 
-    '''
-        TODO: add some signaling to all methods that utilize this as input 
-        TODO: cache results by just appending to this df 
-    '''
-    outlier_res_py = pd.read_json(data_input)
+def run_and_cache_outlier_input(n_clicks, data_input, select_samples): 
+    outlier_res_py = pd.read_json(data_input, orient='split')
     if n_clicks == 0: 
         return outlier_res_py.to_json(date_format='iso', orient='split') 
-    else: 
+    else:     
+        outlier_res_py = outlier_res_py.loc[outlier_res_py['Sample'].isin(select_samples), ]
         return outlier_res_py.to_json(date_format='iso', orient='split') 
 
 
@@ -442,11 +443,15 @@ def download_outlier_data(n_clicks, dff):
     
 @app.callback(
     Output('expression-out', 'data'), 
-    Input('this-gene', 'value')
+    Input('this-gene', 'value'),
+    Input('input-datamatrix', 'data'),
+    Input('input-metadata', 'data')
 )
-def store_gene_data(this_gene): 
+def store_gene_data(this_gene, input_data, input_metadata): 
     ''' Caches and stores data for callbacks 
     '''
+    datamatrix = pd.read_json(input_data, orient='split')
+    metadata = pd.read_json(input_metadata, orient='split')
     this_gene_vals = datamatrix[datamatrix.index == this_gene].values
     ann = metadata.copy(deep=True) 
     ann['exp'] = list(this_gene_vals[0]) 
@@ -474,6 +479,7 @@ def var_gene_plot(df):
 def geneplot(df): 
     '''
     '''
+    print('plotting genes')
     ann = pd.read_json(df, orient='split') 
     fig = px.scatter(ann, x='PTID', y='exp', color='Time',  facet_col='Time')
     fig.for_each_annotation(lambda a: a.update(text="")) # remove annotation from each subplot 
@@ -524,7 +530,7 @@ def download_correlation(n_clicks, dff):
 ##################################
 
 # NOTE: hard-coded vars here 
-def prep_cvcalc_bulk(meanThreshold, cvThreshold): 
+def prep_cvcalc_bulk(meanThreshold, cvThreshold, datamatrix, metadata): 
     ''' Intro-donor variations over time 
     
     TODO: label top 10 genes, and most stable ones 
@@ -607,11 +613,14 @@ def prep_cvcalc_bulk(meanThreshold, cvThreshold):
 
 @app.callback(
     Output('cv-density', 'figure'), 
-    Input('gene-df', 'data') 
+    Input('gene-df', 'data'),
+    Input('input-metadata', 'data')
 )
-def cv_density_plot(gene_df): 
+def cv_density_plot(gene_df, metadata_input): 
     '''
     '''
+    print('plotting cv density')
+    metadata = pd.read_json(metadata_input, orient='split')
     dff = pd.read_json(gene_df, orient='split') 
     uniSample = metadata['PTID'].unique().tolist()
     #input_data = prep_cvcalc_bulk(meanThreshold, cvThreshold)
@@ -625,13 +634,17 @@ def cv_density_plot(gene_df):
 @app.callback(
     Output('cvplot', 'figure'),
     Output('gene-df', 'data'),
-    Input('gene-type', 'value')
+    Input('gene-type', 'value'),
+    Input('input-metadata', 'data'),
+    Input('input-datamatrix', 'data')
 )
-def cvplot(gene_type): 
+def cvplot(gene_type, metadata_input, matrix_input): 
     ''' here we can either pick the genes of interest for heatmap
         or we could explore by making the mean & cv threshold interactive. (think a slider) 
     '''
-    mat_input = prep_cvcalc_bulk(meanThreshold, cvThreshold) # for now, just use the default 
+    datamatrix = pd.read_json(matrix_input, orient='split')
+    metadata = pd.read_json(metadata_input, orient='split')
+    mat_input = prep_cvcalc_bulk(meanThreshold, cvThreshold, datamatrix, metadata) # for now, just use the default 
     
     if (gene_type == 'variable'): 
         mat = mat_input.sort_values(by='Median', ascending=False)
@@ -892,7 +905,7 @@ def var_layout():
                                                                'justify-content' : 'center'}), 
 
         dcc.Dropdown(id = 'dropdown-select',
-                     options= prep_var_contribute_df(lmem_py)['Var1'].unique().tolist(), 
+                     options= prep_var_contribute_df(lmem_py)['genes'].unique().tolist(), 
                      multi=True),
         html.Button(id='feature-button', n_clicks=0, children='Update feature plot',
                     style={'align-items' : 'center',
@@ -917,9 +930,10 @@ def var_layout():
 
 
         dcc.Graph(id='variance-contribution'),
-        dcc.Graph(figure=violin_box_plot()),
+        dcc.Graph(id='violin-box-var-plot'),
 
     ])
+
 
 
 def intra_var_layout(): 
@@ -960,19 +974,13 @@ def intra_var_layout():
 @app.callback(Output('tabs-content', 'children'),
               Input('tabs-graph', 'value'),
               Input('run_app_btn', 'n_clicks'),
-              Input('input-outlier', 'data')
+              Input('input-outlier', 'data'),
+              Input('input-datamatrix', 'data'),
+              Input('input-var', 'data')
 )
-def render_content(tab, run_n_clicks, outlier_input):
+def render_content(tab, run_n_clicks, outlier_input, datamatrix_input, input_var):
     if run_n_clicks == None: 
-        if tab == 'correlation':
-            return need_to_run_layout()
-        elif tab == 'expression level': 
-            return need_to_run_layout()
-        elif tab == 'variance': 
-            return need_to_run_layout()
-        elif tab == 'intra-donor-variation': 
-            return need_to_run_layout()
-        elif tab == 'outliers': 
+        if tab in ['correlation', 'expression_level', 'variance', 'intra-donor-variation', 'outliers']:
             return need_to_run_layout()
     else: 
         if tab == 'correlation':
@@ -1005,13 +1013,100 @@ def render_content(tab, run_n_clicks, outlier_input):
                             'width': '800px',
                             'margin' : '0 auto'}),
             ])
-        elif tab == 'expression level': 
-            return exp_layout() 
-        elif tab == 'variance': 
-            return var_layout() 
-        elif tab == 'intra-donor-variation': 
-            return intra_var_layout()
-        elif tab == 'outliers': 
+        if tab == 'expression_level': 
+            datamatrix = pd.read_json(datamatrix_input, orient='split')
+            return html.Div([
+                html.H4('Pick gene of interest', style={'textAlign' : 'Center', 
+                                                        'color' : colors['aiblue'],
+                                                        'padding-top' : '20px'}), 
+                dcc.Dropdown(datamatrix.index.unique(),
+                            value='ABL1', 
+                            id='this-gene',
+                            style={'width': '200px', 'margin' : '0 auto'}),  
+
+                html.H4("Download dataset", style={'textAlign' : 'Center', 
+                                                        'color' : colors['aiblue'], 
+                                                        'padding-top' : '20px',
+                                                        'display':'grid',
+                                                        'justify-content' : 'center'}
+                    ),
+                html.Button('Download CSV', id='expression_dl_button',
+                        style={'align-items' : 'center',
+                                'width': '200px',
+                                'display':'grid',
+                                'justify-content' : 'center',
+                                'margin' : '0 auto',
+                                'background' : colors['aigreen']}
+                        ), 
+                dcc.Download(id='download-expression-df'), 
+
+                dcc.Graph(id='var-gene-plot', style={'display': 'inline-block', 'width' : '50%'}),     
+                dcc.Graph(id='geneplot', style={'display': 'inline-block', 'width':'50%'})
+            ])
+        if tab == 'variance': 
+            lmem_py = pd.read_json(input_var, orient='split')
+            return html.Div([
+                html.H4("Select feature(s) of interest", style={'textAlign' : 'Center', 
+                                                                    'color' : colors['aiblue'], 
+                                                                    'padding-top' : '20px',
+                                                                    'display':'grid',
+                                                                    'justify-content' : 'center'}), 
+
+                dcc.Dropdown(id = 'dropdown-select',
+                            options= prep_var_contribute_df(lmem_py)['genes'].unique().tolist(), 
+                            multi=True),
+                html.Button(id='feature-button', n_clicks=0, children='Update feature plot',
+                            style={'align-items' : 'center',
+                                'width': '200px',
+                                'display':'grid',
+                                'justify-content' : 'center',
+                                'margin' : '0 auto',
+                                'background' : colors['aigreen']}),
+                html.H4("Download dataset", style={'textAlign' : 'Center', 
+                                                        'color' : colors['aiblue'], 
+                                                        'padding-top' : '40px',
+                                                        'display':'grid',
+                                                        'justify-content' : 'center'}), 
+                html.Button("Download CSV", id='var_btn', style={'align-items' : 'center',
+                                                            'width': '200px',
+                                                            'display':'grid',
+                                                            'justify-content' : 'center',
+                                                            'margin' : '0 auto',
+                                                            'background' : colors['aigreen']}), 
+                dcc.Download(id='download-var-df'), 
+                dcc.Graph(id='variance-contribution'),
+                dcc.Graph(id='violin-box-var-plot'),
+            ])
+        if tab == 'intra-donor-variation': 
+            return html.Div([
+                html.H4("Choose to plot variable or stable genes", style={'textAlign' : 'Center', 
+                                                                        'color' : colors['aiblue'], 
+                                                                        'padding-top' : '40px',
+                                                                        'display':'grid',
+                                                                        'justify-content' : 'center'}), 
+                dcc.RadioItems(['stable','variable'],
+                        'stable',
+                        id='gene-type',
+                        style={'width': '200px', 
+                            'margin' : '0 auto',
+                            'align-items' : 'center'}),
+
+                html.H4("Download dataset", style={'textAlign' : 'Center', 
+                                                        'color' : colors['aiblue'], 
+                                                        'padding-top' : '40px',
+                                                        'display':'grid',
+                                                        'justify-content' : 'center'}), 
+                html.Button("Download CSV", id='cv_gene_btn', style={'align-items' : 'center',
+                                                                'width': '200px',
+                                                                'display':'grid',
+                                                                'justify-content' : 'center',
+                                                                'margin' : '0 auto',
+                                                                'background' : colors['aigreen']}), 
+                dcc.Download(id='download-cv-gene-df'), 
+                dcc.Graph(id='cvplot', style={'height': '150vh'}),
+                dcc.Graph(id='cv-density'),
+            ])
+        if tab == 'outliers': 
             outlier_res_py = pd.read_json(outlier_input, orient='split')
             return html.Div([
                 html.H4('Select a sample of interest', style= {'textAlign' : 'Center', 
@@ -1062,11 +1157,6 @@ def render_content(tab, run_n_clicks, outlier_input):
                     'z',
                     id='center-measure',
                 ),
-
-                dcc.Store(id='outlier-input-state'),   
-                    # TODO: z-score cutoff text box 
-                    # TODO: update plot button 
-
                 html.Div(children=[
 
                     dcc.Graph(id='outlier-plot', style={'display': 'inline-block', 'width':'50%'}),
@@ -1231,7 +1321,7 @@ def run_app():
 
 
             ## expression levels 
-            dcc.Tab(label='Expression Level', value='expression level', style=tab_style, selected_style=tab_selected_style),
+            dcc.Tab(label='Expression Level', value='expression_level', style=tab_style, selected_style=tab_selected_style),
 
             ## variance tab 
             dcc.Tab(label='Variance', value='variance', style=tab_style, selected_style=tab_selected_style),
@@ -1253,6 +1343,7 @@ def run_app():
         # storing data 
         dcc.Store(id='input-datamatrix'),
         dcc.Store(id='input-metadata'), 
+        dcc.Store(id='outlier-input-state'),
         dcc.Store(id='input-var'),
         dcc.Store(id='input-outlier'),
         dcc.Store(id='expression-out'),
@@ -1265,7 +1356,7 @@ def run_app():
 
     # del app.config._read_only["requests_pathname_prefix"]
     app.run_server(debug=True,host=os.getenv('IP', '0.0.0.0'), 
-            port=int(os.getenv('PORT', 4444)), dev_tools_ui=False)
+            port=int(os.getenv('PORT', 4444)))
     return
 
 if __name__ == "__main__": 
