@@ -3,8 +3,7 @@
 '''
 
 # load libraries 
-from jupyter_dash import JupyterDash
-import hisepy as hp
+#from jupyter_dash import JupyterDash
 import os
 import dash
 from dash import html, dcc
@@ -38,8 +37,9 @@ long_callback_manager = DiskcacheLongCallbackManager(cache)
 
 # bootstrap - style sheet 
 external_stylesheets = ['https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css']
-app = JupyterDash(__name__, long_callback_manager=long_callback_manager, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
-server = app.server
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets, long_callback_manager=long_callback_manager)
+#app = JupyterDash(__name__, long_callback_manager=long_callback_manager, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
+# server = app.server
 
 # default aesthetics for all plots 
 pio.templates.default = "plotly_white"
@@ -239,7 +239,7 @@ def download_var_test(n_clicks, dff):
 @app.callback(
     Output('download-outlier-df', 'data'), 
     Input('outlier_dl_button', 'n_clicks'), 
-    State('outlier-input', 'data')
+    State('outlier-input-state', 'data')
 )
 def download_outlier_data(n_clicks, dff): 
     '''
@@ -291,14 +291,16 @@ def prep_outlierP_data(outlier_df, z_cutoff, z_score_subset, nGenes, groupby):
 
 
 @app.callback( 
-    Output('outlier-input', 'data'),
-    Input('z-submit','n_clicks')
+    Output('outlier-input-state', 'data'),
+    Input('z-submit','n_clicks'),
+    Input('input-outlier', 'data')
 )
-def run_and_cache_outlier_input(n_clicks): 
+def run_and_cache_outlier_input(n_clicks, data_input): 
     '''
         TODO: add some signaling to all methods that utilize this as input 
         TODO: cache results by just appending to this df 
     '''
+    outlier_res_py = pd.read_json(data_input)
     if n_clicks == 0: 
         return outlier_res_py.to_json(date_format='iso', orient='split') 
     else: 
@@ -313,7 +315,7 @@ def run_and_cache_outlier_input(n_clicks):
 ## TODO: create a "select plot" dropdown
 @app.callback(
     Output('number-features-bar', 'figure'), 
-    Input('outlier-input', 'data'),
+    Input('outlier-input-state', 'data'),
     [State('sample-selector', 'value')]
 ) 
 def plot_no_features(df, select_samples): 
@@ -334,7 +336,7 @@ def plot_no_features(df, select_samples):
 
 @app.callback(
     Output('p-scatter', 'figure'), 
-    Input('outlier-input', 'data'),
+    Input('outlier-input-state', 'data'),
     Input('z-score-cutoff','value'),
     [State('sample-selector', 'value')]
 )
@@ -356,7 +358,7 @@ def outlier_p_scatter_plot(data_input, z_subset, select_samples):
 
 @app.callback(
     Output('p-bar', 'figure'),
-    Input('outlier-input', 'data'),
+    Input('outlier-input-state', 'data'),
     Input('z-score-cutoff', 'value'),
     [State('sample-selector', 'value')]
 )
@@ -383,7 +385,7 @@ def outlier_p_bar_plot(data_input, z_subset,  select_samples):
 @app.callback(
     Output('outlier-plot', 'figure'), 
     Input('center-measure', 'value'),
-    Input('outlier-input', 'data'),
+    Input('outlier-input-state', 'data'),
     [State('sample-selector', 'value')]
 )
 def outlier_detect_plot(measure_col, data_input, these_samples): 
@@ -481,12 +483,15 @@ def geneplot(df):
 ##############################
 # --- correlation matrix --- #
 ##############################
+
 @app.callback(
     Output('corr-matrix', 'data'), 
     Output('corr-fig', 'figure'),
+    Input('input-datamatrix', 'data'),
     Input('corr-dropdown', 'value')
 )
-def correlation_matrix_plot(correlation_method='spearman'): 
+def correlation_matrix_plot(data_input, correlation_method='spearman'):
+    datamatrix=pd.read_json(data_input, orient='split')
     cols = datamatrix.columns.tolist() 
     cor_res = datamatrix.corr(method=correlation_method) 
     data_input = cor_res[cols].to_numpy().transpose()
@@ -690,22 +695,6 @@ def download_cv_gene(n_clicks, dff):
 ############################
 import DashPalm_prep as dpp 
 
-
-"""running=[
-        (Output("button_id", "disabled"), True, False),
-        (Output("cancel_button_id", "disabled"), False, True),
-        (
-            Output("paragraph_id", "style"),
-            {"visibility": "hidden"},
-            {"visibility": "visible"},
-        ),
-        (
-            Output("progress_bar_graph", "style"),
-            {"visibility": "visible"},
-            {"visibility": "hidden"},
-        ),
-    ],'
-"""
 @app.long_callback(
     output= [
         Output('input-datamatrix', 'data'), 
@@ -743,10 +732,6 @@ def parse_params(run_n_clicks,
                  feature_list, 
                  output_dir):
     if run_n_clicks != None: 
-        print(run_n_clicks) 
-        # TODO: function to check valid parameters 
-        print('about to run Dash prep...') 
-        global datamatrix, metadata, lmem_py, outlier_res_py 
         (datamatrix, metadata, lmem_py, outlier_res_py) = dpp.run(datamatrix_filepath= datamatrix_fpath, 
                                                                   metadata_filepath= metadata_fpath,
                                                                   datatype= datatype,
@@ -764,26 +749,6 @@ def parse_params(run_n_clicks,
         return pd.DataFrame().to_json(), pd.DataFrame().to_json(), pd.DataFrame().to_json(), pd.DataFrame().to_json()
 
     
-####################
-# --- Misc/Dev --- #
-####################
-
-@app.callback(
-    Output('gene-list-options', 'options'),
-    Input('input-datamatrix', 'data')
-)
-def gen_exp_lvl_vals(dm_df): 
-    '''
-    '''
-
-    try: 
-        dff = pd.read_json(dm_df, orient='split') 
-        return df.index.unique().tolist() 
-    except: 
-        print('nope')
-        return []
-
-    
     
 ######################    
 # --- Tab handler ---#
@@ -796,7 +761,7 @@ def parameters_layout():
     return html.Div([
         html.H4("Metadata filepath entry", style=header_button_text),     
         dcc.Input(
-            value='/home/jupyter/PALM_DASHv2/PALM/data/data_Metadata.Rda',
+            value='{}/../data/data_Metadata.Rda'.format(os.getcwd()),
             id='metadata-entry',
             type='text', 
             style=center_component_style
@@ -804,7 +769,7 @@ def parameters_layout():
 
         html.H4("data matrix filepath entry", style=header_button_text),
         dcc.Input(
-            value='/home/jupyter/PALM_DASHv2/PALM/data/Olink_NPX_log2_Protein.Rda',
+            value='{}/../data/Olink_NPX_log2_Protein.Rda'.format(os.getcwd()),
             id='datamatrix-entry', 
             type='text',
             style=center_component_style
@@ -862,7 +827,7 @@ def parameters_layout():
         dcc.Input(
             id='params-output',
             type='text',
-            value='/home/jupyter',
+            value=os.getcwd(),
             style=center_component_style),
 
         html.Button("Run App", id='run_app_btn', style={'align-items' : 'center',
@@ -882,42 +847,6 @@ def need_to_run_layout():
     return html.Div([
         html.H4("Please go to the submit parameters tab first and run the app to generate data") 
     ]) 
-
-
-def correlation_layout(): 
-    '''
-    '''
-    return html.Div([
-            html.H4("Choose the correlation coefficient method", style={'textAlign' : 'Center', 
-                                                                        'color' : colors['aiblue'], 
-                                                                        'padding-top' : '20px',
-                                                                        'display':'grid',
-                                                                        'justify-content' : 'center'}), 
-            dcc.Dropdown(id='corr-dropdown', 
-                         options = ['pearson','spearman'],
-                         value='spearman',
-                         style={'width':'200px',
-                                'margin' : '0 auto',
-                                'align-items' : 'center'}
-                        ),
-            html.H4("Download dataset", style={'textAlign' : 'Center', 
-                                                     'color' : colors['aiblue'], 
-                                                     'padding-top' : '40px',
-                                                     'display':'grid',
-                                                     'justify-content' : 'center'}), 
-            html.Button("Download CSV", id='corr_btn', style={'align-items' : 'center',
-                                                               'width': '200px',
-                                                               'display':'grid',
-                                                               'justify-content' : 'center',
-                                                               'margin' : '0 auto',
-                                                               'background' : colors['aigreen']}), 
-            dcc.Download(id='download-corr-df'), 
-
-
-            dcc.Graph(id='corr-fig', style={'height': '800px',
-                                        'width': '800px',
-                                        'margin' : '0 auto'}),
-            ])
 
     
 def exp_layout(): 
@@ -1025,99 +954,15 @@ def intra_var_layout():
         dcc.Graph(id='cv-density'),
     ])
 
-
-def outlier_layout(): 
-    '''
-    '''
-    return html.Div([
-        html.H4('Select a sample of interest', style= {'textAlign' : 'Center', 
-                                                       'color' : colors['aiblue'], 
-                                                       'padding-top' : '20px',
-                                                       'display':'grid',
-                                                       'justify-content' : 'center'}), 
-        dcc.Dropdown(
-            id='sample-selector',
-            options=outlier_res_py['Sample'].unique().tolist(),
-            multi=True, 
-            placeholder='Select samples of interest',
-            style={'width':'200px',
-                   'margin' : '0 auto',
-                   'align-items' : 'center'
-                  }
-        ),
-
-
-        # insert button
-        html.Button('Update Plots', 
-                    id='z-submit', 
-                    n_clicks=0,
-                    style={'width': '200px', 
-                           'margin' : '0 auto',
-                           'align-items' : 'center',
-                           'display':'grid',
-                           'background' : colors['aigreen']}
-        ),
-
-
-        html.H4("Download dataset", style={'textAlign' : 'Center', 
-                                         'color' : colors['aiblue'], 
-                                         'padding-top' : '20px',
-                                         'display':'grid',
-                                         'justify-content' : 'center'}
-        ),
-        html.Button('Download CSV', id='outlier_dl_button', 
-                    style={'align-items' : 'center',
-                           'width': '200px',
-                           'display':'grid',
-                           'justify-content' : 'center',
-                           'margin' : '0 auto',
-                           'background' : colors['aigreen']}), 
-        dcc.Download(id='download-outlier-df'),
-        dcc.RadioItems(
-            ['meanDev', 'z'],
-            'z',
-            id='center-measure',
-        ),
-
-        dcc.Store(id='outlier-input'),   
-            # TODO: z-score cutoff text box 
-            # TODO: update plot button 
-
-        html.Div(children=[
-
-            dcc.Graph(id='outlier-plot', style={'display': 'inline-block', 'width':'50%'}),
-            # TODO: option to just graph all groups together 
-            dcc.Graph(id='number-features-bar', style={'display': 'inline-block', 'width': '50%'}),
-           # dcc.Graph(id='number-features-pbar'),
-        ]),
-
-        html.H5("Choose to plot where |Z| is above or below z-cutoff", style={'textAlign' : 'Center', 
-                                                   'color' : colors['aiblue'], 
-                                                   'padding-top' : '20px',
-                                                   'display':'grid',
-                                                   'justify-content' : 'center'}),
-        dcc.RadioItems(
-                ['below', 'above', 'all'],
-                'all',
-                id='z-score-cutoff',
-                style={'width': '200px', 
-                       'margin' : '0 auto',
-                       'align-items' : 'center'}
-        ), 
-        html.Div(children=[    
-            dcc.Graph(id='p-scatter', style={'display': 'inline-block', 'width': '50%'}),
-            dcc.Graph(id='p-bar', style={'display':'inline-block', 'width': '50%' }) 
-        ])
-    ])
+    
 
 
 @app.callback(Output('tabs-content', 'children'),
               Input('tabs-graph', 'value'),
-              Input('run_app_btn', 'n_clicks')
+              Input('run_app_btn', 'n_clicks'),
+              Input('input-outlier', 'data')
 )
-def render_content(tab, run_n_clicks):
-    print(run_n_clicks) 
-    print('within render func') 
+def render_content(tab, run_n_clicks, outlier_input):
     if run_n_clicks == None: 
         if tab == 'correlation':
             return need_to_run_layout()
@@ -1131,7 +976,35 @@ def render_content(tab, run_n_clicks):
             return need_to_run_layout()
     else: 
         if tab == 'correlation':
-            return correlation_layout()
+            return html.Div([
+                html.H4("Choose the correlation coefficient method", style={'textAlign' : 'Center', 
+                                                            'color' : colors['aiblue'], 
+                                                            'padding-top' : '20px',
+                                                            'display':'grid',
+                                                            'justify-content' : 'center'}), 
+                dcc.Dropdown(id='corr-dropdown', 
+                    options = ['pearson','spearman'],
+                    value='spearman',
+                    style={'width':'200px',
+                        'margin' : '0 auto',
+                        'align-items' : 'center'}
+                ),
+                html.H4("Download dataset", style={'textAlign' : 'Center', 
+                                            'color' : colors['aiblue'], 
+                                            'padding-top' : '40px',
+                                            'display':'grid',
+                                            'justify-content' : 'center'}), 
+                html.Button("Download CSV", id='corr_btn', style={'align-items' : 'center',
+                                            'width': '200px',
+                                            'display':'grid',
+                                            'justify-content' : 'center',
+                                            'margin' : '0 auto',
+                                            'background' : colors['aigreen']}), 
+                dcc.Download(id='download-corr-df'), 
+                dcc.Graph(id='corr-fig', style={'height': '800px',
+                            'width': '800px',
+                            'margin' : '0 auto'}),
+            ])
         elif tab == 'expression level': 
             return exp_layout() 
         elif tab == 'variance': 
@@ -1139,7 +1012,87 @@ def render_content(tab, run_n_clicks):
         elif tab == 'intra-donor-variation': 
             return intra_var_layout()
         elif tab == 'outliers': 
-            return outlier_layout() 
+            outlier_res_py = pd.read_json(outlier_input, orient='split')
+            return html.Div([
+                html.H4('Select a sample of interest', style= {'textAlign' : 'Center', 
+                                                            'color' : colors['aiblue'], 
+                                                            'padding-top' : '20px',
+                                                            'display':'grid',
+                                                            'justify-content' : 'center'}), 
+                dcc.Dropdown(
+                    id='sample-selector',
+                    options=outlier_res_py['Sample'].unique().tolist(),
+                    multi=True, 
+                    placeholder='Select samples of interest',
+                    style={'width':'200px',
+                        'margin' : '0 auto',
+                        'align-items' : 'center'
+                        }
+                ),
+
+
+                # insert button
+                html.Button('Update Plots', 
+                            id='z-submit', 
+                            n_clicks=0,
+                            style={'width': '200px', 
+                                'margin' : '0 auto',
+                                'align-items' : 'center',
+                                'display':'grid',
+                                'background' : colors['aigreen']}
+                ),
+
+
+                html.H4("Download dataset", style={'textAlign' : 'Center', 
+                                                'color' : colors['aiblue'], 
+                                                'padding-top' : '20px',
+                                                'display':'grid',
+                                                'justify-content' : 'center'}
+                ),
+                html.Button('Download CSV', id='outlier_dl_button', 
+                            style={'align-items' : 'center',
+                                'width': '200px',
+                                'display':'grid',
+                                'justify-content' : 'center',
+                                'margin' : '0 auto',
+                                'background' : colors['aigreen']}), 
+                dcc.Download(id='download-outlier-df'),
+                dcc.RadioItems(
+                    ['meanDev', 'z'],
+                    'z',
+                    id='center-measure',
+                ),
+
+                dcc.Store(id='outlier-input-state'),   
+                    # TODO: z-score cutoff text box 
+                    # TODO: update plot button 
+
+                html.Div(children=[
+
+                    dcc.Graph(id='outlier-plot', style={'display': 'inline-block', 'width':'50%'}),
+                    # TODO: option to just graph all groups together 
+                    dcc.Graph(id='number-features-bar', style={'display': 'inline-block', 'width': '50%'}),
+                # dcc.Graph(id='number-features-pbar'),
+                ]),
+
+                html.H5("Choose to plot where |Z| is above or below z-cutoff", style={'textAlign' : 'Center', 
+                                                        'color' : colors['aiblue'], 
+                                                        'padding-top' : '20px',
+                                                        'display':'grid',
+                                                        'justify-content' : 'center'}),
+                dcc.RadioItems(
+                        ['below', 'above', 'all'],
+                        'all',
+                        id='z-score-cutoff',
+                        style={'width': '200px', 
+                            'margin' : '0 auto',
+                            'align-items' : 'center'}
+                ), 
+                html.Div(children=[    
+                    dcc.Graph(id='p-scatter', style={'display': 'inline-block', 'width': '50%'}),
+                    dcc.Graph(id='p-bar', style={'display':'inline-block', 'width': '50%' }) 
+                ])
+            ])
 
 
 
@@ -1194,7 +1147,7 @@ def run_app():
                  html.Div([
                     html.H4("Metadata filepath entry", style=header_button_text),     
                     dcc.Input(
-                        value='/home/jupyter/PALM_DASHv2/PALM/data/data_Metadata.Rda',
+                        value='{}/../data/data_Metadata.Rda'.format(os.getcwd()),
                         id='metadata-entry',
                         type='text', 
                         style=center_component_style
@@ -1202,7 +1155,7 @@ def run_app():
 
                     html.H4("data matrix filepath entry", style=header_button_text),
                     dcc.Input(
-                        value='/home/jupyter/PALM_DASHv2/PALM/data/Olink_NPX_log2_Protein.Rda',
+                        value='{}/../data/Olink_NPX_log2_Protein.Rda'.format(os.getcwd()),
                         id='datamatrix-entry', 
                         type='text',
                         style=center_component_style
@@ -1260,7 +1213,7 @@ def run_app():
                     dcc.Input(
                         id='params-output',
                         type='text',
-                        value='/home/jupyter',
+                        value=os.getcwd(),
                         style=center_component_style),
 
                     html.Button("Run App", id='run_app_btn', style={'align-items' : 'center',
@@ -1310,8 +1263,9 @@ def run_app():
     ])
 
 
-    del app.config._read_only["requests_pathname_prefix"]
-    app.run_server(mode="inline", debug=True)
+    # del app.config._read_only["requests_pathname_prefix"]
+    app.run_server(debug=True,host=os.getenv('IP', '0.0.0.0'), 
+            port=int(os.getenv('PORT', 4444)), dev_tools_ui=False)
     return
 
 if __name__ == "__main__": 
