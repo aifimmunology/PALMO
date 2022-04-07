@@ -3,35 +3,26 @@
 '''
 
 # load libraries
-#from jupyter_dash import JupyterDash
 import os
 import dash
 from dash import html, dcc
-from dash import dash_table
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
 from dash.dependencies import Input, Output, State
 import pandas as pd
-import socket
 import diskcache
 from dash.long_callback import DiskcacheLongCallbackManager
 
 # additional libraries that wasn't handled properly in prep code
 from plotly.subplots import make_subplots
 import rpy2.robjects as robjects
-from rpy2.robjects.conversion import localconverter
-import rpy2.robjects as ro
-from rpy2.robjects import pandas2ri
 import numpy as np
 
 # import prep module
 import DashPalm_prep as dpp
 
-# argument handler
-import argparse
-import pathlib
-
+# long callback manager set up
 cache = diskcache.Cache("./cache")
 long_callback_manager = DiskcacheLongCallbackManager(cache)
 
@@ -42,8 +33,6 @@ external_stylesheets = [
 app = dash.Dash(__name__,
                 external_stylesheets=external_stylesheets,
                 long_callback_manager=long_callback_manager)
-#app = JupyterDash(__name__, long_callback_manager=long_callback_manager, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
-# server = app.server
 
 # default aesthetics for all plots
 pio.templates.default = "plotly_white"
@@ -139,8 +128,8 @@ def var_contribute_plot(dff):
     Input('input-var', 'data'),
 )
 def violin_box_plot(input_var):
-    ''' creates violin with box plot overlayed 
-    TODO: plot sigFeature datapoints 
+    ''' creates violin with box plot overlayed
+    TODO: plot sigFeature datapoints
     '''
     lmem_py = pd.read_json(input_var, orient='split')
     featureList = ['PTID', 'Time'] + ['Residual']
@@ -176,7 +165,7 @@ def violin_box_plot(input_var):
 def download_var_test(n_clicks, dff):
     '''
     '''
-    if n_clicks != None:
+    if n_clicks is not None:
         dff = pd.read_json(dff, orient='split')
         # create json blob that will hold these values
         return dcc.send_data_frame(dff.to_csv, 'variance_viz_data.csv')
@@ -193,7 +182,7 @@ def download_var_test(n_clicks, dff):
 def download_outlier_data(n_clicks, dff):
     '''
     '''
-    if n_clicks != None:
+    if n_clicks is not None:
         dff = pd.read_json(dff, orient='split')
         return dcc.send_data_frame(dff.to_csv, 'outlier_viz_data.csv')
 
@@ -266,7 +255,7 @@ def plot_no_features(df, select_samples):
     nofeatures_df = nofeatures_df.groupby(
         ['Sample', 'zgroup'])['no_features'].sum().reset_index()
 
-    if select_samples != None:
+    if select_samples is not None:
         nofeatures_df = nofeatures_df.loc[
             nofeatures_df['Sample'].isin(select_samples), ]
     nofeat = px.bar(nofeatures_df,
@@ -293,7 +282,7 @@ def outlier_p_scatter_plot(data_input, z_subset, select_samples):
                                   z_score_subset=z_subset,
                                   nGenes=1042,
                                   groupby="PTID")
-    if select_samples != None:
+    if select_samples is not None:
         input_df = input_df.loc[input_df['id'].isin(select_samples), ]
     fig = px.scatter(input_df,
                      x='Freq',
@@ -321,7 +310,7 @@ def outlier_p_bar_plot(data_input, z_subset, select_samples):
     input_df['sample_time'] = input_df[['Sample', 'Time']].agg(''.join, axis=1)
     input_df.sort_values(by=['sample_time'], inplace=True)
 
-    if select_samples != None:
+    if select_samples is not None:
         input_df = input_df.loc[input_df['sample_time'].isin(select_samples), ]
     fig = px.bar(input_df,
                  x='sample_time',
@@ -344,7 +333,7 @@ def outlier_detect_plot(measure_col, data_input, these_samples):
     # sort values
     d_input = pd.read_json(data_input, orient='split')
     d_input.sort_values(by='Sample', inplace=True)
-    if these_samples != None:
+    if these_samples is not None:
         d_input = d_input.loc[d_input['Sample'].isin(these_samples), ]
 
     out_fig = go.Figure()
@@ -382,7 +371,7 @@ def outlier_detect_plot(measure_col, data_input, these_samples):
 def download_outlier_data(n_clicks, dff):
     '''
     '''
-    if n_clicks != None:
+    if n_clicks is not None:
         dff = pd.read_json(dff, orient='split')
         return dcc.send_data_frame(dff.to_csv, 'expression_lvl_viz_data.csv')
 
@@ -453,7 +442,7 @@ def correlation_matrix_plot(data_input, correlation_method='spearman'):
 def download_correlation(n_clicks, dff):
     '''
     '''
-    if n_clicks != None:
+    if n_clicks is not None:
         dff = pd.read_json(dff, orient='split')
         # create json blob that will hold these values
         return dcc.send_data_frame(dff.to_csv,
@@ -611,7 +600,6 @@ def cvplot(gene_type, metadata_input, matrix_input):
     d5 = mat['PTID5'].values
     d6 = mat['PTID6'].values
 
-    #b1 = annotate_box = go.Figure(go.Box(y=d1))
     b1 = go.Box(y=d1)
     b2 = go.Box(y=d2)
     b3 = go.Box(y=d3)
@@ -640,7 +628,7 @@ def cvplot(gene_type, metadata_input, matrix_input):
 def download_cv_gene(n_clicks, dff):
     '''
     '''
-    if n_clicks != None:
+    if n_clicks is not None:
         dff = pd.read_json(dff, orient='split')
         # create json blob that will hold these values
         return dcc.send_data_frame(dff.to_csv,
@@ -677,7 +665,7 @@ import DashPalm_prep as dpp
 def parse_params(run_n_clicks, metadata_fpath, datamatrix_fpath, datatype,
                  run_outlier, z_score_cutoff, mean_cutoff, cv_cutoff,
                  na_cutoff, feature_list, output_dir):
-    if run_n_clicks != None:
+    if run_n_clicks is not None:
         (datamatrix, metadata, lmem_py,
          outlier_res_py) = dpp.run(datamatrix_filepath=datamatrix_fpath,
                                    metadata_filepath=metadata_fpath,
@@ -707,9 +695,8 @@ def parse_params(run_n_clicks, metadata_fpath, datamatrix_fpath, datatype,
 
 def need_to_run_layout():
     return html.Div([
-        html.
-        H4("Please go to the submit parameters tab first and run the app to generate visualizations"
-           )
+        html.H4("""Please go to the submit parameters tab first and run the app
+            to generate visualizations""")
     ])
 
 
@@ -718,7 +705,7 @@ def need_to_run_layout():
               Input('input-datamatrix', 'data'), Input('input-var', 'data'))
 def render_content(tab, run_n_clicks, outlier_input, datamatrix_input,
                    input_var):
-    if run_n_clicks == None:
+    if run_n_clicks is None:
         if tab in [
                 'correlation', 'expression_level', 'variance',
                 'intra-donor-variation', 'outliers'
