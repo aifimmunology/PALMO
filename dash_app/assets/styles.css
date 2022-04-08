@@ -2,15 +2,14 @@
     border-top: 1px solid #d6d6d6;
     border-bottom: 1px solid #d6d6d6;
     background-color: rgb(120, 156, 74) !important;
-    color: white;
+    color: white !important;
     padding: 6px;
 }
-
 .default-tab-style { 
     border-bottom: 1px solid #d6d6d6;
     padding: 6px;
     font-weight: bold;
-    color: white;
+    color: white; 
 }
 .header-button-text {
     text-align: center;
@@ -19,7 +18,42 @@
     display: grid;
     justify-content: center;
 }
-
-.test-p { 
-    color: yellowgreen
+.center-component-style { 
+    width: 200px;
+    margin: 0 auto;
+    align-items: center;
+    display: grid;
+}
+.button-default-style { 
+    align-items: center;
+    width: 200px;
+    display: grid;
+    justify-content: center;
+    margin: 0 auto;
+    background: rgb(120, 156, 74);
+}
+.graph-component-align { 
+    width: 200px;
+    margin: 0 auto;
+    align-items: center;
+}
+.matrix-graph-style {
+    height: 800px;
+    width: 800px;
+    margin: 0 auto;
+}
+.side-by-side-graph { 
+    display: inline-block;
+    width: 50%;
+}
+.custom-dropdown { 
+    width: 200px;
+    margin: 0 auto;
+}
+.custom-cv-graph { 
+    height: 150vh;
+}
+.custom-h2-header { 
+    text-align: center;
+    color: rgb(120, 156, 74);
 }
