@@ -13,6 +13,7 @@ from dash.dependencies import Input, Output, State
 import pandas as pd
 import diskcache
 from dash.long_callback import DiskcacheLongCallbackManager
+import dash_bootstrap_components as dbc
 
 # additional libraries that wasn't handled properly in prep code
 from plotly.subplots import make_subplots
@@ -46,20 +47,16 @@ colors = {
     'ailightgrey': 'rgb(231, 230, 230)',
 }
 
-cvThreshold = 5
-meanThreshold = 1
-
 ##########################
 # --- Variance Plots --- #
 ##########################
 
 
-def prep_var_contribute_df(tbl: pd.DataFrame):
+def prep_var_contribute_df(tbl: pd.DataFrame, mean_threshold):
     ''' Takes table of residuals and does some formatting and subsetting
     '''
     featureList = ['PTID', 'Time'] + ['Residual']  # args.here
-    # meanThreshold = meanThreshold
-    tbl = tbl.loc[tbl['max'] > meanThreshold, featureList]
+    tbl = tbl.loc[tbl['max'] > mean_threshold, featureList]
     res_tbl = tbl.rename(columns={
         'PTID': 'donor',
         'Time': 'week',
@@ -80,12 +77,13 @@ def prep_var_contribute_df(tbl: pd.DataFrame):
 
 @app.callback(Output('variance-out', 'data'),
               Input('feature-button', 'n_clicks'), Input('input-var', 'data'),
+              Input('params-mean', 'value'),
               [State('dropdown-select', 'value')])
-def subset_var_df(n, input_var, var_chosen):
+def subset_var_df(n, input_var, mean_threshold, var_chosen):
     '''
     '''
     lmem_py = pd.read_json(input_var, orient='split')
-    var_df = prep_var_contribute_df(lmem_py)
+    var_df = prep_var_contribute_df(lmem_py, mean_threshold)
     var_df.sort_values(by='value', ascending=False, inplace=True)
 
     if n == 0:
@@ -123,18 +121,15 @@ def var_contribute_plot(dff):
     return (var_fig)
 
 
-@app.callback(
-    Output('violin-box-var-plot', 'figure'),
-    Input('input-var', 'data'),
-)
-def violin_box_plot(input_var):
+@app.callback(Output('violin-box-var-plot', 'figure'),
+              Input('input-var', 'data'), Input('params-mean', 'value'))
+def violin_box_plot(input_var, mean_threshold):
     ''' creates violin with box plot overlayed
     TODO: plot sigFeature datapoints
     '''
     lmem_py = pd.read_json(input_var, orient='split')
     featureList = ['PTID', 'Time'] + ['Residual']
-    # meanThreshold = meanThreshold
-    res = lmem_py.loc[lmem_py['max'] > meanThreshold, featureList]
+    res = lmem_py.loc[lmem_py['max'] > mean_threshold, featureList]
     res['genes'] = res.index
     df_py = pd.melt(res,
                     id_vars='genes',
@@ -564,24 +559,26 @@ def cv_density_plot(gene_df, metadata_input):
 
 @app.callback(Output('cvplot', 'figure'), Output('gene-df', 'data'),
               Input('gene-type', 'value'), Input('input-metadata', 'data'),
-              Input('input-datamatrix', 'data'))
-def cvplot(gene_type, metadata_input, matrix_input):
+              Input('input-datamatrix', 'data'), Input('params-mean', 'value'),
+              Input('params-cv', 'value'))
+def cvplot(gene_type, metadata_input, matrix_input, mean_threshold,
+           cv_threshold):
     ''' here we can either pick the genes of interest for heatmap
         or we could explore by making the mean & cv threshold interactive. (think a slider) 
     '''
     datamatrix = pd.read_json(matrix_input, orient='split')
     metadata = pd.read_json(metadata_input, orient='split')
-    mat_input = prep_cvcalc_bulk(meanThreshold, cvThreshold, datamatrix,
+    mat_input = prep_cvcalc_bulk(mean_threshold, cv_threshold, datamatrix,
                                  metadata)  # for now, just use the default
 
     if (gene_type == 'variable'):
         mat = mat_input.sort_values(by='Median', ascending=False)
-        mat = mat.loc[np.abs(mat['Median']) > cvThreshold, ]
+        mat = mat.loc[np.abs(mat['Median']) > cv_threshold, ]
         col_scale = [[0, 'rgb(210, 201, 242)'], [0.1, 'rgb(233, 237, 14)'],
                      [0.2, 'rgb(224, 36, 29)'], [1, 'rgb(82, 22, 20)']]
     elif (gene_type == 'stable'):
         mat = mat_input.sort_values(by='Median', ascending=True)
-        mat = mat.loc[np.abs(mat['Median']) <= cvThreshold, ]
+        mat = mat.loc[np.abs(mat['Median']) <= cv_threshold, ]
         col_scale = [[0, 'rgb(210, 201, 242)'], [0.3, 'rgb(100, 79, 179)'],
                      [0.7, 'rgb(82, 68, 242)'], [0.9, 'rgb(233, 237, 14)'],
                      [1, 'rgb(82, 22, 20)']]
@@ -644,7 +641,9 @@ def download_cv_gene(n_clicks, dff):
     Output('input-datamatrix', 'data'),
     Output('input-metadata', 'data'),
     Output('input-var', 'data'),
-    Output('input-outlier', 'data')
+    Output('input-outlier', 'data'),
+    Output('params-mean', 'value'),
+    Output('params-cv', 'value')
 ],
                    inputs=[
                        Input('run_app_btn', 'n_clicks'),
@@ -681,10 +680,10 @@ def parse_params(run_n_clicks, metadata_fpath, datamatrix_fpath, datatype,
         return (datamatrix.to_json(orient='split'),
                 metadata.to_json(orient='split'),
                 lmem_py.to_json(orient='split'),
-                outlier_res_py.to_json(orient='split'))
+                outlier_res_py.to_json(orient='split'), mean_cutoff, cv_cutoff)
     else:
         return pd.DataFrame().to_json(), pd.DataFrame().to_json(
-        ), pd.DataFrame().to_json(), pd.DataFrame().to_json()
+        ), pd.DataFrame().to_json(), pd.DataFrame().to_json(), 0, 0
 
 
 ######################
@@ -695,7 +694,8 @@ def parse_params(run_n_clicks, metadata_fpath, datamatrix_fpath, datatype,
 def need_to_run_layout():
     return html.Div([
         html.H4("""Please go to the submit parameters tab first and run the app
-            to generate visualizations""")
+                to generate visualizations""",
+                className='need-to-run-message')
     ])
 
 
@@ -749,8 +749,8 @@ def render_content(tab, run_n_clicks, outlier_input, datamatrix_input,
                 html.H4("Select feature(s) of interest",
                         className='header-button-text'),
                 dcc.Dropdown(id='dropdown-select',
-                             options=prep_var_contribute_df(lmem_py)
-                             ['genes'].unique().tolist(),
+                             options=prep_var_contribute_df(
+                                 lmem_py, 0)['genes'].unique().tolist(),
                              multi=True),
                 html.Button(id='feature-button',
                             n_clicks=0,
@@ -840,82 +840,89 @@ def run_app():
             value='parameters',
             children=[
                 # we need to render this page at initial loading to gain access to the run_var_btn id
-                dcc.Tab(
-                    label='Submit Parameters',
-                    value='parameters',
-                    className='default-tab-style',
-                    selected_className='tab-selected-style',
-                    children=[
-                        html.Div([
-                            html.H4("Metadata filepath entry",
+                dcc.Tab(label='Submit Parameters',
+                        value='parameters',
+                        className='default-tab-style',
+                        selected_className='tab-selected-style',
+                        children=[
+                            html.Div([
+                                dbc.Row([
+                                    dbc.Col(html.H4("Define Inputs")),
+                                    dbc.Col(html.H4("Set Parameters")),
+                                    dbc.Col(html.H4("Define Outputs"))
+                                ],
+                                        justify='around'),
+                                html.H4("Metadata filepath entry",
+                                        className='header-button-text'),
+                                dcc.Input(value='{}/../data/data_Metadata.Rda'.
+                                          format(os.getcwd()),
+                                          id='metadata-entry',
+                                          type='text',
+                                          className='center-component-style'),
+                                html.H4("data matrix filepath entry",
+                                        className='header-button-text'),
+                                dcc.Input(
+                                    value='{}/../data/Olink_NPX_log2_Protein.Rda'
+                                    .format(os.getcwd()),
+                                    id='datamatrix-entry',
+                                    type='text',
+                                    className='center-component-style'),
+                                html.H4("Choose datatype",
+                                        className='header-button-text'),
+                                dcc.RadioItems(
+                                    options=['bulk'],
+                                    value='bulk',
+                                    id='params-dtype',
+                                    className='center-component-style'),
+                                html.H4(
+                                    "Choose whether to run outlier analysis",
                                     className='header-button-text'),
-                            dcc.Input(value='{}/../data/data_Metadata.Rda'.
-                                      format(os.getcwd()),
-                                      id='metadata-entry',
-                                      type='text',
-                                      className='center-component-style'),
-                            html.H4(
-                                "data matrix filepath entry",
-                                className='header-button-text'),
-                            dcc.
-                            Input(value='{}/../data/Olink_NPX_log2_Protein.Rda'
-                                  .format(os.getcwd()),
-                                  id='datamatrix-entry',
-                                  type='text',
-                                  className='center-component-style'),
-                            html.H4("Choose datatype",
-                                    className='header-button-text'),
-                            dcc.RadioItems(options=['bulk'],
-                                           value='bulk',
-                                           id='params-dtype',
-                                           className='center-component-style'),
-                            html.H4("Choose whether to run outlier analysis",
-                                    className='header-button-text'),
-                            dcc.RadioItems(options=['True', 'False'],
-                                           id='params-outlier',
-                                           value='True',
-                                           className='center-component-style'),
-                            html.H4("Choose z-score cutoff",
-                                    className='header-button-text'),
-                            dcc.Input(id='params-z-score',
-                                      type='number',
-                                      value=2,
-                                      className='center-component-style'),
-                            html.H4("Choose mean threshold",
-                                    className='header-button-text'),
-                            dcc.Input(id='params-mean',
-                                      type='number',
-                                      value=1,
-                                      className='center-component-style'),
-                            html.H4("Choose CV threshold",
-                                    className='header-button-text'),
-                            dcc.Input(id='params-cv',
-                                      type='number',
-                                      value=5,
-                                      className='center-component-style'),
-                            html.H4("Choose NA Threshold",
-                                    className='header-button-text'),
-                            dcc.Input(id='params-na',
-                                      type='number',
-                                      value=0.4,
-                                      className='center-component-style'),
-                            html.H4("Choose name of feature set",
-                                    className='header-button-text'),
-                            dcc.Input(id='params-features',
-                                      type='text',
-                                      value='PTID Time',
-                                      className='center-component-style'),
-                            html.H4("Choose where to save outputs",
-                                    className='header-button-text'),
-                            dcc.Input(id='params-output',
-                                      type='text',
-                                      value=os.getcwd(),
-                                      className='center-component-style'),
-                            html.Button("Run App",
-                                        id='run_app_btn',
-                                        className='button-default-style')
-                        ])
-                    ]),
+                                dcc.RadioItems(
+                                    options=['True', 'False'],
+                                    id='params-outlier',
+                                    value='True',
+                                    className='center-component-style'),
+                                html.H4("Choose z-score cutoff",
+                                        className='header-button-text'),
+                                dcc.Input(id='params-z-score',
+                                          type='number',
+                                          value=2,
+                                          className='center-component-style'),
+                                html.H4("Choose mean threshold",
+                                        className='header-button-text'),
+                                dcc.Input(id='params-mean',
+                                          type='number',
+                                          value=1,
+                                          className='center-component-style'),
+                                html.H4("Choose CV threshold",
+                                        className='header-button-text'),
+                                dcc.Input(id='params-cv',
+                                          type='number',
+                                          value=5,
+                                          className='center-component-style'),
+                                html.H4("Choose NA Threshold",
+                                        className='header-button-text'),
+                                dcc.Input(id='params-na',
+                                          type='number',
+                                          value=0.4,
+                                          className='center-component-style'),
+                                html.H4("Choose name of feature set",
+                                        className='header-button-text'),
+                                dcc.Input(id='params-features',
+                                          type='text',
+                                          value='PTID Time',
+                                          className='center-component-style'),
+                                html.H4("Choose where to save outputs",
+                                        className='header-button-text'),
+                                dcc.Input(id='params-output',
+                                          type='text',
+                                          value=os.getcwd(),
+                                          className='center-component-style'),
+                                html.Button("Run App",
+                                            id='run_app_btn',
+                                            className='button-default-style')
+                            ])
+                        ]),
 
                 ## correlation
                 dcc.Tab(label='Correlation',
