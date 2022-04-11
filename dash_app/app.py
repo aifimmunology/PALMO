@@ -55,7 +55,7 @@ colors = {
 def prep_var_contribute_df(tbl: pd.DataFrame, mean_threshold):
     ''' Takes table of residuals and does some formatting and subsetting
     '''
-    featureList = ['PTID', 'Time'] + ['Residual']  # args.here
+    featureList = ['PTID', 'Time'] + ['Residual']
     tbl = tbl.loc[tbl['max'] > mean_threshold, featureList]
     res_tbl = tbl.rename(columns={
         'PTID': 'donor',
@@ -266,14 +266,16 @@ def plot_no_features(df, select_samples):
 
 @app.callback(Output('p-scatter', 'figure'),
               Input('outlier-input-state', 'data'),
-              Input('z-score-cutoff', 'value'),
+              Input('z-score-cutoff', 'value'), Input('params-z-score',
+                                                      'value'),
               [State('sample-selector', 'value')])
-def outlier_p_scatter_plot(data_input, z_subset, select_samples):
+def outlier_p_scatter_plot(data_input, z_subset, z_score_cutoff,
+                           select_samples):
     '''
     '''
     d_input = pd.read_json(data_input, orient='split')
     input_df = prep_outlierP_data(d_input,
-                                  z_cutoff=2,
+                                  z_cutoff=z_score_cutoff,
                                   z_score_subset=z_subset,
                                   nGenes=1042,
                                   groupby="PTID")
@@ -291,14 +293,15 @@ def outlier_p_scatter_plot(data_input, z_subset, select_samples):
 
 
 @app.callback(Output('p-bar', 'figure'), Input('outlier-input-state', 'data'),
-              Input('z-score-cutoff', 'value'),
+              Input('z-score-cutoff', 'value'), Input('params-z-score',
+                                                      'value'),
               [State('sample-selector', 'value')])
-def outlier_p_bar_plot(data_input, z_subset, select_samples):
+def outlier_p_bar_plot(data_input, z_subset, z_score_cutoff, select_samples):
     '''
     '''
     d_input = pd.read_json(data_input, orient='split')
     input_df = prep_outlierP_data(d_input,
-                                  z_cutoff=2,
+                                  z_cutoff=z_score_cutoff,
                                   z_score_subset=z_subset,
                                   nGenes=1042,
                                   groupby="PTID")
@@ -643,7 +646,8 @@ def download_cv_gene(n_clicks, dff):
     Output('input-var', 'data'),
     Output('input-outlier', 'data'),
     Output('params-mean', 'value'),
-    Output('params-cv', 'value')
+    Output('params-cv', 'value'),
+    Output('params-z-score', 'value')
 ],
                    inputs=[
                        Input('run_app_btn', 'n_clicks'),
@@ -680,10 +684,11 @@ def parse_params(run_n_clicks, metadata_fpath, datamatrix_fpath, datatype,
         return (datamatrix.to_json(orient='split'),
                 metadata.to_json(orient='split'),
                 lmem_py.to_json(orient='split'),
-                outlier_res_py.to_json(orient='split'), mean_cutoff, cv_cutoff)
+                outlier_res_py.to_json(orient='split'), mean_cutoff, cv_cutoff,
+                z_score_cutoff)
     else:
         return pd.DataFrame().to_json(), pd.DataFrame().to_json(
-        ), pd.DataFrame().to_json(), pd.DataFrame().to_json(), 0, 0
+        ), pd.DataFrame().to_json(), pd.DataFrame().to_json(), 0, 0, 0
 
 
 ######################
