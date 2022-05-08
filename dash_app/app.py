@@ -668,7 +668,8 @@ def parse_params(run_n_clicks, metadata_fpath, datamatrix_fpath, datatype,
                  run_outlier, z_score_cutoff, mean_cutoff, cv_cutoff,
                  na_cutoff, feature_list, output_dir):
     if run_n_clicks is not None:
-        (datamatrix, metadata, lmem_py,
+        print(run_n_clicks)
+        (datamatrix, metadata, lmem_py, cv_res,
          outlier_res_py) = dpp.run(datamatrix_filepath=datamatrix_fpath,
                                    metadata_filepath=metadata_fpath,
                                    datatype=datatype,
@@ -997,7 +998,7 @@ def run_app():
     # del app.config._read_only["requests_pathname_prefix"]
     app.run_server(debug=True,
                    host=os.getenv('IP', '0.0.0.0'),
-                   port=int(os.getenv('PORT', 4444)))
+                   port=int(os.getenv('PORT', 4443)))
     return
 
 
