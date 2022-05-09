@@ -18,12 +18,13 @@ To install library, simply run
 
 There are couple of tutorials presented to help users to run PALMO on bulk and single cell data. The examples includes:
 
-* [Tutorial-1: Plasma proteome longitudinal data](#example1)
-* [Tutorial-2: scRNA longitudinal data](#example2)
-* [Tutorial-3: scATAC longitudinal data](#example3)
-* [Tutorial-4: Multi-modal data integration](#example4)
-* [Tutorial-5: CNP0001102 data (longitudinal dataset)](#example5)
-* [Tutorial-6: Differential Gene analysis in longitudinal data](#example6)
+* [Tutorial-1: Plasma proteome longitudinal data](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.0.pdf#page=3)
+* [Tutorial-2: scRNA longitudinal data](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.0.pdf#page=11)
+* [Tutorial-3: scATAC longitudinal data](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.0.pdf#page=21)
+* [Tutorial-4: Multi-modal data integration](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.0.pdf#page=29)
+* [Tutorial-5: CNP0001102 data (longitudinal COVID dataset)](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.0.pdf#page=31)
+* [Tutorial-6: GSE129788 data (Mouse brain)](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.0.pdf#page=39)
+* [Tutorial-7: Differential Gene analysis in longitudinal data](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.0.pdf#page=47)
 
 
 # <a name="authors"></a> Authors
