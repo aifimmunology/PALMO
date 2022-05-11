@@ -1,0 +1,52 @@
+Package: PALMO
+Type: Package
+Title: Identify Intra and Inter-Donor Variations in Bulk or Single Cell Longitudinal Dataset
+Version: 0.1.0
+Authors@R: 
+    c(person(given = "Suhas",
+           family = "Vasaikar",
+           role = c("aut", "cre"),
+           email = "suhas.vasaikar@alleninstitute.org"),
+    person(given = "Aarthi",
+           family = "Talla",
+           role = c("aut", "ctb"),
+           email = "aarthi.talla@alleninstitute.org"),
+    person(given = "Xiaojun",
+           family = "Li",
+           role = c("aut", "ctb"),
+           email = "xiaojun.li@alleninstitute.org")
+           )
+Maintainer: Suhas Vasaikar <suhas.vasaikar@alleninstitute.org>
+Description: It is a platform for analyzing longitudinal data from bulk as well as single cell datasets. It allows to identify variations in molecular features within and across donors over longitudinal time points. The analysis can be done on bulk expression dataset without known cell type information or single cell with cell type/user-defined groups. It allows to infer stable and variable features in given donor and each cell type (or user defined group). The outlier analysis can be performed to identify technical/biological perturbed samples in donor/participant. Further, differential analysis can be performed to decipher time-wise changes in gene expression in a cell type.
+Depends: R (>= 4.0), methods, grid, graphics, stats, grDevices
+Imports:
+    Seurat (>= 3.9),
+    ggrepel (>= 0.9),
+    pbapply (>= 1.4),
+    lme4 (>= 1.1),
+    ggforce (>= 0.3),
+    MAST (>= 1.14),
+    factoextra (>= 1.0),
+    Rtsne (>= 0.15),
+    knitr(>= 1.30),
+    dplyr,
+    ggplot2,
+    reshape2,
+    ComplexHeatmap,
+    circlize,
+    cowplot,
+    pheatmap,
+    tidyverse,
+    utils
+Suggests:
+    ggpubr,
+    rmarkdown
+URL: https://github.com/aifimmunology/PALMO
+BugReports: https://github.com/aifimmunology/PALMO/issues
+biocViews: GeneExpression, SingleCell, DifferentialExpression
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: false
+VignetteBuilder: knitr
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.2
