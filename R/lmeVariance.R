@@ -5,8 +5,8 @@
 #' calculate variance contribution from each given feature list.
 #' @param data_object Input \emph{PALMO} S4 object. It contains annotation
 #' information and expression data from Bulk or single cell data.
-#' @param featureSet Variance analysis carried out for the feature set provided such
-#' as c('PTID', 'Time', 'Sex')
+#' @param featureSet Variance analysis carried out for the feature set provided
+#' such as c('PTID', 'Time', 'Sex')
 #' @param fixed_effect_var Fixed effect variables. In linear mixed model
 #' fixed_effect_var included as fixed effect variables and variance contribution
 #' obtained by adding them as random variables
@@ -15,6 +15,8 @@
 #' @param selectedFeatures User-defined gene/feature list
 #' @param NA_to_zero Convert NAs to zero. Default FALSE
 #' @param cl Number of clusters. Use nCores-1 to run parallel. Default 2
+#' @param lmer_control control structures for mixed model fitting. Default
+#' optimizer is "bobyqa". Reduces the run time for large data significantly.
 #' @param fileName User-defined file name, Default outputFile
 #' @param filePATH User-defined output directory \emph{PATH} Default, current
 #' directory
@@ -29,10 +31,11 @@
 
 lmeVariance <- function(data_object, featureSet, fixed_effect_var = NULL,
                         meanThreshold = NULL, selectedFeatures = NULL,
-                        NA_to_zero = FALSE, cl = 2, fileName = NULL,
+                        NA_to_zero = FALSE, cl = 2, lmer_control= FALSE,
+                        fileName = NULL,
                         filePATH = NULL) {
 
-    message(date(), ": Performing variance decomposition\n")
+    message(date(), ": Performing variance decomposition")
     if (is.null(fileName)) {
         fileName <- "outputFile"
     }
@@ -43,7 +46,7 @@ lmeVariance <- function(data_object, featureSet, fixed_effect_var = NULL,
     ## meanThrehold
     if (is.null(meanThreshold)) {
         meanThreshold <- 0
-        message(date(), ": Using mean threshold >= 0\n")
+        message(date(), ": Using mean threshold >= 0")
     }
     data_object@meanThreshold <- meanThreshold
 
@@ -52,7 +55,8 @@ lmeVariance <- function(data_object, featureSet, fixed_effect_var = NULL,
     mat <- data_object@curated$data
     check_data <- all.equal(row.names(ann), colnames(mat))
     if (check_data == FALSE) {
-        stop(date(), ": Annotation of samples (rows) and datamatrix columns do not match")
+        stop(date(), ": Annotation of samples (rows) and datamatrix columns
+             do not match")
     }
 
     ## If features selected before hand
@@ -79,9 +83,9 @@ lmeVariance <- function(data_object, featureSet, fixed_effect_var = NULL,
         check_fixedeffect <- intersect(fixed_effect_var, colnames(ann))
         if (length(check_fixedeffect) > 0) {
             featureSet = c(featureSet, check_fixedeffect)
-            form <- paste(paste("(1|", featureSet, ")", sep = ""), collapse = " + ")
-            form <- paste(paste(check_fixedeffect, sep = "", collapse = " + "), " + ", form,
-                sep = "", collapse = " + ")
+            form <- paste(paste("(1|", featureSet, ")", sep=""), collapse=" + ")
+            form <- paste(paste(check_fixedeffect, sep="", collapse=" + "),
+                          " + ", form, sep = "", collapse = " + ")
         } else {
             stop(date(), ": Fixed effect variable (fixed_effect_var) not found")
         }
@@ -97,10 +101,10 @@ lmeVariance <- function(data_object, featureSet, fixed_effect_var = NULL,
     featureList <- c(featureSet, "Residual")
     rowN <- row.names(mat)
     op <- pboptions(type = "timer")  # default
-    suppressMessages(lmem_res <- pblapply(1:length(rowN), cl = cl, function(gn) {
+    suppressMessages(lmem_res <- pblapply(1:length(rowN), cl=cl, function(gn) {
         geneName <- rowN[gn]
-        # print(geneName)
-        df <- data.frame(exp = as.numeric(mat[geneName, ]), ann, stringsAsFactors = FALSE)
+        df <- data.frame(exp = as.numeric(mat[geneName, ]), ann,
+                         stringsAsFactors = FALSE)
 
         ## remove features with not enough values
         gene_group <- lapply(1:length(featureSet), function(i) {
@@ -113,15 +117,21 @@ lmeVariance <- function(data_object, featureSet, fixed_effect_var = NULL,
         ## Check any of attribute has only one group
         check_gene_group <- sum(gene_group == 1)
         if (check_gene_group == 0) {
-            ## Define formula form <- paste(paste('(1|', featureSet,')', sep=''), collapse=' + ')
+            ## Define formula form
             form1 <- as.formula(paste("exp ~ ", form, sep = ""))
 
-            # linear mixed effect model
-            lmem <- lmer(formula = form1, data = df)
+            ## linear mixed effect model
+            if(lmer_control == TRUE) {
+              lmem <- lmer(formula = form1, data = df,
+                         control = lmerControl(optimizer="bobyqa",
+                                               calc.derivs = FALSE))
+            } else {
+              lmem <- lmer(formula = form1, data = df)
+            }
+
             lmem_re <- as.data.frame(VarCorr(lmem))
             row.names(lmem_re) <- lmem_re$grp
             lmem_re <- lmem_re[featureList, ]
-            # lmem_re$vcov/sum(lmem_re$vcov)
             fix_effect <- fixef(lmem)  #get fixed effect
             lmem_re$CV <- lmem_re$sdcor/fix_effect  ##Calculate CV
             return(c(geneName, mean(df$exp, na.rm = TRUE),
@@ -144,14 +154,17 @@ lmeVariance <- function(data_object, featureSet, fixed_effect_var = NULL,
     row.names(temp) <- colnames(lmem_res)[-1]
     lmem_res <- data.frame(Gene = colnames(temp), t(temp), check.names = FALSE,
                            stringsAsFactors = FALSE)
-    lmem_res <- lmem_res[order(lmem_res[, featureList[1]], decreasing = TRUE), ]
-    write.csv(lmem_res, file = paste(filePATH, "/", fileName, "-Variance.csv", sep = ""))
+    lmem_res <- lmem_res[order(lmem_res[, featureList[1]], decreasing = TRUE),]
+    write.csv(lmem_res, file = paste(filePATH, "/", fileName, "-Variance.csv",
+                                     sep = ""))
 
     ## Overall gene mean result
-    plot1 <- ggplot(lmem_res, aes(x = mean)) + geom_histogram() + labs(title = "Mean Expression")
+    plot1 <- ggplot(lmem_res, aes(x = mean)) + geom_histogram() +
+        labs(title = "Mean Expression")
     plot2 <- ggplot(lmem_res, aes(x = log10(mean + 1))) +
         geom_histogram() + labs(title = "Mean Expression (log10)")
-    pdf(paste(filePATH, "/", fileName, "-Meanplot.pdf", sep = ""), width = 5, height = 5)
+    pdf(paste(filePATH, "/", fileName, "-Meanplot.pdf", sep = ""),
+        width = 5, height = 5)
     print(plot1)
     print(plot2)
     dev.off()
@@ -165,20 +178,20 @@ lmeVariance <- function(data_object, featureSet, fixed_effect_var = NULL,
     sigFeatures <- c()
     for (i in 1:length(featureSet)) {
         dfx <- res[order(res[, featureSet[i]], decreasing = TRUE), ]
-        sigFeatures <- c(sigFeatures, paste(row.names(dfx[1:5, ]), featureSet[i], sep = "_"))
+        sigFeatures <- c(sigFeatures, paste(row.names(dfx[1:5, ]),
+                                            featureSet[i], sep = "_"))
     }
     df1 <- df[df$feature %in% sigFeatures, ]
     plot1 <- ggplot(df, aes(x = Var2, y = value, fill = Var2)) +
         geom_violin(scale = "width") +
         geom_boxplot(width = 0.1, fill = "white") +
-        # ggpubr::stat_compare_means(label.y = 140) + # Add global p-value
         geom_text_repel(data = df1, aes(x = Var2, y = value),
                         label = df1$Var1, size = 2, segment.size = 0.1,
-                        segment.alpha = 0.9, max.overlaps = 20, color = "black") +
+                        segment.alpha=0.9, max.overlaps=20, color="black") +
         labs(x = "FeatureList", y = "Variance Explained (%)") +
         theme_classic()
     ## Plot
-    pdf(paste(filePATH, "/", fileName, "-VarianceExplained-Boxplot.pdf", sep = ""),
+    pdf(paste(filePATH,"/",fileName,"-VarianceExplained-Boxplot.pdf",sep=""),
         width = 5, height = 5)
     print(plot1)
     dev.off()

@@ -25,7 +25,7 @@ outlierDetect <- function(data_object, z_cutoff = NULL, plotWidth = 10,
                           plotHeight = 5, group_column = NULL, cl = 2,
                           fileName = NULL, filePATH = NULL) {
 
-    message(date(), ": Performing Outlier anlaysis\n")
+    message(date(), ": Performing Outlier anlaysis")
     if (is.null(fileName)) {
         fileName <- "outputFile"
     }
@@ -43,7 +43,8 @@ outlierDetect <- function(data_object, z_cutoff = NULL, plotWidth = 10,
     mat <- data_object@curated$data
     check_data <- all.equal(row.names(ann), colnames(mat))
     if (check_data == FALSE) {
-        stop(date(), ": Annotation of samples (rows) and datamatrix columns do not match")
+        stop(date(), ": Annotation of samples (rows) and datamatrix columns do
+             not match")
     }
 
     ## Input
@@ -63,7 +64,8 @@ outlierDetect <- function(data_object, z_cutoff = NULL, plotWidth = 10,
                 if (nrow(temp) > 0) {
                   temp$gene <- geneName
                   temp$meanDev <- temp$exp - mean(temp$exp, na.rm = TRUE)
-                  temp$z <- (temp$exp - mean(temp$exp, na.rm = TRUE))/(sd(temp$exp, na.rm = TRUE))
+                  temp$z <- (temp$exp -
+                    mean(temp$exp, na.rm = TRUE))/(sd(temp$exp, na.rm = TRUE))
                   temp$outlier <- ifelse(abs(temp$z) >= z_cutoff, temp$z, 0)
                   temp <- temp[temp$outlier != 0, ]
                   return(data.frame(temp))
@@ -88,7 +90,8 @@ outlierDetect <- function(data_object, z_cutoff = NULL, plotWidth = 10,
         ## Calculate Z-score (outlier analysis)
         op <- pboptions(type = "timer")  # default
         outlier_res <- pblapply(rowN, cl = cl, function(geneName) {
-            df <- data.frame(exp = as.numeric(mat[geneName, ]), ann, stringsAsFactors = FALSE)
+            df <- data.frame(exp = as.numeric(mat[geneName, ]), ann,
+                             stringsAsFactors = FALSE)
             dfx <- lapply(uniSample, function(uS) {
                 temp <- df[df$PTID %in% uS, ]
                 res <- lapply(uniGroup, function(uG) {
@@ -96,7 +99,8 @@ outlierDetect <- function(data_object, z_cutoff = NULL, plotWidth = 10,
                   if (nrow(temp) > 0) {
                     temp$gene <- geneName
                     temp$meanDev <- temp$exp - mean(temp$exp, na.rm = TRUE)
-                    temp$z <- (temp$exp - mean(temp$exp, na.rm = TRUE))/(sd(temp$exp, na.rm = TRUE))
+                    temp$z <- (temp$exp -
+                        mean(temp$exp, na.rm=TRUE))/(sd(temp$exp, na.rm=TRUE))
                     temp$outlier <- ifelse(abs(temp$z) >= z_cutoff, temp$z, 0)
                     temp <- temp[temp$outlier != 0, ]
                     return(temp)
@@ -115,8 +119,8 @@ outlierDetect <- function(data_object, z_cutoff = NULL, plotWidth = 10,
     outlier_res <- do.call(rbind, outlier_res)
     outlier_res <- outlier_res[!is.na(outlier_res$Sample), ]
     outlier_res <- outlier_res[, !colnames(outlier_res) %in% "outlier"]
-    write.csv(outlier_res, file = paste(filePATH, "/", fileName, "-Outlier-result.csv", sep = ""),
-        row.names = FALSE)
+    write.csv(outlier_res, file = paste(filePATH, "/", fileName,
+                "-Outlier-result.csv", sep = ""), row.names = FALSE)
 
     ## Plot
     df <- outlier_res
@@ -130,26 +134,28 @@ outlierDetect <- function(data_object, z_cutoff = NULL, plotWidth = 10,
             geom_boxplot(width = 0.25, outlier.shape = NA, fill = "white",
                          position = position_dodge(preserve = "single")) +
             ggforce::geom_sina(size = 0.1) +
-            labs(x = "", y = "Z-score", title = paste("Outlier events |Z| >", z_cutoff), fill = "") +
+            labs(x = "", y = "Z-score",
+                 title = paste("Outlier events |Z| >", z_cutoff), fill = "") +
             facet_wrap(~direction, scales = "free_y", ncol = 1) +
             scale_fill_manual(values = c(`> Z` = "red", `< -Z` = "blue")) +
             theme_classic() +
-            theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 1, size = 6),
-                  axis.text.y = element_text(size = 6),
+            theme(axis.text.x=element_text(angle=90, hjust=1, vjust=1, size=6),
+                  axis.text.y = element_text(size=6),
                   legend.position = "right")
 
         ## Mean-deviation plot
         plot2 <- ggplot(df, aes(x = Sample, y = meanDev, fill = direction)) +
             geom_violin(scale = "width") +
-            geom_boxplot(width = 0.25, outlier.shape = NA, fill = "white", position = position_dodge(preserve = "single")) +
+            geom_boxplot(width = 0.25, outlier.shape = NA, fill = "white",
+                         position = position_dodge(preserve = "single")) +
             ggforce::geom_sina(size = 0.1) +
             labs(x = "", y = "Mean deviation",
                  title = paste("Outlier events |Z| >", z_cutoff), fill = "") +
             facet_wrap(~direction, scales = "free_y", ncol = 1) +
             scale_fill_manual(values = c(`> Z` = "red", `< -Z` = "blue")) +
             theme_classic() +
-            theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 1, size = 6),
-                  axis.text.y = element_text(size = 6),
+            theme(axis.text.x=element_text(angle=90, hjust=1, vjust=1, size=6),
+                  axis.text.y=element_text(size=6),
                   legend.position = "right")
 
         ## Count plot
@@ -157,25 +163,30 @@ outlierDetect <- function(data_object, z_cutoff = NULL, plotWidth = 10,
         df_up <- data.frame(table(df_up$PTID, df_up$Time))
         df_down <- df[df$z < 0, ]
         df_down <- data.frame(table(df_down$PTID, df_down$Time))
-        df1 <- rbind(data.frame(df_up, direction = "> Z"), data.frame(df_down, direction = "< -Z"))
+        df1 <- rbind(data.frame(df_up, direction = "> Z"),
+                     data.frame(df_down, direction = "< -Z"))
         df1$id <- paste(df1$Var1, df1$Var2, sep = "")
         df1$direction <- factor(df1$direction, levels = c("> Z", "< -Z"))
         df1$label <- ifelse(abs(df1$Freq) > 0, df1$Freq, NA)
         plot3 <- ggplot(df1, aes(x = id, y = Freq, fill = direction)) +
-            geom_bar(stat = "identity", position = position_dodge(preserve = "single")) +
-            labs(x = "", y = "# Features", title = paste("Outlier events |Z| >", z_cutoff), fill = "") +
+            geom_bar(stat = "identity",
+                     position = position_dodge(preserve = "single")) +
+            labs(x = "", y = "# Features",
+                 title = paste("Outlier events |Z| >", z_cutoff), fill = "") +
             scale_fill_manual(values = c(`> Z` = "red", `< -Z` = "blue")) +
-            geom_text(aes(label = label), position = position_dodge(width = 0.9), size = 2, vjust = 0) +
+            geom_text(aes(label = label), position=position_dodge(width = 0.9),
+                      size = 2, vjust = 0) +
             theme_classic() +
-            theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 1, size = 6),
-                  axis.text.y = element_text(size = 6),
+            theme(axis.text.x=element_text(angle=90, hjust=1, vjust=1, size=6),
+                  axis.text.y=element_text(size=6),
                   legend.position = "right")
 
-        message(date(), ": Results are in ...Outlier-result.csv sheet. Now generating plots.\n")
+        message(date(), ": Results are in ...Outlier-result.csv sheet. Now
+                generating plots.")
         if (is.null(group_column)) {
             ## Plot
-            pdf(paste(filePATH, "/", fileName, "-Outlier-Boxplot.pdf", sep = ""), width = plotWidth,
-                height = plotHeight)
+            pdf(paste(filePATH, "/", fileName, "-Outlier-Boxplot.pdf",
+                      sep = ""), width = plotWidth, height = plotHeight)
             print(plot1)
             print(plot2)
             print(plot3)
@@ -187,23 +198,23 @@ outlierDetect <- function(data_object, z_cutoff = NULL, plotWidth = 10,
                 labs(x = "", y = "Z-score", title = "Mean Deviation") +
                 ggforce::geom_sina(size = 0.5) +
                 theme_classic() +
-                theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 1, size = 6),
-                      axis.text.y = element_text(size = 6),
+                theme(axis.text.x=element_text(angle=90,hjust=1,vjust=1,size=6),
+                      axis.text.y=element_text(size=6),
                       legend.position = "right")
 
-            plot2b <- ggplot(df, aes(x = Sample, y = meanDev, color = bygroup)) +
+            plot2b <- ggplot(df, aes(x = Sample, y = meanDev, color= bygroup)) +
                 geom_violin(scale = "width") +
                 # geom_boxplot(width=0.1, fill='white') +
                 labs(x = "", y = "Mean Deviation", title = "Mean Deviation") +
                 ggforce::geom_sina(size = 0.5) +
                 theme_classic() +
-                theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 1, size = 6),
-                      axis.text.y = element_text(size = 6),
+                theme(axis.text.x=element_text(angle=90,hjust=1,vjust=1,size=6),
+                      axis.text.y=element_text(size=6),
                       legend.position = "right")
 
             ## Plot
-            pdf(paste(filePATH, "/", fileName, "-Outlier-Boxplot.pdf", sep = ""), width = plotWidth,
-                height = plotHeight)
+            pdf(paste(filePATH, "/", fileName, "-Outlier-Boxplot.pdf",
+                      sep = ""), width = plotWidth, height = plotHeight)
             print(plot1)
             print(plot2)
             print(plot1b)
@@ -220,9 +231,9 @@ outlierDetect <- function(data_object, z_cutoff = NULL, plotWidth = 10,
         df <- outlier_res[order(outlier_res$z, decreasing = TRUE), ]
         data_object@result$outlier_res <- df
 
-        message(date(), ": Please check output directory for results\n")
+        message(date(), ": Please check output directory for results")
     } else {
-        message(date(), ": Did not see events with given z cutoff\n")
+        message(date(), ": Did not see events with given z cutoff")
     }
     return(data_object)
 

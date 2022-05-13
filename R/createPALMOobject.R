@@ -8,7 +8,7 @@
 #' https://search.r-project.org/CRAN/refmans/SeuratObject/html/CreateSeuratObject.html).
 #' In case Seurat object not available then user can use function
 #' createPALMOfromsinglecellmatrix to create PALMO object. The Seurat
-#' object/metadata should have Sample column curesponding to Annotation
+#' object/metadata should have Sample column corresponding to Annotation
 #' dataframe.
 #' @param anndata Annotation dataframe. It consist of information such as
 #' \emph{Sample} (sample name), \emph{PTID} (donor/participant), \emph{Time}
@@ -32,14 +32,14 @@ createPALMOobject <- function(anndata, data) {
     obj@raw$data <- data
     obj@rownames <- row.names(data)
     obj@colnames <- colnames(data)
-    message(date(), ": The PALMO object is created\n")
+    message(date(), ": The PALMO object is created.")
 
     ## Creating output directory
     mainDir <- getwd()
     subDir <- "output"
     dir.create(file.path(mainDir, subDir), showWarnings = FALSE)
     obj@filePATH <- file.path(mainDir, subDir)
-    message(date(), ": For outout files, the output directory is created\n")
+    message(date(), ": For outout files, the output directory is created.")
 
     return(obj)
 }

@@ -21,7 +21,7 @@
 
 avgExpCalc <- function(data_object, assay = "RNA", group_column) {
 
-    message(date(), ": Calculating scRNA Average expression\n")
+    message(date(), ": Calculating scRNA Average expression")
 
     ## Get the data
     if (!is.null(data_object@curated$SeuratObj)) {
@@ -34,7 +34,7 @@ avgExpCalc <- function(data_object, assay = "RNA", group_column) {
         dataObj@meta.data$Sample_group <- paste(dataObj@meta.data$Sample,
                                                 dataObj@meta.data$group,
                                                 sep = ":")
-        #dataObj@meta.data$Sample_group <- gsub(" ", "_", dataObj@meta.data$Sample_group)
+        dataObj@meta.data$Sample_group <- gsub(" ", "_", dataObj@meta.data$Sample_group)
         metaData <- dataObj@meta.data
 
         ## Check assay
@@ -50,14 +50,13 @@ avgExpCalc <- function(data_object, assay = "RNA", group_column) {
         scrna_avgmat <- data.frame(scrna_avgmat[[assay]], check.names = FALSE,
                                    stringsAsFactors = FALSE)
         colnames(scrna_avgmat) <- cn
-        message(date(), ": scRNA Average expression finished\n")
+        message(date(), ": scRNA Average expression finished")
 
         ## Keep genes with avgExpression > zero
         rowDF <- rowSums(scrna_avgmat)
         rowDF <- rowDF[rowDF > 0]
         mat <- scrna_avgmat[names(rowDF), ]
-        message(date(), ": Keeping genes with avergae expression >0 in all
-                samples\n")
+        message(date(), ": Keeping genes with avg expression >0")
 
         ## Create annotation
         cn <- data.frame(Sample_group = colnames(mat))

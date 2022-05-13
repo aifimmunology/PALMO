@@ -28,7 +28,7 @@ createPALMOfromsinglecellmatrix <- function(data, metadata, anndata = NULL) {
     metadata <- metadata[ov, ]
     data <- data[, ov]
     if (length(ov) > 1) {
-        message(date(), "Number of cells overlapped=", length(ov), "\n")
+        message(date(), "Number of cells overlapped=", length(ov))
         # Create seurat object
         scrna_obj <- CreateSeuratObject(counts = data, meta.data = metadata)
         # Create PALMO object
@@ -36,7 +36,7 @@ createPALMOfromsinglecellmatrix <- function(data, metadata, anndata = NULL) {
         return(palmoobj)
     } else {
         warning(date(), "Sample of matrix (column names) and annotation (row
-                names) are not matching. Please check input data.\n")
+                names) are not matching. Please check input data.")
     }
 
 }

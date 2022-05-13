@@ -6,7 +6,8 @@
 #' @param data_object Input \emph{PALMO} S4 object. It contains annotation
 #' information and expression data from Bulk or single cell data.
 #' @param fileName User-defined filename, Default outputFile
-#' @param filePATH User-defined output directory \emph{PATH} Default, current directory
+#' @param filePATH User-defined output directory \emph{PATH} Default, current
+#' directory
 #' @param cl Number of clusters. Use nCores-1 to run parallel. Default 2
 #' @return PALMO object with CV profile cv_all
 #' @keywords cvCalcBulkProfile
@@ -16,9 +17,10 @@
 #' cvCalcBulkProfile(data_object=palmo_obj)
 #' }
 
-cvCalcBulkProfile <- function(data_object, cl = 2, fileName = NULL, filePATH = NULL) {
+cvCalcBulkProfile <- function(data_object, cl = 2, fileName = NULL,
+                              filePATH = NULL) {
 
-    message(date(), ": Performing Coefficient of variance analysis\n")
+    message(date(), ": Performing Coefficient of variance analysis.")
     if (is.null(fileName)) {
         fileName <- "outputFile"
     }
@@ -31,26 +33,28 @@ cvCalcBulkProfile <- function(data_object, cl = 2, fileName = NULL, filePATH = N
     mat <- data_object@curated$data
     check_data <- all.equal(row.names(ann), colnames(mat))
     if (check_data == FALSE) {
-        stop(date(), ": Annotation of samples (rows) and datamatrix columns do not match")
+        stop(date(), ": Annotation of samples (rows) and datamatrix columns do
+             not match")
     }
 
     # CV vs Mean
     unigene <- row.names(mat)
     uniSample <- sort(unique(ann$PTID))
 
-    message(date(), ": Performing CV calculations\n")
+    message(date(), ": Performing CV calculations")
     op <- pboptions(type = "timer")  # default
     res <- pblapply(uniSample, cl = cl, function(uS) {
         # print(uS)
         meta_df <- ann[ann$PTID %in% uS, ]
         if (nrow(meta_df) > 1) {
             df <- mat[unigene, meta_df$Sample]
-            df <- data.frame(df, NAs = apply(df, 1, function(x) {
-                sum(is.na(x))
-            }), zeros = apply(df, 1, function(x) {
-                sum(x == 0)
-            }), mean = rowMeans(df, na.rm = TRUE), sd = apply(df, 1, sd, na.rm = TRUE), var = apply(df,
-                1, var, na.rm = TRUE), stringsAsFactors = FALSE)
+            df <- data.frame(df,
+                    NAs = apply(df, 1, function(x) { sum(is.na(x)) }),
+                    zeros = apply(df, 1, function(x) { sum(x == 0) }),
+                    mean = rowMeans(df, na.rm = TRUE),
+                    sd = apply(df, 1, sd, na.rm = TRUE),
+                    var = apply(df, 1, var, na.rm = TRUE),
+                    stringsAsFactors = FALSE)
             df$CV <- 100 * df$sd/df$mean
             df <- df[, c("mean", "sd", "var", "CV", "NAs", "zeros")]
             df$feature <- row.names(df)
@@ -66,11 +70,14 @@ cvCalcBulkProfile <- function(data_object, cl = 2, fileName = NULL, filePATH = N
     data_object@result$cv_all <- cv_all
 
     ## histogram of CV
-    plot1 <- ggplot(cv_all, aes(x = mean, y = CV)) + geom_point(size = 0.5, color = "grey") +
-        scale_x_continuous(trans = "log10") + scale_y_continuous(trans = "log10") + facet_wrap(~group) +
+    plot1 <- ggplot(cv_all, aes(x = mean, y = CV)) +
+        geom_point(size = 0.5, color = "grey") +
+        scale_x_continuous(trans = "log10") +
+        scale_y_continuous(trans = "log10") +
+        facet_wrap(~group) +
         theme_classic()
     print(plot1)
 
-    message(date(), ": Done\n")
+    message(date(), ": Done")
     return(data_object)
 }

@@ -46,7 +46,7 @@ cvCalcBulk <- function(data_object, meanThreshold=NULL,
                        plotWidth=5, plotHeight=8,
                        fileName=NULL, filePATH=NULL) {
 
-    message(date(),": Performing Coefficient of variance analysis\n")
+    message(date(),": Performing Coefficient of variance analysis")
     if(is.null(fileName)) {
         fileName <- "outputFile"
     }
@@ -57,7 +57,7 @@ cvCalcBulk <- function(data_object, meanThreshold=NULL,
     ## meanThrehold
     if(is.null(meanThreshold)) {
         meanThreshold <- 0
-        message(date(),": Using mean threshold >= 0\n")
+        message(date(),": Using mean threshold >= 0")
     }
     data_object@meanThreshold <- meanThreshold
     data_object@cvThreshold <- cvThreshold
@@ -66,7 +66,7 @@ cvCalcBulk <- function(data_object, meanThreshold=NULL,
     if(is.null(median_cvThreshold)) {
         median_cvThreshold <- cvThreshold
         message(date(),": Using median CV threshold (across donors) same as CV
-          threshold at single donor\n")
+          threshold at single donor")
         data_object@median_cvThreshold <- median_cvThreshold
     }
 
@@ -86,7 +86,7 @@ cvCalcBulk <- function(data_object, meanThreshold=NULL,
 
     ## If features selected before hand
     if(!is.null(selectedFeatures)) {
-        message(date(),": Filtering for selected features", "\n")
+        message(date(),": Filtering for selected features")
         mat <- mat[selectedFeatures,]
     }
 
@@ -239,7 +239,7 @@ cvCalcBulk <- function(data_object, meanThreshold=NULL,
         if(median_cvThreshold> max_cv) {
             median_cvThreshold <- max_cv
             message(date(),": Input median_cv_max higher than maximum CV
-                    range.\n")
+                    range.")
         }
 
         #Remove NAs
@@ -322,7 +322,7 @@ cvCalcBulk <- function(data_object, meanThreshold=NULL,
         } else {
             var_mat <- NA
             message(date(),": Variable features do not found. Check data
-            for missing values or change CV parameters\n")
+            for missing values or change CV parameters")
         }
 
         ## Plot stable genes CV
@@ -377,7 +377,7 @@ cvCalcBulk <- function(data_object, meanThreshold=NULL,
             stable_mat <- NA
             message(date(),": Stable features do not found. Check data for
             missing values or change CV parameters. Summary of CV range
-                    in given data:\n")
+                    in given data:")
             message(summary(res_var$Median))
         }
 
@@ -443,6 +443,6 @@ cvCalcBulk <- function(data_object, meanThreshold=NULL,
     data_object@result$var_mat <- var_mat
     data_object@result$stable_mat <- stable_mat
 
-    message(date(),": Done. Please check output directory for Plots/results.\n")
+    message(date(),": Done. Please check output directory for Plots/results.")
     return(data_object)
 }

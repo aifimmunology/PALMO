@@ -28,7 +28,7 @@ checkReplicates <- function(data_object, mergeReplicates = FALSE) {
     rep <- data.frame(table(ann_temp$PTID, ann_temp$Time))
     rep <- rep[rep$Freq > 1, ]
     if (nrow(rep) > 0) {
-        message(date(), ": Replicates for data found\n")
+        message(date(), ": Replicates for data found")
         print(rep)
         rep_PTID_Time <- unique(paste(rep$Var1, rep$Var2, sep = "_"))
 
@@ -40,7 +40,7 @@ checkReplicates <- function(data_object, mergeReplicates = FALSE) {
         }
 
         if (mergeReplicates == TRUE) {
-            message(date(), ": Merging replicates by Median\n")
+            message(date(), ": Merging replicates by Median")
             ann_rep <- ann[ann$PTID_Time %in% rep_PTID_Time, ]
             PTID_Time <- unique(ann_rep$PTID_Time)
             ann$Sample_old <- ann$Sample
@@ -100,12 +100,12 @@ checkReplicates <- function(data_object, mergeReplicates = FALSE) {
             data_object@curated$anndata <- ann
             data_object@curated$data <- med_agg_res
             message(date(), ": Check PALMO object (anndata, data). To ignore
-                    replicates use mrgereplicates=FALSE.\n")
+                    replicates use mrgereplicates=FALSE.")
         } else {
-            message(date(), ": Merging Replicates ignored\n")
+            warning(date(), ": Merging Replicates ignored.")
         }
     } else {
-        warning(date(), ": No Replicates found\n")
+        message(date(), ": No Replicates found")
     }
 
     return(data_object)

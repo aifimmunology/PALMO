@@ -38,7 +38,7 @@ annotateMetadata <- function(data_object, sample_column = "Sample",
     if (sum(is.na(anndata$Sample)) > 0 | sum(is.na(anndata$PTID)) > 0 |
         sum(is.na(anndata$Time)) > 0) {
         warning(date(), ": Caution -> The Sample_column, Donor_column or
-        Time_column contains missing value or NA. Missing data is removed.\n")
+        Time_column contains missing value or NA. Missing data is removed.")
         anndata <- anndata[!is.na(anndata$Sample), ]
         anndata <- anndata[!is.na(anndata$PTID), ]
         anndata <- anndata[!is.na(anndata$Time), ]
@@ -48,7 +48,7 @@ annotateMetadata <- function(data_object, sample_column = "Sample",
     donor_tp <- data.frame(table(anndata$PTID))
     donor_tp <- donor_tp[donor_tp$Freq > 1, ]
     if (nrow(donor_tp) == 0) {
-        stop(date(), ": Error -> Number of timepoints are less than 2.\n")
+        stop(date(), ": Error -> Number of timepoints are less than 2.")
     }
     data_object@nDonors <- nrow(donor_tp)
 

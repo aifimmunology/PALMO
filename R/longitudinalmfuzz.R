@@ -15,7 +15,8 @@
 #' @param group_oi User-defined groups to consider for example from celltypes
 #' select few
 #' @param mfuzz_thres \code{mfuzz:thres} threshold for excluding genes
-#' @param mfuzz_min.std \code{mfuzz:min.std} threshold for minimum standard deviation
+#' @param mfuzz_min.std \code{mfuzz:min.std} threshold for minimum standard
+#' deviation
 #' @param max_cluster Number of clusters to explore (Default 2^n)
 #' @param delta \code{mfuzz:delta} threshold for minimum standard deviation
 #' @param plotsize Size of plot width and height. Default 10 (in).
@@ -32,12 +33,16 @@
 #' timeColumn='Time', donorColumn='PTID')
 #' }
 
-longitudinalmfuzz <- function(data_object, group_column = "group", timeColumn = "Time", timeOrder = NULL,
-    donorColumn = "PTID", baseline_timepoint = NULL, featurelist = NULL, group_oi = NULL, mfuzz_thres = 0.25,
-    mfuzz_min.std = 0, max_cluster = NULL, delta = 0.5, plotsize = 10, cl = 2, fileName = NULL,
-    filePATH = NULL) {
+longitudinalmfuzz <- function(data_object, group_column = "group",
+                              timeColumn = "Time", timeOrder = NULL,
+                              donorColumn = "PTID", baseline_timepoint = NULL,
+                              featurelist = NULL, group_oi = NULL,
+                              mfuzz_thres = 0.25, mfuzz_min.std = 0,
+                              max_cluster = NULL, delta = 0.5,
+                              plotsize = 10, cl = 2,
+                              fileName = NULL, filePATH = NULL) {
 
-    message(date(), ": Identifying Longitudinal Trajectories\n")
+    message(date(), ": Identifying Longitudinal Trajectories")
     ## If filename or filepath null
     if (is.null(fileName)) {
         fileName <- "outputFile"
@@ -51,7 +56,8 @@ longitudinalmfuzz <- function(data_object, group_column = "group", timeColumn = 
     mat <- data_object@curated$data
     check_data <- all.equal(row.names(ann), colnames(mat))
     if (check_data == FALSE) {
-        stop(date(), ": Annotation of samples (rows) and datamatrix columns do not match")
+        stop(date(), ": Annotation of samples (rows) and datamatrix columns
+             do not match")
     }
 
     ## By user defined group
@@ -79,7 +85,8 @@ longitudinalmfuzz <- function(data_object, group_column = "group", timeColumn = 
     if (!is.null(timeOrder)) {
         uniTime <- intersect(timeOrder, uniTime)
     }
-    message(date(), ": Time order->", uniTime, ".\n>>To change time order use parameter timeOrder=c('t1', 't2', 't3').\n")
+    message(date(), ": Time order->", uniTime, ".\n>>To change time order
+            use parameter timeOrder=c('t1', 't2', 't3').")
 
     ## User defined genelist/featurelist
     if (is.null(featurelist)) {
@@ -99,15 +106,19 @@ longitudinalmfuzz <- function(data_object, group_column = "group", timeColumn = 
     res_group <- lapply(uniGroup, function(uIG) {
         ## by donor
         res_donor <- lapply(uniDonor, function(uID) {
-            message(date(), "Running ::", uID, "-", uIG, "\n")
+            message(date(), "Running ::", uID, "-", uIG)
             ann_sub <- ann[ann$bygroup %in% uIG & ann$donorGroup %in% uID, ]
             mat_sub <- mat[geneList, row.names(ann_sub)]
             uniTime_sub <- intersect(uniTime, unique(ann_sub$bytime))
             op <- pboptions(type = "timer")  # default
             res <- pblapply(geneList, cl = cl, function(gL) {
-                df <- data.frame(gene = as.numeric(mat_sub[gL, ]), time = ann_sub$bytime, blank = 0)
-                suppressMessages(df1 <- df %>% group_by(time, blank) %>% summarise(val = median(gene)) %>%
-                  data.frame() %>% column_to_rownames(var = "time"), classes = "message")
+                df <- data.frame(gene = as.numeric(mat_sub[gL, ]),
+                                 time = ann_sub$bytime, blank = 0)
+                suppressMessages(df1 <- df %>% group_by(time, blank) %>%
+                                     summarise(val = median(gene)) %>%
+                                     data.frame() %>%
+                                     column_to_rownames(var = "time"),
+                                 classes = "message")
                 df1 <- df1[uniTime_sub, ]
                 return(df1$val)
             })
@@ -115,7 +126,7 @@ longitudinalmfuzz <- function(data_object, group_column = "group", timeColumn = 
             res <- data.frame(do.call(rbind, res))
             colnames(res) <- uniTime_sub
             row.names(res) <- geneList
-            res <- data.frame(res, check.names = FALSE, stringsAsFactors = FALSE)
+            res <- data.frame(res, check.names=FALSE, stringsAsFactors=FALSE)
 
             ## Define maximum cluster
             nCluster <- 2^(length(uniTime_sub))
@@ -131,21 +142,22 @@ longitudinalmfuzz <- function(data_object, group_column = "group", timeColumn = 
             expDF <- filter.std(expDF, min.std = mfuzz_min.std, visu = FALSE)
 
             ## Check baseline timepoint
-            if (is.null(baseline_timepoint)) {
+            if(is.null(baseline_timepoint)) {
                 expDF <- standardise(expDF)
             } else {
                 print(baseline_timepoint)
-                if (length(intersect(colnames(res), baseline_timepoint)) == 1) {
+                if(length(intersect(colnames(res), baseline_timepoint)) == 1) {
                   expDF <- standardise2(expDF, timepoint = baseline_timepoint)
                 } else {
-                  stop(date(), ": Given baseline timepoint is not found in given dataset")
+                  stop(date(), ": Baseline timepoint is not found")
                 }
             }
 
             ## Estimate m
             m1 <- mestimate(expDF)
             t.cl <- mfuzz(expDF, c = possible_clusters, m = m1)
-            temp <- data.frame(t.cl$centers, check.names = FALSE, stringsAsFactors = FALSE)
+            temp <- data.frame(t.cl$centers, check.names = FALSE,
+                               stringsAsFactors = FALSE)
             temp1 <- apply(temp, 1, function(x) {
                 diff <- lapply(2:length(x), function(y) {
                   y1 <- x[y] - x[y - 1]
@@ -156,26 +168,30 @@ longitudinalmfuzz <- function(data_object, group_column = "group", timeColumn = 
                 y <- paste(paste(diff, collapse = ":"), sep = "")
                 return(y)
             })
-            temp <- data.frame(temp, trajectory_direction = temp1, cluster = row.names(temp),
-                check.names = FALSE, stringsAsFactors = FALSE)
+            temp <- data.frame(temp, trajectory_direction = temp1,
+                               cluster = row.names(temp), check.names = FALSE,
+                               stringsAsFactors = FALSE)
 
             # Cluster information
             temp$group <- uIG
             temp$donor <- uID
-            write.csv(temp, file = paste(filePATH, "/longitudinal_", fileName, "_", uID, "_",
-                uIG, ".csv", sep = ""), quote = FALSE)
+            write.csv(temp, file = paste(filePATH, "/longitudinal_",
+                                         fileName, "_", uID, "_", uIG, ".csv",
+                                         sep = ""), quote = FALSE)
 
             plot_panels <- ceiling(sqrt(nCluster))
-            pdf(paste(filePATH, "/longitudinal_", fileName, "_", uID, "_", uIG, ".pdf", sep = ""),
-                width = plotsize, height = plotsize)
-            mfuzz.plot(expDF, cl = t.cl, time.labels = labels, mfrow = c(plot_panels, plot_panels),
-                new.window = FALSE)
+            pdf(paste(filePATH, "/longitudinal_", fileName, "_", uID, "_", uIG,
+                      ".pdf", sep = ""), width = plotsize, height = plotsize)
+            mfuzz.plot(expDF, cl = t.cl, time.labels = labels,
+                       mfrow = c(plot_panels, plot_panels), new.window = FALSE)
             dev.off()
 
-            mRes <- data.frame(Genes = names(t.cl[["cluster"]]), cluster = t.cl[["cluster"]],
-                stringsAsFactors = FALSE)
-            write.csv(mRes, file = paste(filePATH, "/longitudinal_", fileName, "_", uID, "_",
-                uIG, "_geneclustering.csv", sep = ""), quote = FALSE)
+            mRes <- data.frame(Genes = names(t.cl[["cluster"]]),
+                               cluster = t.cl[["cluster"]],
+                               stringsAsFactors = FALSE)
+            write.csv(mRes, file = paste(filePATH, "/longitudinal_",
+                        fileName, "_", uID, "_", uIG, "_geneclustering.csv",
+                        sep = ""), quote = FALSE)
             mRes <- mRes[geneList, ]
             row.names(mRes) <- geneList
             colnames(mRes)[2] <- paste(uID, uIG, sep = ":")

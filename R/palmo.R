@@ -1,7 +1,7 @@
 #' palmo class
 #'
-#' This function creates \emph{PALMO} class object. All the raw data and results from
-#' PALMO are stored in this object.
+#' This function creates \emph{PALMO} class object. All the raw data and results
+#' from PALMO are stored in this object.
 #' @field raw list, contains user entered annotation and expression dataframe or
 #' object
 #' @field curated list, contains curated input data
@@ -29,9 +29,27 @@
 #' @exportClass palmo
 #' @return PALMO S4 class
 
-palmo <- setClass(Class = "palmo", slots = c(raw = "list", curated = "list", result = "list", 
-    nDonors = "numeric", rownames = "character", colnames = "character", housekeeping_genes = "character", 
-    datatype = "character", omics = "character", featureSet = "character", meanThreshold = "numeric", 
-    cvThreshold = "numeric", median_cvThreshold = "numeric", groupName = "character", group_oi = "character", 
-    donorThreshold = "numeric", groupThreshold = "numeric", topFeatures = "numeric", donor_sep = "character", 
-    cor_method = "character", clusterBy = "character", z_cutoff = "numeric", filePATH = "character"))
+palmo <- setClass(Class = "palmo",
+                  slots = c(raw = "list",
+                            curated = "list",
+                            result = "list",
+                            nDonors = "numeric",
+                            rownames = "character",
+                            colnames = "character",
+                            housekeeping_genes = "character",
+                            datatype = "character",
+                            omics = "character",
+                            featureSet = "character",
+                            meanThreshold = "numeric",
+                            cvThreshold = "numeric",
+                            median_cvThreshold = "numeric",
+                            groupName = "character",
+                            group_oi = "character",
+                            donorThreshold = "numeric",
+                            groupThreshold = "numeric",
+                            topFeatures = "numeric",
+                            donor_sep = "character",
+                            cor_method = "character",
+                            clusterBy = "character",
+                            z_cutoff = "numeric",
+                            filePATH = "character"))

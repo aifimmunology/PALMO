@@ -22,10 +22,11 @@
 #' housekeeping_genes=c('GAPDH', 'ACTB'), fileName='scrna')
 #' }
 
-cvCalcSCProfile <- function(data_object, meanThreshold = NULL, housekeeping_genes = NULL, cl = 2,
-    fileName = NULL, filePATH = NULL) {
+cvCalcSCProfile <- function(data_object, meanThreshold = NULL,
+                            housekeeping_genes = NULL, cl = 2,
+                            fileName = NULL, filePATH = NULL) {
 
-    message(date(), ": Performing Coefficient of variance analysis\n")
+    message(date(), ": Performing Coefficient of variance analysis")
 
     ## If filename or filepath null
     if (is.null(fileName)) {
@@ -43,7 +44,7 @@ cvCalcSCProfile <- function(data_object, meanThreshold = NULL, housekeeping_gene
     ## meanThrehold
     if (is.null(meanThreshold)) {
         meanThreshold <- 0
-        message(date(), ": Using mean threshold >= 0\n")
+        message(date(), ": Using mean threshold >= 0")
     }
     data_object@meanThreshold <- meanThreshold
 
@@ -52,7 +53,8 @@ cvCalcSCProfile <- function(data_object, meanThreshold = NULL, housekeeping_gene
     mat <- data_object@curated$data
     check_data <- all.equal(row.names(ann), colnames(mat))
     if (check_data == FALSE) {
-        stop(date(), ": Annotation of samples (rows) and datamatrix columns do not match")
+        stop(date(), ": Annotation of samples (rows) and datamatrix columns
+             do not match")
     }
 
     ## Calculate CV vs Mean for all genes per celltype
@@ -62,17 +64,19 @@ cvCalcSCProfile <- function(data_object, meanThreshold = NULL, housekeeping_gene
     uniSamplegroup <- as.character(unique(ann$group_donor))
 
     ## All genes CV calculations
-    message(date(), ": Performing CV calculations\n")
+    message(date(), ": Performing CV calculations")
     op <- pboptions(type = "timer")  # default
     res <- pblapply(uniSamplegroup, cl = cl, function(uS) {
         # print(uS)
         ann_df <- ann[ann$group_donor %in% uS, ]
         if (nrow(ann_df) > 1) {
             df <- mat[unigene, ann_df$Sample_group]
-            df <- data.frame(df, zeros = apply(df, 1, function(x) {
-                sum(x != 0)
-            }), mean = rowMeans(df, na.rm = TRUE), sd = apply(df, 1, sd, na.rm = TRUE), var = apply(df,
-                1, var, na.rm = TRUE), stringsAsFactors = FALSE)
+            df <- data.frame(df,
+                    zeros = apply(df, 1, function(x) { sum(x != 0) }),
+                    mean = rowMeans(df, na.rm = TRUE),
+                    sd = apply(df, 1, sd, na.rm = TRUE),
+                    var = apply(df, 1, var, na.rm = TRUE),
+                    stringsAsFactors = FALSE)
             df$cv <- 100 * df$sd/df$mean
             df$cv <- ifelse(df$mean >= meanThreshold, df$cv, NA)
             df <- df[, c("mean", "sd", "var", "cv")]
@@ -88,22 +92,28 @@ cvCalcSCProfile <- function(data_object, meanThreshold = NULL, housekeeping_gene
 
     ## Plot results
     df <- cv_all[cv_all$mean >= meanThreshold, ]
-    p1 <- ggplot(cv_all, aes(x = mean)) + geom_histogram(aes(color = select), fill = "white",
-        binwidth = 0.1) + labs(title = "Mean expression (log10)") + scale_x_continuous(trans = "log10")
-    p2 <- ggplot(df, aes(x = cv)) + labs(title = "CV (mean/SD %)") + geom_histogram(binwidth = 1,
-        color = "black", fill = "white")
+    p1 <- ggplot(cv_all, aes(x = mean)) +
+        geom_histogram(aes(color = select), fill = "white", binwidth = 0.1) +
+        labs(title = "Mean expression (log10)") +
+        scale_x_continuous(trans = "log10")
+    p2 <- ggplot(df, aes(x = cv)) +
+        labs(title = "CV (mean/SD %)") +
+        geom_histogram(binwidth = 1, color = "black", fill = "white")
     ## Housekeeping genes data
     df <- df[df$gene %in% housekeeping_genes, ]
     if (nrow(df) > 0) {
-        p3 <- ggplot(df, aes(x = mean, y = cv)) + geom_point() + labs(title = "Housekeeping genes") +
+        p3 <- ggplot(df, aes(x = mean, y = cv)) +
+            geom_point() + labs(title = "Housekeeping genes") +
             facet_wrap(~gene)
 
-        pdf(paste(filePATH, "/", fileName, "-CVPlot.pdf", sep = ""), width = 12, height = 5)
+        pdf(paste(filePATH, "/", fileName, "-CVPlot.pdf", sep = ""),
+            width = 12, height = 5)
         print(plot_grid(p1, p2, p3, ncol = 3))
         dev.off()
         print(plot_grid(p1, p2, p3, ncol = 3))
     } else {
-        pdf(paste(filePATH, "/", fileName, "-CVPlot.pdf", sep = ""), width = 8, height = 5)
+        pdf(paste(filePATH, "/", fileName, "-CVPlot.pdf", sep = ""),
+            width = 8, height = 5)
         print(plot_grid(p1, p2, ncol = 2))
         dev.off()
         print(plot_grid(p1, p2, ncol = 2))
@@ -112,6 +122,6 @@ cvCalcSCProfile <- function(data_object, meanThreshold = NULL, housekeeping_gene
     ## Add CV result
     data_object@result$cv_all <- cv_all
 
-    message(date(), ": Done. Please check output directory for Plots/results.\n")
+    message(date(), ": Done. Please check output directory for Plots/results.")
     return(data_object)
 }

@@ -26,7 +26,7 @@
 cvSCsampleprofile <- function(data_object, meanThreshold = NULL, cvThreshold = NULL, cl = 2,
     plot_log10 = FALSE, fileName = NULL, filePATH = NULL) {
 
-    message(date(), ": Performing Sample-wise Coefficient of variance analysis\n")
+    message(date(), ": Performing Sample-wise Coefficient of variance analysis")
 
     ## If filename or filepath null
     if (is.null(fileName)) {
@@ -39,13 +39,13 @@ cvSCsampleprofile <- function(data_object, meanThreshold = NULL, cvThreshold = N
     ## meanThrehold
     if (is.null(meanThreshold)) {
         meanThreshold <- 0
-        message(date(), ": Using mean threshold >= 0\n")
+        message(date(), ": Using mean threshold >= 0")
     }
     data_object@meanThreshold <- meanThreshold
     ## cvThrehold
     if (is.null(cvThreshold)) {
         cvThreshold <- 10
-        message(date(), ": Using CV threshold 10\n")
+        message(date(), ": Using CV threshold 10")
     }
     data_object@cvThreshold <- cvThreshold
 
@@ -64,10 +64,10 @@ cvSCsampleprofile <- function(data_object, meanThreshold = NULL, cvThreshold = N
     uniSamplegroup <- as.character(unique(ann$group_donor))
 
     ## CV-mean plot
-    message(date(), ": Plotting Sample wise CV analysis\n")
+    message(date(), ": Plotting Sample wise CV analysis")
     pdf(paste(filePATH, "/", fileName, "-CV-SampleGroup-Plot.pdf", sep = ""), width = 5, height = 5)
     op <- pboptions(type = "timer")  # default
-    res1 <- pblapply(uniSamplegroup, function(uS) {
+    res1 <- pblapply(uniSamplegroup, cl = cl, function(uS) {
         # print(uS)
         ann_df <- ann[ann$group_donor %in% uS, ]
         if (nrow(ann_df) > 1) {
@@ -100,6 +100,6 @@ cvSCsampleprofile <- function(data_object, meanThreshold = NULL, cvThreshold = N
     pboptions(op)
     dev.off()
 
-    message(date(), ": Done. Please check output directory for results.\n")
+    message(date(), ": Done. Please check output directory for results.")
 
 }

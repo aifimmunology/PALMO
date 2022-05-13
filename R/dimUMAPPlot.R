@@ -24,7 +24,7 @@
 dimUMAPPlot <- function(data_object, nPC = 30, gene_oi, group_column, plotname = NULL, repel = FALSE,
     filePATH = NULL, fileName = NULL) {
 
-    message(date(), ": Visualizing UMAP\n")
+    message(date(), ": Visualizing UMAP")
     ## If filename or filepath null
     if (is.null(fileName)) {
         fileName <- "outputFile"
@@ -54,29 +54,31 @@ dimUMAPPlot <- function(data_object, nPC = 30, gene_oi, group_column, plotname =
         top_seurat <- seurat_vargenes[1:length(gene_oi)]
         gene_oi <- intersect(gene_oi, row.names(rnaObj))
 
-        # Plot
+        ## Plot
         rnaObj <- ScaleData(rnaObj, features = gene_oi)
-        rnaObj <- suppressMessages(RunPCA(rnaObj, features = gene_oi, npcs = nPC, approx = TRUE),
-            classes = "message")
-        rnaObj <- suppressMessages(RunUMAP(rnaObj, reduction = "pca", dims = 1:nPC), classes = "message")
-        # To use Python UMAP via reticulate, set umap.method to 'umap-learn' and metric to
-        # 'correlation
-        p1 <- DimPlot(object = rnaObj, reduction = "pca", group.by = group_column, label = TRUE,
-            repel = repel)
-        p2 <- DimPlot(object = rnaObj, reduction = "umap", group.by = group_column, label = TRUE,
-            repel = repel)
+        rnaObj <- suppressMessages(RunPCA(rnaObj, features = gene_oi,
+                                          npcs = nPC, approx = TRUE),
+                                   classes = "message")
+        rnaObj <- suppressMessages(RunUMAP(rnaObj, reduction = "pca",
+                                           dims = 1:nPC),
+                                   classes = "message")
 
-        png(paste(filePATH, "/", fileName, "-UMAP-", plotname, "-Genes.png", sep = ""), width = 16,
-            height = 5, res = 200, units = "in")
+        ## UMAP plot
+        p1 <- DimPlot(object = rnaObj, reduction = "pca",
+                      group.by = group_column, label = TRUE, repel = repel)
+        p2 <- DimPlot(object = rnaObj, reduction = "umap",
+                      group.by = group_column, label = TRUE, repel = repel)
+
+        png(paste(filePATH, "/", fileName, "-UMAP-", plotname, "-Genes.png",
+                  sep = ""), width = 16, height = 5, res = 200, units = "in")
         print(plot_grid(p1, p2, align = "hv"))
         dev.off()
 
         message(date(), ": Please check output directory for PC, UMAP plot")
-        # plot result
+        ## plot result
         print(plot_grid(p1, p2, align = "hv"))
-        # data_object@result[plotname] <- rnaObj
     } else {
-        stop(date(), ": PALMO object do not contain Seurat object. Please create PALMO
-         object.")
+        stop(date(), ": PALMO object do not contain Seurat object. Please
+        create PALMO object.")
     }
 }

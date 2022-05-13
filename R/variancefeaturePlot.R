@@ -18,8 +18,9 @@
 #' variancefeaturePlot(data_object=palmo_obj, top_n=15)
 #' }
 
-variancefeaturePlot <- function(data_object = NULL, vardata = NULL, featureSet = "PTID", Residual = FALSE,
-    top_n = 15, cols = NULL) {
+variancefeaturePlot <- function(data_object = NULL, vardata = NULL,
+                                featureSet = "PTID", Residual = FALSE,
+                                top_n = 15, cols = NULL) {
 
     ## Check for input data
     if (!is.null(data_object)) {
@@ -27,13 +28,13 @@ variancefeaturePlot <- function(data_object = NULL, vardata = NULL, featureSet =
     } else if (!is.null(vardata)) {
         data <- vardata
     } else {
-        stop(date(), ": Please enter decomposition data frame or PALMO object.\n")
+        stop(date(), ": Please enter decomposition data frame or PALMO object.")
     }
 
     # If column of interest do not match with parameters
     check <- intersect(colnames(data), featureSet)
     if (length(check) != length(featureSet)) {
-        stop(date(), ": Input featureSet do not match with data provided.\n")
+        stop(date(), ": Input featureSet do not match with data provided.")
     }
 
     if (Residual == TRUE) {
@@ -60,8 +61,11 @@ variancefeaturePlot <- function(data_object = NULL, vardata = NULL, featureSet =
         colnames(data_sub) <- c("feature", "variable", "value")
 
         # Orderby
-        data_sub$variable <- factor(data_sub$variable, levels = rev(unique(c(column_oi, as.character(data_sub$variable)))))
-        data_sub$feature <- factor(data_sub$feature, levels = rev(unique(as.character(data_sub$feature))))
+        data_sub$variable <- factor(data_sub$variable,
+                        levels = rev(unique(c(column_oi,
+                                        as.character(data_sub$variable)))))
+        data_sub$feature <- factor(data_sub$feature,
+                        levels = rev(unique(as.character(data_sub$feature))))
 
         # color
         if (!is.null(cols)) {
@@ -75,10 +79,14 @@ variancefeaturePlot <- function(data_object = NULL, vardata = NULL, featureSet =
         names(cols_list) <- featureList
 
         # Column of interest specific plot
-        plot <- ggplot(data_sub, aes(x = feature, y = value, fill = variable)) + geom_bar(stat = "identity",
-            position = "stack") + labs(x = "Features", y = "% Variance explained", title = column_oi) +
-            scale_fill_manual(values = cols_list) + theme_bw() + theme(axis.text.x = element_text(angle = 90,
-            hjust = 0.5, vjust = 1), legend.position = "right") + coord_flip()
+        plot <- ggplot(data_sub, aes(x = feature, y = value, fill=variable)) +
+            geom_bar(stat = "identity", position = "stack") +
+            labs(x = "Features", y = "% Variance explained", title=column_oi) +
+            scale_fill_manual(values = cols_list) +
+            theme_bw() +
+            theme(axis.text.x = element_text(angle=90, hjust=0.5, vjust=1),
+                  legend.position = "right") +
+            coord_flip()
         print(plot)
         splots[[i]] <- plot
     }
