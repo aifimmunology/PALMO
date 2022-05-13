@@ -1,7 +1,7 @@
 Package: PALMO
 Type: Package
 Title: Identify Intra and Inter-Donor Variations in Bulk or Single Cell Longitudinal Dataset
-Version: 0.1.0
+Version: 0.99.0
 Authors@R: 
     c(person(given = "Suhas",
            family = "Vasaikar",
