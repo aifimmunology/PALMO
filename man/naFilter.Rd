@@ -10,8 +10,7 @@ naFilter(data_object, na_cutoff = 0.4)
 \item{data_object}{Input \emph{PALMO} S4 object. It contains annotation
 information and expression data from Bulk or single cell data.}
 
-\item{na_cutoff}{Threshold to remove NAs. Range is 0-1 (Default 0.4 means >40\%
-NAs are not allowed).}
+\item{na_cutoff}{Threshold to remove NAs. Range is 0-1 (Default 0.4 means40\% NAs are not allowed).}
 }
 \value{
 PALMO object with filtered NAs

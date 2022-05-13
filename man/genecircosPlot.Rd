@@ -11,7 +11,9 @@ genecircosPlot(
   group_position = 1,
   group_oi = NULL,
   titleName = "",
-  colorThreshold = 10
+  colorThreshold = 10,
+  colorMax = NULL,
+  colorscale = FALSE
 )
 }
 \arguments{
@@ -32,6 +34,10 @@ represents gene/proteins column represents group:donor (or donor:group)}
 
 \item{colorThreshold}{User-defined color threshold (same as cvThreshold,
 like 5)}
+
+\item{colorMax}{Maximum CV value in heatplot ("max", numeric or NULL)}
+
+\item{colorscale}{Show color scale, TRUE or FALSE (default).}
 }
 \value{
 Circos plots and dataframe

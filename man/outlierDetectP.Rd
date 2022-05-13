@@ -4,18 +4,27 @@
 \alias{outlierDetectP}
 \title{outlierDetectP Function}
 \usage{
-outlierDetectP(outlier_events, z_cutoff = 2, nGenes, group_by = "PTID")
+outlierDetectP(
+  outlier_events,
+  z_cutoff = 2,
+  nGenes,
+  group_by = "PTID",
+  alternative = "two.sided"
+)
 }
 \arguments{
 \item{outlier_events}{Identified outlier events}
 
-\item{z_cutoff}{|Z| cutoff threshold to find potential outliers (Eg. z_cutoff=
-2, equals to Mean/SD 2)}
+\item{z_cutoff}{|Z| cutoff threshold to find potential outliers (Eg.
+z_cutoff= 2, equals to Mean/SD 2)}
 
 \item{nGenes}{Number of background genes/features}
 
 \item{group_by}{Column name to use for groupwise outlier analysis. Default is
 PTID (donor or participant id).}
+
+\item{alternative}{alternative hypothesis, must be one of "one.sided"
+or "two.sided" (default)}
 }
 \value{
 PALMO object with outlier event p value dataframe

@@ -7,8 +7,8 @@
 mergePALMOdata(data_object, datatype)
 }
 \arguments{
-\item{data_object}{Input \emph{PALMO} S4 object. It contains annotation information
-and expression data from Bulk or single cell data.}
+\item{data_object}{Input \emph{PALMO} S4 object. It contains annotation
+information and expression data from Bulk or single cell data.}
 
 \item{datatype}{Input data type 'bulk' or 'singlecell'}
 }

@@ -12,6 +12,7 @@ lmeVariance(
   selectedFeatures = NULL,
   NA_to_zero = FALSE,
   cl = 2,
+  lmer_control = FALSE,
   fileName = NULL,
   filePATH = NULL
 )
@@ -20,8 +21,8 @@ lmeVariance(
 \item{data_object}{Input \emph{PALMO} S4 object. It contains annotation
 information and expression data from Bulk or single cell data.}
 
-\item{featureSet}{Variance analysis carried out for the feature set provided such
-as c('PTID', 'Time', 'Sex')}
+\item{featureSet}{Variance analysis carried out for the feature set provided
+such as c('PTID', 'Time', 'Sex')}
 
 \item{fixed_effect_var}{Fixed effect variables. In linear mixed model
 fixed_effect_var included as fixed effect variables and variance contribution
@@ -35,6 +36,9 @@ genes/features Default is 0}
 \item{NA_to_zero}{Convert NAs to zero. Default FALSE}
 
 \item{cl}{Number of clusters. Use nCores-1 to run parallel. Default 2}
+
+\item{lmer_control}{control structures for mixed model fitting. Default
+optimizer is "bobyqa". Reduces the run time for large data significantly.}
 
 \item{fileName}{User-defined file name, Default outputFile}
 

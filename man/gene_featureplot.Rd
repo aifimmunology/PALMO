@@ -27,7 +27,8 @@ information and expression data from Bulk or single cell data.}
 \item{data}{Optional, Data can be bulk data or single cell data}
 
 \item{anndata}{Optional, Annotation dataframe consist of information such as
-Sample (sample name), PTID (donor/participant), Time (longitudinal timepoints)}
+Sample (sample name), PTID (donor/participant), Time (longitudinal
+timepoints)}
 
 \item{featureList}{User-defined feature or genelist as a vector}
 
@@ -44,7 +45,8 @@ Sample (sample name), PTID (donor/participant), Time (longitudinal timepoints)}
 \item{facet_by}{A set of variables or expressions}
 
 \item{compare_means}{Add mean comparison p-value in a plot (for more
-information refer http://rpkgs.datanovia.com/ggpubr/reference/stat_compare_means.html)}
+information refer
+http://rpkgs.datanovia.com/ggpubr/reference/stat_compare_means.html)}
 
 \item{x_text_angle}{xaxis text angle on ggplot}
 

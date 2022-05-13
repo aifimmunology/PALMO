@@ -15,8 +15,8 @@ cvCalcSC(
 )
 }
 \arguments{
-\item{data_object}{Input \emph{PALMO} S4 object. Contains annotation table and
-expression matrix or data frame. Rows represent gene/proteins column
+\item{data_object}{Input \emph{PALMO} S4 object. Contains annotation table
+and expression matrix or data frame. Rows represent gene/proteins column
 represents participant samples (same as annotation table Sample column)}
 
 \item{meanThreshold}{Average expression threshold to filter lowly expressed

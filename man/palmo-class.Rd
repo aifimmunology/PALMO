@@ -9,8 +9,8 @@
 PALMO S4 class
 }
 \description{
-This function creates \emph{PALMO} class object. All the raw data and results from
-PALMO are stored in this object.
+This function creates \emph{PALMO} class object. All the raw data and results
+from PALMO are stored in this object.
 }
 \section{Fields}{
 

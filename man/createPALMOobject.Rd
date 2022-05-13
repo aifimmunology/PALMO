@@ -25,7 +25,7 @@ data should be Seurat object (please check
 https://search.r-project.org/CRAN/refmans/SeuratObject/html/CreateSeuratObject.html).
 In case Seurat object not available then user can use function
 createPALMOfromsinglecellmatrix to create PALMO object. The Seurat
-object/metadata should have Sample column curesponding to Annotation
+object/metadata should have Sample column corresponding to Annotation
 dataframe.
 }
 \examples{

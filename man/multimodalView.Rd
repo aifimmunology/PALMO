@@ -13,6 +13,8 @@ multimodalView(
   group_position = NULL,
   plotHeight = 10,
   titleName = "",
+  colorMax = NULL,
+  colorscale = FALSE,
   fileName = NULL,
   filePATH = NULL
 )
@@ -28,13 +30,17 @@ gene/proteins column represents group:donor (group and donor separated by :)}
 
 \item{geneList}{Genes of interest to explore}
 
-\item{colorThreshold}{User-defined color threshold in colorspace}
+\item{colorThreshold}{User-defined color threshold in color space}
 
 \item{group_position}{Default 1, use 2 when columns are donor:group format}
 
 \item{plotHeight}{User-defined Plot size (in)}
 
 \item{titleName}{Title of the plot}
+
+\item{colorMax}{Maximum CV value in heatplot ("max", numeric or NULL)}
+
+\item{colorscale}{Show color scale, TRUE or FALSE (default).}
 
 \item{fileName}{User defined filename}
 
@@ -44,7 +50,7 @@ gene/proteins column represents group:donor (group and donor separated by :)}
 Multimodal plot and data list
 }
 \description{
-This function allows to vizualize the multimodal view genes of interest
+This function allows to visualize the multimodal view genes of interest
 by celltypes/ groups defined by use
 }
 \examples{

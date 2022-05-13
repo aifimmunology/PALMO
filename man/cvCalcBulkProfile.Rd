@@ -14,7 +14,8 @@ information and expression data from Bulk or single cell data.}
 
 \item{fileName}{User-defined filename, Default outputFile}
 
-\item{filePATH}{User-defined output directory \emph{PATH} Default, current directory}
+\item{filePATH}{User-defined output directory \emph{PATH} Default, current
+directory}
 }
 \value{
 PALMO object with CV profile cv_all

@@ -33,7 +33,7 @@ is 'spearman'}
 \item{group_position}{(Optional) Position of group 1st or 2nd like (group_position=2, in
 Donor:group)}
 
-\item{group_by}{Cluster correlation heatplot by 'donor' or 'group'}
+\item{group_by}{Cluster correlation heat plot by 'donor' or 'group'}
 
 \item{col_break}{Value between 0-1.}
 

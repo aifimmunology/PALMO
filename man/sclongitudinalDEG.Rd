@@ -25,16 +25,16 @@ sclongitudinalDEG(
 \item{data_object}{Input \emph{PALMO} S4 object. It contains annotation
 information and expression data from Bulk or single cell data.}
 
-\item{scassay}{Single cell assay from scRNA seurat object (Default 'RNA')}
+\item{scassay}{Single cell assay from scRNA seurat object (Default "RNA")}
 
-\item{group_column}{Column of interest such as 'celltype' to analyze DEGs in
+\item{group_column}{Column of interest such as "celltype" to analyze DEGs in
 participant over time}
 
-\item{group_oi}{Features of interest such as  specific celltypes c('CD4_Naive',
-'CD4_TEM')}
+\item{group_oi}{Features of interest such as  specific celltypes
+c("CD4_Naive", "CD4_TEM")}
 
-\item{mincellsexpressed}{Average expression threshold to filter lowly expressed
-genes/features Default is 0.1}
+\item{mincellsexpressed}{Average expression threshold to filter lowly
+expressed genes/features Default is 0.1}
 
 \item{removelnc}{Remove lincRNAs, mitochondrial and ribosomal genes from
 analysis incldes (^RP|^MT-|^LINC|orf) (TRUE/FALSE). Default is TRUE}
@@ -57,9 +57,6 @@ Default is FALSE}
 \item{filePATH}{User-defined output directory \emph{PATH} Default, current
 directory}
 }
-\value{
-PALMO object with deg list
-}
 \description{
 This function allows ser to calculate differential expressed genes in the
 direction of given time points (if timepoints>3 otherwise DEGs between two
@@ -73,7 +70,8 @@ were run across multiple batches.
 }
 \examples{
 \dontrun{
-palmo_obj <- sclongitudinalDEG(ann=metadata, dataObj=pbmc, scassay='RNA', group_column='celltype')
+palmo_obj <- sclongitudinalDEG(ann=metadata, dataObj=pbmc, scassay="RNA",
+group_column="celltype")
 }
 }
 \keyword{sclongitudinalDEG}

@@ -17,8 +17,8 @@ p_value_for_event(events, tries, rate)
 outlier event p value
 }
 \description{
-This function allows to calculate p value for identified outlier significant abnormal
-events
+This function allows to calculate p value for identified outlier significant
+abnormal events
 }
 \examples{
 \dontrun{

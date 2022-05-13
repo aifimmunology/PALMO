@@ -34,7 +34,7 @@ participants}
 \item{topFeatures}{Number of features to be selected from each group, Default
 is 25}
 
-\item{filePATH}{User-defined output directory \emph{PATH} to load the \emph{CV}
+\item{filePATH}{User-defined output directory \emph{PATH} to load \emph{CV}
 result obtained from \code{cvCalcSC} function}
 
 \item{fileName}{User defined filename}

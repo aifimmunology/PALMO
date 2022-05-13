@@ -38,8 +38,8 @@ Default is ACTB, GAPDH}
 \item{topFeatures}{Number of features to be selected from each group, Default
 is 25}
 
-\item{filePATH}{User-defined output directory path to load the CV result obtained
-from cvCalcSC function}
+\item{filePATH}{User-defined output directory path to load the CV result
+obtained from cvCalcSC function}
 
 \item{fileName}{User defined filename}
 }

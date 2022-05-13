@@ -45,7 +45,8 @@ select few}
 
 \item{mfuzz_thres}{\code{mfuzz:thres} threshold for excluding genes}
 
-\item{mfuzz_min.std}{\code{mfuzz:min.std} threshold for minimum standard deviation}
+\item{mfuzz_min.std}{\code{mfuzz:min.std} threshold for minimum standard
+deviation}
 
 \item{max_cluster}{Number of clusters to explore (Default 2^n)}
 
