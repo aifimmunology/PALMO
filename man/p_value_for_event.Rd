@@ -2,7 +2,7 @@
 % Please edit documentation in R/outlierDetectP.R
 \name{p_value_for_event}
 \alias{p_value_for_event}
-\title{A p_value_for_event Function}
+\title{p_value_for_event Function}
 \usage{
 p_value_for_event(events, tries, rate)
 }
@@ -13,11 +13,16 @@ p_value_for_event(events, tries, rate)
 
 \item{rate}{probability distribution}
 }
+\value{
+outlier event p value
+}
 \description{
-This function allows to calculate p value for identified outlier significant abnormal
-events
+This function allows to calculate p value for identified outlier significant
+abnormal events
 }
 \examples{
-#p_value_for_event(events, tries, rate)
+\dontrun{
+p_value_for_event(events, tries, rate)
+}
 }
 \keyword{p_value_for_event}

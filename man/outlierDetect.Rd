@@ -2,46 +2,49 @@
 % Please edit documentation in R/outlierDetect.R
 \name{outlierDetect}
 \alias{outlierDetect}
-\title{A outlierDetect Function}
+\title{outlierDetect Function}
 \usage{
 outlierDetect(
-  ann,
-  mat,
-  z_cutoff = 2,
+  data_object,
+  z_cutoff = NULL,
   plotWidth = 10,
   plotHeight = 5,
-  groupBy = FALSE,
+  group_column = NULL,
+  cl = 2,
   fileName = NULL,
   filePATH = NULL
 )
 }
 \arguments{
-\item{ann}{Annotation table. Table must consist column Sample (Participant
-sample name), PTID (Participant), Time (longitudinal time points)}
+\item{data_object}{Input \emph{PALMO} S4 object. It contains annotation
+information and expression data from Bulk or single cell data.}
 
-\item{mat}{Expression matrix or data frame. Rows represents gene/proteins
-column represents participant samples (same as annotation table Sample column)}
-
-\item{z_cutoff}{|Z| cutoff threshold to find potential outliers (Eg. z_cutoff=
-2, equals to Mean/SD 2)}
+\item{z_cutoff}{|Z| cutoff threshold to find potential outliers (Eg.
+\emph{z_cutoff}=2, equals to \code{Mean/SD} 2)}
 
 \item{plotWidth}{User-defined plot width, Default 10 in}
 
 \item{plotHeight}{User-defined plot height, Default 5 in}
 
-\item{groupBy}{Include groupwise outlier analysis (TRUE or FALSE). Column
-used for analyis is Sample_group}
+\item{group_column}{Include group by outlier analysis (celltype, cluster)}
+
+\item{cl}{Number of clusters. Use nCores-1 to run parallel. Default 2}
 
 \item{fileName}{User-defined file name, Default outputFile}
 
-\item{filePATH}{User-defined output directory PATH Default, current directory}
+\item{filePATH}{User-defined output directory \emph{PATH} Default, current
+directory}
+}
+\value{
+PALMO object with outlier_res dataframe
 }
 \description{
-This function allows you to perform outlier analysis on bulk data by
+This function allows users to perform outlier analysis on bulk data by
 calculating z-score. Outlier genes defined as mean/SD = |Z| > z_cutoff.
 }
 \examples{
-#filePATH <- getwd()
-#outlier_res <- outlierDetect(ann=metadata, mat=datamatrix)
+\dontrun{
+palmo_obj <- outlierDetect(data_object=palmo_obj, z_cutoff=2)
+}
 }
 \keyword{outlierDetect}

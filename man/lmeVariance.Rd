@@ -2,44 +2,61 @@
 % Please edit documentation in R/lmeVariance.R
 \name{lmeVariance}
 \alias{lmeVariance}
-\title{A lmeVariance Function}
+\title{lmeVariance Function}
 \usage{
 lmeVariance(
-  ann,
-  mat,
+  data_object,
   featureSet,
+  fixed_effect_var = NULL,
   meanThreshold = NULL,
+  selectedFeatures = NULL,
+  NA_to_zero = FALSE,
+  cl = 2,
+  lmer_control = FALSE,
   fileName = NULL,
   filePATH = NULL
 )
 }
 \arguments{
-\item{ann}{Annotation table. Table must consist column Sample (Participant
-sample name), PTID (Participant), Time (longitudinal time points)}
+\item{data_object}{Input \emph{PALMO} S4 object. It contains annotation
+information and expression data from Bulk or single cell data.}
 
-\item{mat}{Expression matrix or data frame. Rows represents gene/proteins
-column represents participant samples (same as annotation table Sample column)}
+\item{featureSet}{Variance analysis carried out for the feature set provided
+such as c('PTID', 'Time', 'Sex')}
 
-\item{featureSet}{Variance analysis carried out for the feature set provided such
-as c("PTID", "Time", "Sex")}
+\item{fixed_effect_var}{Fixed effect variables. In linear mixed model
+fixed_effect_var included as fixed effect variables and variance contribution
+obtained by adding them as random variables}
 
 \item{meanThreshold}{Average expression threshold to filter lowly expressed
 genes/features Default is 0}
 
+\item{selectedFeatures}{User-defined gene/feature list}
+
+\item{NA_to_zero}{Convert NAs to zero. Default FALSE}
+
+\item{cl}{Number of clusters. Use nCores-1 to run parallel. Default 2}
+
+\item{lmer_control}{control structures for mixed model fitting. Default
+optimizer is "bobyqa". Reduces the run time for large data significantly.}
+
 \item{fileName}{User-defined file name, Default outputFile}
 
-\item{filePATH}{User-defined output directory PATH Default, current directory}
+\item{filePATH}{User-defined output directory \emph{PATH} Default, current
+directory}
+}
+\value{
+PALMO object with variance lmem_res dataframe
 }
 \description{
-This function allows you to calculate inter-donor variation between participants
-over longitudinal time points. It uses linear mixed model to calculate variance
-contribution from each given feature list
+This function allows you to calculate inter-donor variation between
+participants over longitudinal timepoints. It uses linear mixed model to
+calculate variance contribution from each given feature list.
 }
 \examples{
-##Input Expression data
-#filePATH <- getwd()
-#lmem_res <- lmeVariance(ann=metadata, mat=datamatrix,
-#featureSet=c("PTID", "Time", "Sex"),
-#meanThreshold=0.1, fileName="RNA", filePATH=filePATH)
+\dontrun{
+palmo_obj=lmeVariance(data_object=palmo_obj,
+featureSet=c('PTID','Time','Sex'))
+}
 }
 \keyword{lmeVariance}

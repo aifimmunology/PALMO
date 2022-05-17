@@ -2,17 +2,19 @@
 % Please edit documentation in R/sclongitudinalDEG.R
 \name{sclongitudinalDEG}
 \alias{sclongitudinalDEG}
-\title{A sclongitudinalDEG Function}
+\title{sclongitudinalDEG Function}
 \usage{
 sclongitudinalDEG(
-  ann,
-  dataObj,
+  data_object,
   scassay = "RNA",
-  celltypecol,
+  group_column,
+  group_oi = NULL,
   mincellsexpressed = 0.1,
   removelnc = "TRUE",
-  adjfac = "none",
+  adjfac = NULL,
   baseline = NULL,
+  addCDR = FALSE,
+  CDR_column = NULL,
   plotWidth = 10,
   plotHeight = 10,
   fileName = NULL,
@@ -20,19 +22,19 @@ sclongitudinalDEG(
 )
 }
 \arguments{
-\item{ann}{Annotation dataframe. Table must consist column Sample (Participant
-sample name), PTID (Participant), Time (longitudinal time points)}
-
-\item{dataObj}{Single cell RNA seurat object. Seurat object should have column
-name Sample (same as annotation table Sample column)}
+\item{data_object}{Input \emph{PALMO} S4 object. It contains annotation
+information and expression data from Bulk or single cell data.}
 
 \item{scassay}{Single cell assay from scRNA seurat object (Default "RNA")}
 
-\item{celltypecol}{Column of interest such as celltype to analyze DEGs in
+\item{group_column}{Column of interest such as "celltype" to analyze DEGs in
 participant over time}
 
-\item{mincellsexpressed}{Average expression threshold to filter lowly expressed
-genes/features Default is 0.1}
+\item{group_oi}{Features of interest such as  specific celltypes
+c("CD4_Naive", "CD4_TEM")}
+
+\item{mincellsexpressed}{Average expression threshold to filter lowly
+expressed genes/features Default is 0.1}
 
 \item{removelnc}{Remove lincRNAs, mitochondrial and ribosomal genes from
 analysis incldes (^RP|^MT-|^LINC|orf) (TRUE/FALSE). Default is TRUE}
@@ -41,16 +43,22 @@ analysis incldes (^RP|^MT-|^LINC|orf) (TRUE/FALSE). Default is TRUE}
 
 \item{baseline}{Donors (PTID) to be considered as baseline. Deafult NULL}
 
+\item{addCDR}{(Optional) Add CDR while performing differential analysis.
+Default is FALSE}
+
+\item{CDR_column}{(Optional) cellular detection rate column name}
+
 \item{plotWidth}{User-defined plot width, Default 10 in}
 
 \item{plotHeight}{User-defined plot height, Default 10 in}
 
 \item{fileName}{User-defined file name, Default outputFile}
 
-\item{filePATH}{User-defined output directory PATH Default, current directory}
+\item{filePATH}{User-defined output directory \emph{PATH} Default, current
+directory}
 }
 \description{
-This function allows you to calculate differential expressed genes in the
+This function allows ser to calculate differential expressed genes in the
 direction of given time points (if timepoints>3 otherwise DEGs between two
 timepoints). A hurdle model was fit to each participant independently in
 order to identify participant-specific longitudinal transcriptomic changes.
@@ -61,7 +69,9 @@ and adjusting for the batch only if any timepoints from the same participant
 were run across multiple batches.
 }
 \examples{
-##Input scRNA data and annotation file
-#DEGres <- sclongitudinalDEG(ann=metadata, dataObj=pbmc, scassay="RNA", celltypecol="celltype")
+\dontrun{
+palmo_obj <- sclongitudinalDEG(ann=metadata, dataObj=pbmc, scassay="RNA",
+group_column="celltype")
+}
 }
 \keyword{sclongitudinalDEG}

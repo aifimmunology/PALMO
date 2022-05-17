@@ -2,12 +2,11 @@
 % Please edit documentation in R/VarFeatures.R
 \name{VarFeatures}
 \alias{VarFeatures}
-\title{A VarFeatures Function}
+\title{VarFeatures Function}
 \usage{
 VarFeatures(
-  ann = NULL,
+  data_object,
   group_oi = NULL,
-  meanThreshold = NULL,
   cvThreshold = NULL,
   donorThreshold = NULL,
   groupThreshold = NULL,
@@ -17,43 +16,41 @@ VarFeatures(
 )
 }
 \arguments{
-\item{ann}{Annotation table. Table must consist column Sample (Participant
-sample name), PTID (Participant), Time (longitudinal time points)}
+\item{data_object}{Input \emph{PALMO} S4 object. It contains annotation
+information and expression data from Bulk or single cell data.}
 
-\item{group_oi}{Group of interest to focus on, Default is NULL}
-
-\item{meanThreshold}{Average expression threshold to filter lowly expressed
-genes Default is 0.1 (log2 scale)}
+\item{group_oi}{Group of interest to focus on. Example among celltypes focus
+on selected ones. Default is NULL.}
 
 \item{cvThreshold}{Coefficient of variation threshold to select variable and
-stable genes Default is 10 for single cell RNA (100*SD/mean)}
+stable genes Default is 10 for single cell RNA \code{(100*SD/mean)}}
 
 \item{donorThreshold}{Donor threshold number to be used, Default is number of
 participants}
 
 \item{groupThreshold}{Group label threshold number to be used, Default is
-(number of participants x group labels)/2}
+\code{(number of participants x group labels)/2}}
 
 \item{topFeatures}{Number of features to be selected from each group, Default
 is 25}
 
-\item{filePATH}{User-defined output directory path to load the CV result obtained
-from cvCalcSC function}
+\item{filePATH}{User-defined output directory \emph{PATH} to load \emph{CV}
+result obtained from \code{cvCalcSC} function}
 
 \item{fileName}{User defined filename}
 }
+\value{
+PALMO object with variable (var_genes) features
+}
 \description{
-This function allows you to identify variable genes in a participant across
-longitudinal timepoints in single cell dataset. The coefficient of variation
-(CV) obtained from 'cvCalcSC' function used to filter genes/features by CV
-threshold (cvThreshold). User can identify cvThreshold in different datasets
-using housekeeping genes CV distribution. The minimum expression of gene
-(meanThreshold) used to remove lowly expressed genes (spike CV).
+This function allows user to identify variable genes in participants across
+longitudinal timepoints using single cell expression data. The coefficient of
+variation (CV) calculated using \code{cvCalcSC} function. Users can identify
+cvThreshold in different datasets using housekeeping genes CV distribution.
 }
 \examples{
-#Single cell RNA data
-#vargenes <- VarFeatures(ann=metadata, meanThreshold=0.1, cvThreshold=10,
-#donorThreshold=donorThreshold, groupThreshold=groupThreshold,
-#topFeatures=25, fileName="scRNA", filePATH="output/")
+\dontrun{
+palmo_obj <- VarFeatures(data_object=palmo_obj, cvThreshold=10)
+}
 }
 \keyword{VarFeatures}

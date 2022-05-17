@@ -2,25 +2,32 @@
 % Please edit documentation in R/cvCalcBulkProfile.R
 \name{cvCalcBulkProfile}
 \alias{cvCalcBulkProfile}
-\title{A cvCalcBulkProfile Function}
+\title{cvCalcBulkProfile Function}
 \usage{
-cvCalcBulkProfile(ann, mat, fileName = NULL, filePATH = NULL)
+cvCalcBulkProfile(data_object, cl = 2, fileName = NULL, filePATH = NULL)
 }
 \arguments{
-\item{ann}{Annotation table. Table must consist column Sample (Participant
-sample name), PTID (Participant), Time (longitudinal time points)}
+\item{data_object}{Input \emph{PALMO} S4 object. It contains annotation
+information and expression data from Bulk or single cell data.}
 
-\item{mat}{Expression matrix or data frame. Rows represents gene/proteins
-column represents participant samples (same as annotation table Sample column)}
+\item{cl}{Number of clusters. Use nCores-1 to run parallel. Default 2}
 
-\item{fileName}{User-defined file name, Default outputFile}
+\item{fileName}{User-defined filename, Default outputFile}
 
-\item{filePATH}{User-defined output directory PATH Default, current directory}
+\item{filePATH}{User-defined output directory \emph{PATH} Default, current
+directory}
+}
+\value{
+PALMO object with CV profile cv_all
 }
 \description{
-This function allows to calculate Intra-donor variations over longitudinal
-timepoints. The coefficient of variation (CV) is calculated in Bulk
-data without group information. CV calculated across samples. It requires
-longitudinal data matrix/data frame and annotation file.
+This function allows to calculate Intra-donor variations in bulk data over
+longitudinal timepoints and visualize in a CV vs Mean plot. Plots stored in
+output directory.
+}
+\examples{
+\dontrun{
+cvCalcBulkProfile(data_object=palmo_obj)
+}
 }
 \keyword{cvCalcBulkProfile}

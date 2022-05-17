@@ -2,41 +2,53 @@
 % Please edit documentation in R/cvCalcSC.R
 \name{cvCalcSC}
 \alias{cvCalcSC}
-\title{A cvCalcSC Function}
+\title{cvCalcSC Function}
 \usage{
 cvCalcSC(
-  ann,
-  mat,
+  data_object,
   meanThreshold = NULL,
   cvThreshold = NULL,
   housekeeping_genes = NULL,
+  cl = 2,
   fileName = NULL,
   filePATH = NULL
 )
 }
 \arguments{
-\item{ann}{Annotation table. Table must consist column Sample (Participant
-sample name), PTID (Participant), Time (longitudinal time points)}
-
-\item{mat}{Expression matrix or data frame. Rows represents gene/proteins
-column represents participant samples (same as annotation table Sample column)}
+\item{data_object}{Input \emph{PALMO} S4 object. Contains annotation table
+and expression matrix or data frame. Rows represent gene/proteins column
+represents participant samples (same as annotation table Sample column)}
 
 \item{meanThreshold}{Average expression threshold to filter lowly expressed
 genes Default is 0.1 (log2 scale)}
 
 \item{cvThreshold}{Coefficient of variation threshold to select variable and
-stable genes Default is 10 for single cell RNA (100*SD/mean)}
+stable genes. Default is 5 for bulk data. Users can use 10-20 for single cell
+average expression data.}
 
-\item{housekeeping_genes}{Optional list of housekeeping genes to focus on.
-Default is ACTB, GAPDH}
+\item{housekeeping_genes}{Optional, vector of housekeeping genes. Default is
+c('ACTB', 'GAPDH')}
+
+\item{cl}{Number of clusters. Use nCores-1 to run parallel. Default 2}
 
 \item{fileName}{User-defined file name, Default outputFile}
 
-\item{filePATH}{User-defined output directory PATH Default, current directory}
+\item{filePATH}{User-defined output directory \emph{PATH} Default, current
+directory}
+}
+\value{
+PALMO object with CV list
 }
 \description{
-This function allows to calculate Intra-donor variations over longitudinal
-timepoints. The coefficient of variation is calculated in single cell
-data. It requires longitudinal data matrix/data frame and annotation file.
+This function allows to calculate Intra-donor variations in single cell data
+over longitudinal timepoints. The coefficient of variation (CV=SD/mean) is
+calculated in average expression data in same donor/participant and
+corresponding user-defined group (like celltype, cluster) across longitudinal
+timepoints.
+}
+\examples{
+\dontrun{
+palmo_obj=cvCalcSC(data_object=palmo_obj, meanThreshold=0.1, cvThreshold=5)
+}
 }
 \keyword{cvCalcSC}

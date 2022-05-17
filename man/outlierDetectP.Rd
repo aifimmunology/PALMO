@@ -2,26 +2,42 @@
 % Please edit documentation in R/outlierDetectP.R
 \name{outlierDetectP}
 \alias{outlierDetectP}
-\title{A outlierDetectP Function}
+\title{outlierDetectP Function}
 \usage{
-outlierDetectP(outlier_events, z_cutoff = 2, nGenes, groupBy = "PTID")
+outlierDetectP(
+  outlier_events,
+  z_cutoff = 2,
+  nGenes,
+  group_by = "PTID",
+  alternative = "two.sided"
+)
 }
 \arguments{
 \item{outlier_events}{Identified outlier events}
 
-\item{z_cutoff}{|Z| cutoff threshold to find potential outliers (Eg. z_cutoff=
-2, equals to Mean/SD 2)}
+\item{z_cutoff}{|Z| cutoff threshold to find potential outliers (Eg.
+z_cutoff= 2, equals to Mean/SD 2)}
 
 \item{nGenes}{Number of background genes/features}
 
-\item{groupBy}{Column name to use for groupwise outlier analysis default is
-PTID (patient id)}
+\item{group_by}{Column name to use for groupwise outlier analysis. Default is
+PTID (donor or participant id).}
+
+\item{alternative}{alternative hypothesis, must be one of "one.sided"
+or "two.sided" (default)}
+}
+\value{
+PALMO object with outlier event p value dataframe
+
+PALMO object with outlier event p value
 }
 \description{
 This function allows to identify significant abnormal event identified
 from outlier analysis.
 }
 \examples{
-#outlierDetectP(outlier_events, z_cutoff=2, nGenes)
+\dontrun{
+outlierDetectP(outlier_events=outlier_res, z_cutoff=2, nGenes=1043)
+}
 }
 \keyword{outlierDetectP}

@@ -2,15 +2,16 @@
 % Please edit documentation in R/sample_correlation.R
 \name{sample_correlation}
 \alias{sample_correlation}
-\title{A sample_correlation Function}
+\title{sample_correlation Function}
 \usage{
 sample_correlation(
-  data,
-  column_sep = ":",
-  method = "spearman",
-  groupColumn = 2,
-  clusterBy = "donor",
-  max = 0.9,
+  data_object,
+  donor_sep = ":",
+  cor_method = "spearman",
+  group_position = 2,
+  group_by = "donor",
+  col_break = NULL,
+  col_max = 1,
   column_names_fontsize = 4,
   row_names_fontsize = 4,
   row_title_fontsize = 6,
@@ -21,41 +22,48 @@ sample_correlation(
 )
 }
 \arguments{
-\item{data}{Expression matrix or data frame. Rows represents gene/proteins
-column represents participant samples (if celltype with in donor then sample:
-celltype, separated by :)}
+\item{data_object}{Input \emph{PALMO} S4 object. It contains annotation information
+and expression data from Bulk or single cell data.}
 
-\item{column_sep}{Sample and celltype seperator like (:)}
+\item{donor_sep}{Sample and group(celltype) separator like (donor_sep=':')}
 
-\item{method}{Correlation method "pearson" or "spearman"}
+\item{cor_method}{(Optional) Correlation method 'pearson' or 'spearman'. Default
+is 'spearman'}
 
-\item{groupColumn}{Data column names consists group (Donor-group) at 2nd place
-or 1st place(like PTIDxGroupX, 2 or GroupXPTIDx, 1)}
+\item{group_position}{(Optional) Position of group 1st or 2nd like (group_position=2, in
+Donor:group)}
 
-\item{clusterBy}{Cluster correlation result by "donor" or "group". Default
-donor}
+\item{group_by}{Cluster correlation heat plot by 'donor' or 'group'}
 
-\item{max}{Maximum color limit (Default, 0.9 correlation)}
+\item{col_break}{Value between 0-1.}
 
-\item{column_names_fontsize}{Font size of the column names, default 4}
+\item{col_max}{Maximum color limit (Default 1)}
 
-\item{row_names_fontsize}{Font size of the row names, default 4}
+\item{column_names_fontsize}{Font size of the column names, Default 4}
 
-\item{row_title_fontsize}{Font size of the row title, default 6}
+\item{row_names_fontsize}{Font size of the row names, Default 4}
 
-\item{column_title_fontsize}{Font size of the column title, default 6}
+\item{row_title_fontsize}{Font size of the row title, Default 6}
 
-\item{plotHeight}{Height of the plot (in), deafult 20in}
+\item{column_title_fontsize}{Font size of the column title, Default 6}
+
+\item{plotHeight}{Height of the plot in inch, Default 20 in}
 
 \item{fileName}{User-defined file name, Default outputFile}
 
-\item{filePATH}{User-defined output directory PATH Default, current directory}
+\item{filePATH}{User-defined output directory \emph{PATH} Default, current
+directory}
+}
+\value{
+PALMO object with correlation cor_res dataframe
 }
 \description{
 This function allows to perform sample correlation (by group like
-celltype, ot by donor).
+celltype, or by donor).
 }
 \examples{
-#res <- sample_correlation(data=datamatrix, column_sep=":", method="spearman")
+\dontrun{
+palmo_obj <- sample_correlation(data_object=palmo_obj, donor_sep=':')
+}
 }
 \keyword{sample_correlation}

@@ -2,34 +2,52 @@
 % Please edit documentation in R/genecircosPlot.R
 \name{genecircosPlot}
 \alias{genecircosPlot}
-\title{A genecircosPlot Function}
+\title{genecircosPlot Function}
 \usage{
 genecircosPlot(
-  data,
+  data = NULL,
+  data_object = NULL,
   geneList,
-  groupColumn = NULL,
-  groupBy = NULL,
-  colorThreshold = NULL
+  group_position = 1,
+  group_oi = NULL,
+  titleName = "",
+  colorThreshold = 10,
+  colorMax = NULL,
+  colorscale = FALSE
 )
 }
 \arguments{
 \item{data}{Expression matrix or data frame. Rows represents gene/proteins
-column represents group:donor (group and donor separated by :)}
+column represents group:donor (or donor:group)}
 
-\item{geneList}{Genes of interest to explore}
+\item{data_object}{Input \emph{PALMO} S4 object. It contains annotation
+information and expression data from Bulk or single cell data. Rows
+represents gene/proteins column represents group:donor (or donor:group)}
 
-\item{groupColumn}{Default 1, use 2 when columns are donor:group format}
+\item{geneList}{User-defined genes of interest}
 
-\item{groupBy}{Optional, User-defined groups to consider and order}
+\item{group_position}{Default 1, use 2 when columns are donor:group format}
 
-\item{colorThreshold}{User-defined color threshold in colorspace}
+\item{group_oi}{Optional, User-defined groups to consider and order plot}
+
+\item{titleName}{Title of the plot}
+
+\item{colorThreshold}{User-defined color threshold (same as cvThreshold,
+like 5)}
+
+\item{colorMax}{Maximum CV value in heatplot ("max", numeric or NULL)}
+
+\item{colorscale}{Show color scale, TRUE or FALSE (default).}
+}
+\value{
+Circos plots and dataframe
 }
 \description{
-This function allows you to Circos Plot for gene list of interest by group
+This function allows to Circos Plot for gene list of interest by group
 }
 \examples{
-##Circos Plot for genes expression in a group
-#geneList <- c("IL32","CCL5","TCF7","IL7R","LEF1")
-#res <- genecircosPlot(data=cv_res, geneList=geneList)
+\dontrun{
+genecircosPlot(data_object=palmo_obj, geneList=c('IL32','CCL5','TCF7'))
+}
 }
 \keyword{genecircosPlot}

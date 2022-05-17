@@ -1,78 +1,84 @@
-#' A dimUMAPPlot Function
+#' dimUMAPPlot Function
 #'
-#' This function allows you to perform UMAP visualization of gene of interest list.
-#' @param ann Annotation table. Table must consist column Sample (Participant 
-#' sample name), PTID (Participant), Time (longitudinal time points), group,
-#' name of the group, group_donor (combined string using group:Sample)
-#' @param rnaObj The seurat scRNA object in case of single cell RNA data (optional).
-#' @param countMat Expression matrix or data frame. Rows represents gene/proteins
-#' column represents participant samples (same as annotation table Sample column),
-#' in case count matrix for expression data (optional).
+#' This function allows to perform UMAP visualization of gene of interest list.
+#' @param data_object Input \emph{PALMO} S4 object. Contains annotation table and
+#' single cell data stored as Seurat scRNA object.
 #' @param gene_oi Genes of interest to explore, required
 #' @param nPC Number of PCAs to be used for UMAP, Default is 30
-#' @param groupName User-defined group name column from annotation table or seurat
-#' annotation column, required
-#' @param plotname User-defined output file name, required
+#' @param group_column User-defined group name column from annotation table or
+#' Seurat annotation column. Example, group_column='celltype' (required)
+#' @param plotname User-defined output file name (required)
+#' @param repel UMAP plot with labels repel=TRUE. Default FALSE
 #' @param fileName User-defined file name, Default outputFile
-#' @param filePATH User-defined output directory PATH Default, current directory
+#' @param filePATH User-defined output directory \emph{PATH} Default, current
+#' directory
+#' @return UMAP plot
 #' @keywords dimUMAPPlot
 #' @export
 #' @examples
-#' ##Count/genescore matrix data
-#' #dimUMAPPlot(ann=annotation, countMat=countData, nPC=15, gene_oi=var_gene, 
-#' #groupName="celltype", plotname="variable", filePATH=filePATH, fileName="ATAC")
-#' 
-#' ##Single cell RNA data
-#' #dimUMAPPlot(rnaObj=SeuratObj, nPC=15, gene_oi=var_gene, groupName="celltype",
-#' #plotname="variable", filePATH=filePATH, fileName="scRNA")
+#' \dontrun{
+#' dimUMAPPlot(data_object=pamo_obj, nPC=15, gene_oi=stable_gene,
+#' group_column='celltype', plotname='stable')
+#' }
 
-dimUMAPPlot <- function(ann, rnaObj=NULL, countMat=NULL, nPC=30, gene_oi=NULL, groupName=NULL, plotname=NULL, filePATH=NULL, fileName=NULL) {
-    
-  cat(date(),": Visualizing UMAP\n")
-  if(!is.null(rnaObj)) {
-      #Remove scaled data if any
-      rnaObj <- DietSeurat(rnaObj, counts = TRUE, data = TRUE,
-                     scale.data = FALSE, features = NULL, assays = NULL, dimreducs = NULL, graphs = NULL)
-  } else if(!is.null(countMat)) {
-      #create seurat object
-      rnaObj <- CreateSeuratObject(counts=countMat, project = "proj", assay = "RNA",
-                                 min.cells = 0, min.features = 0, names.field = 1,
-                                 names.delim = "_", meta.data = NULL)
-      metaData <- rnaObj@meta.data
-      rnaObj@meta.data <- data.frame(metaData, ann, stringsAsFactors = F)
-      metaData <- rnaObj@meta.data
-      rnaObj <- FindVariableFeatures(rnaObj, selection.method = "vst", nfeatures = 3000)
-      save(rnaObj, file=paste(filePATH,"/",fileName,"-genematatrix-seuratobj.Rda", sep=""))
-  } else {
-      cat(now(),": Please provide Seurat object as input for scRNA or archR object for scATAC\n")
-      stop()
-  }
+dimUMAPPlot <- function(data_object, nPC = 30, gene_oi, group_column, plotname = NULL, repel = FALSE,
+    filePATH = NULL, fileName = NULL) {
 
-  if(is.null(nPC)) {
-    nPC=30 #Number of PCA to be used, default 30
-  }
+    message(date(), ": Visualizing UMAP")
+    ## If filename or filepath null
+    if (is.null(fileName)) {
+        fileName <- "outputFile"
+    }
+    if (is.null(filePATH)) {
+        filePATH <- data_object@filePATH
+    }
 
-  if(is.null(groupName)) {
-    cat(now(),": Please provide avgGroup\n")
-  }
-    
-  #Get the variable features
-  seurat_vargenes <- VariableFeatures(rnaObj)
-  top_seurat <- seurat_vargenes[1:length(gene_oi)]
-  gene_oi <- intersect(gene_oi, row.names(rnaObj))
-    
-  #Plot
-  rnaObj <- ScaleData(rnaObj, features = gene_oi)
-  rnaObj <- suppressMessages(RunPCA(rnaObj, features=gene_oi, npcs = nPC, approx=TRUE), classes = "message")
-  rnaObj <- suppressMessages(RunUMAP(rnaObj, reduction = "pca", dims = 1:nPC), classes = "message")
-  #To use Python UMAP via reticulate, set umap.method to 'umap-learn' and metric to 'correlation
-  p1 <- DimPlot(object = rnaObj, reduction = "pca", group.by = groupName, label = T)
-  p2 <- DimPlot(object = rnaObj, reduction = 'umap', group.by = groupName, label = T)
-    
-  png(paste(filePATH,"/",fileName,"-UMAP-",plotname,"-Genes.png", sep=""), width=16, height=5, res=200, units = "in")
-  print(plot_grid(p1, p2, align="hv"))
-  dev.off()
-    
-  return(rnaObj)
-    
+    ## Number of PCs
+    if (is.null(nPC)) {
+        nPC = 30  #Number of PCA to be used, default 30
+    }
+
+    ## group_column is required
+    if (is.null(group_column)) {
+        stop(date(), ": Please provide avgGroup like 'group', 'celltype'.")
+    }
+    ## Plotname is required
+    if (is.null(plotname)) {
+        plotname <- "dimred_output"
+    }
+
+    ## Get the variable features
+    if (!is.null(data_object@curated$SeuratObj)) {
+        rnaObj <- data_object@curated$SeuratObj
+        seurat_vargenes <- VariableFeatures(rnaObj)
+        top_seurat <- seurat_vargenes[1:length(gene_oi)]
+        gene_oi <- intersect(gene_oi, row.names(rnaObj))
+
+        ## Plot
+        rnaObj <- ScaleData(rnaObj, features = gene_oi)
+        rnaObj <- suppressMessages(RunPCA(rnaObj, features = gene_oi,
+                                          npcs = nPC, approx = TRUE),
+                                   classes = "message")
+        rnaObj <- suppressMessages(RunUMAP(rnaObj, reduction = "pca",
+                                           dims = 1:nPC),
+                                   classes = "message")
+
+        ## UMAP plot
+        p1 <- DimPlot(object = rnaObj, reduction = "pca",
+                      group.by = group_column, label = TRUE, repel = repel)
+        p2 <- DimPlot(object = rnaObj, reduction = "umap",
+                      group.by = group_column, label = TRUE, repel = repel)
+
+        png(paste(filePATH, "/", fileName, "-UMAP-", plotname, "-Genes.png",
+                  sep = ""), width = 16, height = 5, res = 200, units = "in")
+        print(plot_grid(p1, p2, align = "hv"))
+        dev.off()
+
+        message(date(), ": Please check output directory for PC, UMAP plot")
+        ## plot result
+        print(plot_grid(p1, p2, align = "hv"))
+    } else {
+        stop(date(), ": PALMO object do not contain Seurat object. Please
+        create PALMO object.")
+    }
 }

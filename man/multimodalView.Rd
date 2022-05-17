@@ -2,16 +2,19 @@
 % Please edit documentation in R/multimodalView.R
 \name{multimodalView}
 \alias{multimodalView}
-\title{A multimodalView Function}
+\title{multimodalView Function}
 \usage{
 multimodalView(
   modality1,
   modality2,
-  groupBy = NULL,
+  group_oi = NULL,
   geneList,
   colorThreshold = 10,
-  groupColumn = NULL,
+  group_position = NULL,
   plotHeight = 10,
+  titleName = "",
+  colorMax = NULL,
+  colorscale = FALSE,
   fileName = NULL,
   filePATH = NULL
 )
@@ -23,27 +26,36 @@ gene/proteins column represents group:donor (group and donor separated by :)}
 \item{modality2}{Variation or Expression matrix/data frame. Rows represents
 gene/proteins column represents group:donor (group and donor separated by :)}
 
-\item{groupBy}{Optional, User-defined groups to consider and order}
+\item{group_oi}{Optional, User-defined groups to consider and order}
 
 \item{geneList}{Genes of interest to explore}
 
-\item{colorThreshold}{User-defined color threshold in colorspace}
+\item{colorThreshold}{User-defined color threshold in color space}
 
-\item{groupColumn}{Default 1, use 2 when columns are donor:group format}
+\item{group_position}{Default 1, use 2 when columns are donor:group format}
 
 \item{plotHeight}{User-defined Plot size (in)}
 
+\item{titleName}{Title of the plot}
+
+\item{colorMax}{Maximum CV value in heatplot ("max", numeric or NULL)}
+
+\item{colorscale}{Show color scale, TRUE or FALSE (default).}
+
 \item{fileName}{User defined filename}
 
-\item{filePATH}{User-defined output directory path to save result}
+\item{filePATH}{User-defined output directory \emph{PATH} to save result}
+}
+\value{
+Multimodal plot and data list
 }
 \description{
-This function allows you to vizualize the multimodal view genes of interest
+This function allows to visualize the multimodal view genes of interest
 by celltypes/ groups defined by use
 }
 \examples{
-##Circos Plot for genes expression in a group
-#geneList <- c("HLA-A","HLA-B","HLA-C","HLA-DRA","HLA-DPA1","HLA-DRB1")
-#multimodalView(modality1=scrna_cv_res, modality2=scatac_cv_res, geneList)
+\dontrun{
+multimodalView(modality1=scrna_cv_res, modality2=scatac_cv_res, geneList)
+}
 }
 \keyword{multimodalView}
