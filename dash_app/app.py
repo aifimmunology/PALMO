@@ -56,23 +56,13 @@ def prep_var_contribute_df(tbl: pd.DataFrame, mean_threshold):
     ''' Takes table of residuals and does some formatting and subsetting
     '''
     featureList = ['PTID', 'Time'] + ['Residual']
-    tbl = tbl.loc[tbl['max'] > mean_threshold, featureList]
-    res_tbl = tbl.rename(columns={
-        'PTID': 'donor',
-        'Time': 'week',
-        'Residual': 'Residuals'
-    })
-    res_tbl = res_tbl * 100
-    df1 = res_tbl.loc[(res_tbl['donor'] > res_tbl['week']) &
-                      (res_tbl['Residuals'] < 50), ]
-    df1.sort_values(by='donor', ascending=False, inplace=True)
+    res_tbl = tbl.loc[tbl['max'] > mean_threshold, featureList]
+    # res_tbl.sort_values(by='PTID', ascending=False, inplace=True)
 
     # reshape
-    df1['genes'] = df1.index
-    var_df = pd.melt(df1,
-                     id_vars='genes',
-                     value_vars=['donor', 'week', 'Residuals'])
-    return (var_df)
+    res_tbl['genes'] = res_tbl.index
+    var_df = pd.melt(res_tbl, id_vars='genes', value_vars=featureList)
+    return var_df
 
 
 @app.callback(Output('variance-out', 'data'),
@@ -84,11 +74,12 @@ def subset_var_df(n, input_var, mean_threshold, var_chosen):
     '''
     lmem_py = pd.read_json(input_var, orient='split')
     var_df = prep_var_contribute_df(lmem_py, mean_threshold)
-    var_df.sort_values(by='value', ascending=False, inplace=True)
-
-    if n == 0:
-        top_vars = var_df[0:15]['genes'].unique().tolist()
-        dff = var_df[var_df['genes'].isin(top_vars)]
+    if (n == 0):
+        ptid_entries = var_df.loc[var_df['variable'].eq('PTID'), ].copy(
+            deep=True)
+        top_vars = ptid_entries.sort_values(
+            by='value', ascending=False)[0:15]['genes'].unique().tolist()
+        dff = var_df.loc[var_df['genes'].isin(top_vars), ]
     elif n > 0:
         dff = var_df[var_df['genes'].isin(var_chosen)]
     return dff.to_json(orient='split')
@@ -103,7 +94,7 @@ def var_contribute_plot(dff):
     '''
     dff = pd.read_json(dff, orient='split')
     # sort by donor
-    donors_sorted = dff.loc[dff['variable'].eq('donor'), ]
+    donors_sorted = dff.loc[dff['variable'].eq('PTID'), ]
     donors_sorted.sort_values(by='value', ascending=False, inplace=True)
     var_fig = px.bar(
         dff,
@@ -240,13 +231,17 @@ def run_and_cache_outlier_input(n_clicks, data_input, select_samples):
 
 @app.callback(Output('number-features-bar', 'figure'),
               Input('outlier-input-state', 'data'),
+              Input('params-z-score', 'value'),
               [State('sample-selector', 'value')])
-def plot_no_features(df, select_samples):
+def plot_no_features(df, z_cutoff, select_samples):
     '''
     '''
     # create column for number of features
     nofeatures_df = pd.read_json(df, orient='split')
     nofeatures_df['no_features'] = 1
+    nofeatures_df.loc[nofeatures_df['z'] > 0, 'zgroup'] = '> Z'
+    nofeatures_df.loc[nofeatures_df['z'] < 0, 'zgroup'] = '< -Z'
+
     nofeatures_df = nofeatures_df.groupby(
         ['Sample', 'zgroup'])['no_features'].sum().reset_index()
 
@@ -323,8 +318,9 @@ def outlier_p_bar_plot(data_input, z_subset, z_score_cutoff, select_samples):
 @app.callback(Output('outlier-plot', 'figure'), Input('center-measure',
                                                       'value'),
               Input('outlier-input-state', 'data'),
+              Input('params-z-score', 'value'),
               [State('sample-selector', 'value')])
-def outlier_detect_plot(measure_col, data_input, these_samples):
+def outlier_detect_plot(measure_col, data_input, z_cut_off, these_samples):
     ''' 
     TODO: order the samples correctly 
     '''
@@ -335,6 +331,8 @@ def outlier_detect_plot(measure_col, data_input, these_samples):
         d_input = d_input.loc[d_input['Sample'].isin(these_samples), ]
 
     out_fig = go.Figure()
+    d_input.loc[d_input['z'] > 0, 'zgroup'] = '> Z'
+    d_input.loc[d_input['z'] < 0, 'zgroup'] = '< -Z'
     z_group_list = list(d_input['zgroup'].unique())
     z_group_list.sort()
     for this_group in z_group_list:
@@ -788,15 +786,16 @@ def render_content(tab, run_n_clicks, outlier_input, datamatrix_input,
             ])
         if tab == 'outliers':
             outlier_res_py = pd.read_json(outlier_input, orient='split')
+            sample_list = outlier_res_py['Sample'].unique().tolist()
+            sample_list.sort()
             return html.Div([
                 html.H4('Select a sample of interest',
                         className='header-button-text'),
-                dcc.Dropdown(
-                    id='sample-selector',
-                    options=outlier_res_py['Sample'].unique().tolist(),
-                    multi=True,
-                    placeholder='Select samples of interest',
-                    className='graph-component-align'),
+                dcc.Dropdown(id='sample-selector',
+                             options=sample_list,
+                             multi=True,
+                             placeholder='Select samples of interest',
+                             className='graph-component-align'),
 
                 # insert button
                 html.Button('Update Plots',
@@ -837,168 +836,171 @@ def render_content(tab, run_n_clicks, outlier_input, datamatrix_input,
 ######################
 
 
-def run_app():
-    app.layout = html.Div(children=[
-        html.H2('Platform for Analyzing Longitudinal Multi-omics data',
-                className='custom-h2-header'),
-        dcc.Tabs(
-            id='tabs-graph',
-            value='parameters',
-            children=[
-                # we need to render this page at initial loading to gain access to the run_var_btn id
-                dcc.Tab(
-                    label='Submit Parameters',
-                    value='parameters',
-                    className='default-tab-style',
-                    selected_className='tab-selected-style',
-                    children=[
-                        html.Div([
-                            dbc.Row([
-                                dbc.Col([
-                                    html.H4("Metadata filepath entry",
-                                            className='header-button-text'),
-                                    dcc.Input(
-                                        value='{}/../data/data_Metadata.Rda'.
-                                        format(os.getcwd()),
-                                        id='metadata-entry',
+def run_app(datatype):
+    if datatype == 'bulk':
+        app.layout = html.Div(children=[
+            html.H2('Platform for Analyzing Longitudinal Multi-omics data',
+                    className='custom-h2-header'),
+            dcc.Tabs(
+                id='tabs-graph',
+                value='parameters',
+                children=[
+                    # we need to render this page at initial loading to gain access to the run_var_btn id
+                    dcc.Tab(
+                        label='Submit Parameters',
+                        value='parameters',
+                        className='default-tab-style',
+                        selected_className='tab-selected-style',
+                        children=[
+                            html.Div([
+                                dbc.Row([
+                                    dbc.Col([
+                                        html.H4("Metadata filepath entry",
+                                                className='header-button-text'),
+                                        dcc.Input(
+                                            value='{}/data/data_Metadata.Rda'.
+                                            format(os.getcwd()),
+                                            id='metadata-entry',
+                                            type='text',
+                                            className='center-component-style')
+                                    ]),
+                                    dbc.Col([
+                                        html.H4("Choose datatype",
+                                                className='header-button-text'),
+                                        dcc.RadioItems(
+                                            options=['bulk', 'singlecell'],
+                                            value='bulk',
+                                            id='params-dtype',
+                                            className='center-component-style')
+                                    ]),
+                                    dbc.Col()
+                                ]),
+                                dbc.Row([
+                                    dbc.Col([
+                                        html.H4("data matrix filepath entry",
+                                                className='header-button-text'),
+                                        dcc.Input(
+                                            value=
+                                            '{}/data/Olink_NPX_log2_Protein.Rda'.
+                                            format(os.getcwd()),
+                                            id='datamatrix-entry',
+                                            type='text',
+                                            className='center-component-style')
+                                    ]),
+                                    dbc.Col([
+                                        html.
+                                        H4("Choose whether to run outlier analysis",
+                                        className='header-button-text'),
+                                        dcc.RadioItems(
+                                            options=['True', 'False'],
+                                            id='params-outlier',
+                                            value='True',
+                                            className='center-component-style')
+                                    ]),
+                                    dbc.Col([
+                                        html.H4("Choose where to save outputs",
+                                                className='header-button-text'),
+                                        dcc.Input(
+                                            id='params-output',
+                                            type='text',
+                                            value=os.getcwd(),
+                                            className='center-component-style')
+                                    ])
+                                ]),
+                                html.H4("Choose z-score cutoff",
+                                        className='header-button-text'),
+                                dcc.Input(id='params-z-score',
+                                        type='number',
+                                        value=2,
+                                        className='center-component-style'),
+                                html.H4("Choose mean threshold",
+                                        className='header-button-text'),
+                                dcc.Input(id='params-mean',
+                                        type='number',
+                                        value=1,
+                                        className='center-component-style'),
+                                html.H4("Choose CV threshold",
+                                        className='header-button-text'),
+                                dcc.Input(id='params-cv',
+                                        type='number',
+                                        value=5,
+                                        className='center-component-style'),
+                                html.H4("Choose NA Threshold",
+                                        className='header-button-text'),
+                                dcc.Input(id='params-na',
+                                        type='number',
+                                        value=0.4,
+                                        className='center-component-style'),
+                                html.H4("Choose name of feature set",
+                                        className='header-button-text'),
+                                dcc.Input(id='params-features',
                                         type='text',
-                                        className='center-component-style')
-                                ]),
-                                dbc.Col([
-                                    html.H4("Choose datatype",
-                                            className='header-button-text'),
-                                    dcc.RadioItems(
-                                        options=['bulk'],
-                                        value='bulk',
-                                        id='params-dtype',
-                                        className='center-component-style')
-                                ]),
-                                dbc.Col()
-                            ]),
-                            dbc.Row([
-                                dbc.Col([
-                                    html.H4("data matrix filepath entry",
-                                            className='header-button-text'),
-                                    dcc.Input(
-                                        value=
-                                        '{}/../data/Olink_NPX_log2_Protein.Rda'
-                                        .format(os.getcwd()),
-                                        id='datamatrix-entry',
-                                        type='text',
-                                        className='center-component-style')
-                                ]),
-                                dbc.Col([
-                                    html.
-                                    H4("Choose whether to run outlier analysis",
-                                       className='header-button-text'),
-                                    dcc.RadioItems(
-                                        options=['True', 'False'],
-                                        id='params-outlier',
-                                        value='True',
-                                        className='center-component-style')
-                                ]),
-                                dbc.Col([
-                                    html.H4("Choose where to save outputs",
-                                            className='header-button-text'),
-                                    dcc.Input(
-                                        id='params-output',
-                                        type='text',
-                                        value=os.getcwd(),
-                                        className='center-component-style')
-                                ])
-                            ]),
-                            html.H4("Choose z-score cutoff",
-                                    className='header-button-text'),
-                            dcc.Input(id='params-z-score',
-                                      type='number',
-                                      value=2,
-                                      className='center-component-style'),
-                            html.H4("Choose mean threshold",
-                                    className='header-button-text'),
-                            dcc.Input(id='params-mean',
-                                      type='number',
-                                      value=1,
-                                      className='center-component-style'),
-                            html.H4("Choose CV threshold",
-                                    className='header-button-text'),
-                            dcc.Input(id='params-cv',
-                                      type='number',
-                                      value=5,
-                                      className='center-component-style'),
-                            html.H4("Choose NA Threshold",
-                                    className='header-button-text'),
-                            dcc.Input(id='params-na',
-                                      type='number',
-                                      value=0.4,
-                                      className='center-component-style'),
-                            html.H4("Choose name of feature set",
-                                    className='header-button-text'),
-                            dcc.Input(id='params-features',
-                                      type='text',
-                                      value='PTID Time',
-                                      className='center-component-style'),
-                            html.Button("Run App",
-                                        id='run_app_btn',
-                                        className='button-default-style')
-                        ])
-                    ]),
+                                        value='PTID Time',
+                                        className='center-component-style'),
+                                html.Button("Run App",
+                                            id='run_app_btn',
+                                            className='button-default-style')
+                            ])
+                        ]),
+                        
+                    ## correlation
+                    dcc.Tab(label='Correlation',
+                            value='correlation',
+                            className='default-tab-style',
+                            selected_className='tab-selected-style'),
 
-                ## correlation
-                dcc.Tab(label='Correlation',
-                        value='correlation',
-                        className='default-tab-style',
-                        selected_className='tab-selected-style'),
+                    ## expression levels
+                    dcc.Tab(label='Expression Level',
+                            value='expression_level',
+                            className='default-tab-style',
+                            selected_className='tab-selected-style'),
 
-                ## expression levels
-                dcc.Tab(label='Expression Level',
-                        value='expression_level',
-                        className='default-tab-style',
-                        selected_className='tab-selected-style'),
+                    ## variance tab
+                    dcc.Tab(label='Variance',
+                            value='variance',
+                            className='default-tab-style',
+                            selected_className='tab-selected-style'),
 
-                ## variance tab
-                dcc.Tab(label='Variance',
-                        value='variance',
-                        className='default-tab-style',
-                        selected_className='tab-selected-style'),
+                    # intra-donor-variation
+                    dcc.Tab(label='Intra-donor Variation',
+                            value='intra-donor-variation',
+                            className='default-tab-style',
+                            selected_className='tab-selected-style'),
 
-                # intra-donor-variation
-                dcc.Tab(label='Intra-donor Variation',
-                        value='intra-donor-variation',
-                        className='default-tab-style',
-                        selected_className='tab-selected-style'),
+                    # outliers tab
+                    dcc.Tab(label='Outliers',
+                            value='outliers',
+                            className='default-tab-style',
+                            selected_className='tab-selected-style')
+                ],
+                colors={
+                    'border': colors['aiwhite'],
+                    'primary': colors['aiwhite'],
+                    'background': colors['aiblue']
+                }),
 
-                # outliers tab
-                dcc.Tab(label='Outliers',
-                        value='outliers',
-                        className='default-tab-style',
-                        selected_className='tab-selected-style')
-            ],
-            colors={
-                'border': colors['aiwhite'],
-                'primary': colors['aiwhite'],
-                'background': colors['aiblue']
-            }),
+            # id that holds all the tab content
+            html.Div(id='tabs-content'),
 
-        # id that holds all the tab content
-        html.Div(id='tabs-content'),
-
-        # storing data
-        dcc.Store(id='input-datamatrix'),
-        dcc.Store(id='input-metadata'),
-        dcc.Store(id='outlier-input-state'),
-        dcc.Store(id='input-var'),
-        dcc.Store(id='input-outlier'),
-        dcc.Store(id='expression-out'),
-        dcc.Store(id='corr-matrix'),
-        dcc.Store(id='variance-out'),
-        dcc.Store(id='var-dl-counter'),
-        dcc.Store(id='gene-df')
-    ])
+            # storing data
+            dcc.Store(id='input-datamatrix'),
+            dcc.Store(id='input-metadata'),
+            dcc.Store(id='outlier-input-state'),
+            dcc.Store(id='input-var'),
+            dcc.Store(id='input-outlier'),
+            dcc.Store(id='expression-out'),
+            dcc.Store(id='corr-matrix'),
+            dcc.Store(id='variance-out'),
+            dcc.Store(id='var-dl-counter'),
+            dcc.Store(id='gene-df')
+        ])
+    elif datatype=='singlecell': 
+        app.layout=
 
     # del app.config._read_only["requests_pathname_prefix"]
     app.run_server(debug=True,
                    host=os.getenv('IP', '0.0.0.0'),
-                   port=int(os.getenv('PORT', 4443)))
+                   port=int(os.getenv('PORT', 4444)))
     return
 
 
