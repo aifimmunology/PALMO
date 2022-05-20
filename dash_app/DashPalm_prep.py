@@ -160,7 +160,7 @@ def find_stable_features(palmo_obj, cv_threshold):
                   "CD14_Mono","CD16_Mono",
                   "cDC2","pDC")
     StableFeatures(data_object=palmo_obj, group_oi=celltype_oi, cvThreshold={}, donorThreshold=donorThreshold, groupThreshold=groupThreshold, topFeatures=25, fileName="scrna")
-    '''.format(cv_threshold) 
+    '''.format(cv_threshold))
     return palmo_obj 
 
 
@@ -180,8 +180,9 @@ def run(data_filepath,
         2. run variance custom function 
         3. run outlier detection custom function  
     '''
-    palmo_obj = load_data(data_filepath, metadata_filepath, datatype)
-    palmo_obj = prep_data(palmo_obj, datatype, na_threshold)
+    #palmo_obj = load_data(data_filepath, metadata_filepath, datatype)
+    #palmo_obj = prep_data(palmo_obj, datatype, na_threshold)
+    print(datatype)
     if datatype == 'bulk':
         palmo_obj = run_lmeVariance(palmo_obj, mean_threshold, feature_set, datatype,
                                     output_dir)
@@ -199,14 +200,34 @@ def run(data_filepath,
         outlier_res = rpy_2py(ro.r("palmo_obj@result[['outlier_res']]"))
         return (datamatrix, metadata, decomp_var_df, cv_all, outlier_res)
     elif datatype == 'singlecell':
+        print('in singlecell') 
+        """
         palmo_obj = run_cvcalc_scprofile(palmo_obj, mean_threshold, housekeeping_genes)
-        #palmo_obj = run_lmeVariance(palmo_obj, mean_threshold, feature_set, #datatype, output_dir)
+        palmo_obj = run_lmeVariance(palmo_obj, mean_threshold, feature_set, datatype, output_dir)
         palmo_obj = run_cvCalc(palmo_obj, datatype=datatype,
                                meanThreshold=mean_threshold, 
                                cvThreshold=cv_threshold)
-        # palmo_obj = find_variable_features(palmo_obj, cv_threshold)
+        palmo_obj = find_variable_features(palmo_obj, cv_threshold)
         palmo_obj = find_stable_features(palmo_obj, cv_threshold) 
-        import pdb; pdb.set_trace()
+        """
+        # extract cureated data.frames and results 
+        """
+        data = rpy_2py(ro.r("palmo_obj@curated$data"))
+        metadata = rpy_2py(ro.r("palmo_obj@curated$anndata"))
+        cv_res = rpy_2py(ro.r("palmo_obj@result$cv_meanthreshold"))
+        var_decomp = rpy_2py(ro.r("palmo_obj@result$variance_decomposition"))
+        var_genes = rpy_2py(ro.r('palmo_obj@result$variable_gene'))
+        stable_genes = var_genes = rpy_2py(ro.r('palmo_obj@result$non_variable_gene'))
+        """
+        work_dir = '/home/jupyter/scrna_dash'
+        data = pd.read_csv('{}/data.csv'.format(work_dir))
+        metadata = pd.read_csv('{}/metadata.csv'.format(work_dir))
+        cv_res = pd.read_csv('{}/cv_res.csv'.format(work_dir))
+        var_decomp = pd.read_csv('{}/var_decomp.csv'.format(work_dir))
+        #var_gemes = pd.read_csv('{}/var_genes.csv'.format(work_dir)) 
+        #stable_genes = pd.read_csv('{}/non_var_genes.csv'.format(work_dir))
+        outlier_res = pd.DataFrame() 
+        return (data, metadata, var_decomp, cv_res, outlier_res)
 
 if __name__ == "__main__":
     import sys

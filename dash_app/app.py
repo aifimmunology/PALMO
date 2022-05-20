@@ -1,6 +1,11 @@
 ''' run_dash.py
 
 '''
+#from jupyter_dash.comms import _send_jupyter_config_comm_request # jupyter-only
+#_send_jupyter_config_comm_request() # jupyter-only
+
+#from jupyter_dash import JupyterDash # jupyter-only
+#JupyterDash.infer_jupyter_proxy_config() # jupyter-only
 
 # load libraries
 import os
@@ -31,6 +36,7 @@ long_callback_manager = DiskcacheLongCallbackManager(cache)
 external_stylesheets = [
     'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css'
 ]
+#app = JupyterDash(__name__, external_stylesheets=external_stylesheets,long_callback_manager=long_callback_manager) # jupyter-only
 app = dash.Dash(__name__,
                 external_stylesheets=external_stylesheets,
                 long_callback_manager=long_callback_manager)
@@ -636,6 +642,19 @@ def download_cv_gene(n_clicks, dff):
 ############################
 # --- Run Prep & Store --- #
 ############################
+def get_datapath(data_entry):
+    '''
+    '''
+    if data_entry == 'Bulk Plasma':
+        return (
+            '/Users/james.harvey/workplace/repos/PALM/dash_app/data/Olink_NPX_log2_Protein.Rda'
+        )
+    elif data_entry == "scRNA":
+        return ( 
+            '/home/jupyter/PALM/dash_app/rds/AIFI-scRNA-PBMC-FinalData.RDS'
+        )
+
+
 @app.long_callback(output=[
     Output('input-datamatrix', 'data'),
     Output('input-metadata', 'data'),
@@ -661,13 +680,12 @@ def download_cv_gene(n_clicks, dff):
                    ],
                    running=[(Output("run_app_btn", "disabled"), True, False)],
                    prevent_initial_call=True)
-def parse_params(run_n_clicks, metadata_fpath, datamatrix_fpath, datatype,
+def parse_params(run_n_clicks, metadata_fpath, data_fpath, datatype,
                  run_outlier, z_score_cutoff, mean_cutoff, cv_cutoff,
                  na_cutoff, feature_list, output_dir):
     if run_n_clicks is not None:
-        print(run_n_clicks)
         (datamatrix, metadata, lmem_py, cv_res,
-         outlier_res_py) = dpp.run(data_filepath=datamatrix_fpath,
+         outlier_res_py) = dpp.run(data_filepath=get_datapath(data_fpath),
                                    metadata_filepath=metadata_fpath,
                                    datatype=datatype,
                                    do_outlier=run_outlier,
@@ -689,7 +707,6 @@ def parse_params(run_n_clicks, metadata_fpath, datamatrix_fpath, datatype,
         return pd.DataFrame().to_json(), pd.DataFrame().to_json(
         ), pd.DataFrame().to_json(), pd.DataFrame().to_json(), 0, 0, 0, False
 
-
 ######################
 # --- Tab handler ---#
 ######################
@@ -703,11 +720,18 @@ def need_to_run_layout():
     ])
 
 
+def need_to_run_layout2():
+    return html.Div([
+        html.H4("""PPPPPlease go to the submit parameters tab first and run the app
+                to generate visualizations""",
+                className='need-to-run-message')
+    ])
+
 @app.callback(Output('tabs-content', 'children'), Input('tabs-graph', 'value'),
               Input('run_app_btn', 'n_clicks'), Input('input-outlier', 'data'),
-              Input('input-datamatrix', 'data'), Input('input-var', 'data'))
+              Input('input-datamatrix', 'data'), Input('input-var', 'data'), Input('params-dtype', 'value'))
 def render_content(tab, run_n_clicks, outlier_input, datamatrix_input,
-                   input_var):
+                   input_var, dtype):
     if run_n_clicks is None:
         if tab in [
                 'correlation', 'expression_level', 'variance',
@@ -716,119 +740,134 @@ def render_content(tab, run_n_clicks, outlier_input, datamatrix_input,
             return need_to_run_layout()
     else:
         if tab == 'correlation':
-            return html.Div([
-                html.H4("Choose the correlation coefficient method",
-                        className='header-button-text'),
-                dcc.Dropdown(id='corr-dropdown',
-                             options=['pearson', 'spearman'],
-                             value='spearman',
-                             className='graph-component-align'),
-                html.H4("Download dataset", className='header-button-text'),
-                html.Button("Download CSV",
-                            id='corr_btn',
-                            className='button-default-style'),
-                dcc.Download(id='download-corr-df'),
-                dcc.Graph(id='corr-fig', className='matrix-graph-style'),
-            ])
+            if dtype == 'bulk':
+                return html.Div([
+                    html.H4("Choose the correlation coefficient method",
+                            className='header-button-text'),
+                    dcc.Dropdown(id='corr-dropdown',
+                                 options=['pearson', 'spearman'],
+                                 value='spearman',
+                                 className='graph-component-align'),
+                    html.H4("Download dataset", className='header-button-text'),
+                    html.Button("Download CSV",
+                                id='corr_btn',
+                                className='button-default-style'),
+                    dcc.Download(id='download-corr-df'),
+                    dcc.Graph(id='corr-fig', className='matrix-graph-style'),
+                ])
+            elif dtype == 'singlecell': 
+                return need_to_run_layout2() 
         if tab == 'expression_level':
             datamatrix = pd.read_json(datamatrix_input, orient='split')
-            return html.Div([
-                html.H4('Pick gene of interest',
-                        className='header-button-text'),
-                dcc.Dropdown(datamatrix.index.unique(),
-                             value='ABL1',
-                             id='this-gene',
-                             className='custom-dropdown'),
-                html.H4("Download dataset", className='header-button-text'),
-                html.Button('Download CSV',
-                            id='expression_dl_button',
-                            className='button-default-style'),
-                dcc.Download(id='download-expression-df'),
-                dcc.Graph(id='var-gene-plot', className='side-by-side-graph'),
-                dcc.Graph(id='geneplot', className='side-by-side-graph')
-            ])
-        if tab == 'variance':
-            lmem_py = pd.read_json(input_var, orient='split')
-            return html.Div([
-                html.H4("Select feature(s) of interest",
-                        className='header-button-text'),
-                dcc.Dropdown(id='dropdown-select',
-                             options=prep_var_contribute_df(
-                                 lmem_py, 0)['genes'].unique().tolist(),
-                             multi=True),
-                html.Button(id='feature-button',
-                            n_clicks=0,
-                            children='Update feature plot',
-                            className='button-default-style'),
-                html.H4("Download dataset", className='header-button-text'),
-                html.Button("Download CSV",
-                            id='var_btn',
-                            className='button-default-style'),
-                dcc.Download(id='download-var-df'),
-                dcc.Graph(id='variance-contribution'),
-                dcc.Graph(id='violin-box-var-plot'),
-            ])
-        if tab == 'intra-donor-variation':
-            return html.Div([
-                html.H4("Choose to plot variable or stable genes",
-                        className='header-button-text'),
-                dcc.RadioItems(['stable', 'variable'],
-                               'stable',
-                               id='gene-type',
-                               className='graph-component-align'),
-                html.H4("Download dataset", className='header-button-text'),
-                html.Button("Download CSV",
-                            id='cv_gene_btn',
-                            className='button-default-style'),
-                dcc.Download(id='download-cv-gene-df'),
-                dcc.Graph(id='cvplot', className='custom-cv-graph'),
-                dcc.Graph(id='cv-density'),
-            ])
-        if tab == 'outliers':
-            outlier_res_py = pd.read_json(outlier_input, orient='split')
-            sample_list = outlier_res_py['Sample'].unique().tolist()
-            sample_list.sort()
-            return html.Div([
-                html.H4('Select a sample of interest',
-                        className='header-button-text'),
-                dcc.Dropdown(id='sample-selector',
-                             options=sample_list,
-                             multi=True,
-                             placeholder='Select samples of interest',
-                             className='graph-component-align'),
-
-                # insert button
-                html.Button('Update Plots',
-                            id='z-submit',
-                            n_clicks=0,
-                            className='button-default-style'),
-                html.H4("Download dataset", className='header-button-text'),
-                html.Button('Download CSV',
-                            id='outlier_dl_button',
-                            className='button-default-style'),
-                dcc.Download(id='download-outlier-df'),
-                dcc.RadioItems(
-                    ['meanDev', 'z'],
-                    'z',
-                    id='center-measure',
-                ),
-                html.Div(children=[
-                    dcc.Graph(id='outlier-plot',
-                              className='side-by-side-graph'),
-                    dcc.Graph(id='number-features-bar',
-                              className='side-by-side-graph'),
-                ]),
-                html.H5("Choose to plot where |Z| is above or below z-cutoff",
-                        className='header-button-text'),
-                dcc.RadioItems(['below', 'above', 'all'],
-                               'all',
-                               id='z-score-cutoff',
-                               className='graph-component-align'),
-                html.Div(children=[
-                    dcc.Graph(id='p-scatter', className='side-by-side-graph'),
-                    dcc.Graph(id='p-bar', className='side-by-side-graph')
+            if dtype == 'bulk': 
+                return html.Div([
+                    html.H4('Pick gene of interest',
+                            className='header-button-text'),
+                    dcc.Dropdown(datamatrix.index.unique(),
+                                 value='ABL1',
+                                 id='this-gene',
+                                 className='custom-dropdown'),
+                    html.H4("Download dataset", className='header-button-text'),
+                    html.Button('Download CSV',
+                                id='expression_dl_button',
+                                className='button-default-style'),
+                    dcc.Download(id='download-expression-df'),
+                    dcc.Graph(id='var-gene-plot', className='side-by-side-graph'),
+                    dcc.Graph(id='geneplot', className='side-by-side-graph')
                 ])
-            ])
+            elif dtype == 'singlecell': 
+                return need_to_run_layout()
+        if tab == 'variance':
+            if dtype == 'bulk': 
+                lmem_py = pd.read_json(input_var, orient='split')
+                return html.Div([
+                    html.H4("Select feature(s) of interest",
+                            className='header-button-text'),
+                    dcc.Dropdown(id='dropdown-select',
+                                 options=prep_var_contribute_df(
+                                     lmem_py, 0)['genes'].unique().tolist(),
+                                 multi=True),
+                    html.Button(id='feature-button',
+                                n_clicks=0,
+                                children='Update feature plot',
+                                className='button-default-style'),
+                    html.H4("Download dataset", className='header-button-text'),
+                    html.Button("Download CSV",
+                                id='var_btn',
+                                className='button-default-style'),
+                    dcc.Download(id='download-var-df'),
+                    dcc.Graph(id='variance-contribution'),
+                    dcc.Graph(id='violin-box-var-plot'),
+                ])
+            elif dtype == 'singlecell': 
+                return need_to_run_layout() 
+        if tab == 'intra-donor-variation':
+            if dtype == 'bulk': 
+                return html.Div([
+                    html.H4("Choose to plot variable or stable genes",
+                            className='header-button-text'),
+                    dcc.RadioItems(['stable', 'variable'],
+                                   'stable',
+                                   id='gene-type',
+                                   className='graph-component-align'),
+                    html.H4("Download dataset", className='header-button-text'),
+                    html.Button("Download CSV",
+                                id='cv_gene_btn',
+                                className='button-default-style'),
+                    dcc.Download(id='download-cv-gene-df'),
+                    dcc.Graph(id='cvplot', className='custom-cv-graph'),
+                    dcc.Graph(id='cv-density'),
+                ])
+            elif dtype == 'singlecell': 
+                return need_to_run_layout()
+        if tab == 'outliers':
+            if dtype == 'bulk': 
+                outlier_res_py = pd.read_json(outlier_input, orient='split')
+                sample_list = outlier_res_py['Sample'].unique().tolist()
+                sample_list.sort()
+                return html.Div([
+                    html.H4('Select a sample of interest',
+                            className='header-button-text'),
+                    dcc.Dropdown(id='sample-selector',
+                                 options=sample_list,
+                                 multi=True,
+                                 placeholder='Select samples of interest',
+                                 className='graph-component-align'),
+
+                    # insert button
+                    html.Button('Update Plots',
+                                id='z-submit',
+                                n_clicks=0,
+                                className='button-default-style'),
+                    html.H4("Download dataset", className='header-button-text'),
+                    html.Button('Download CSV',
+                                id='outlier_dl_button',
+                                className='button-default-style'),
+                    dcc.Download(id='download-outlier-df'),
+                    dcc.RadioItems(
+                        ['meanDev', 'z'],
+                        'z',
+                        id='center-measure',
+                    ),
+                    html.Div(children=[
+                        dcc.Graph(id='outlier-plot',
+                                  className='side-by-side-graph'),
+                        dcc.Graph(id='number-features-bar',
+                                  className='side-by-side-graph'),
+                    ]),
+                    html.H5("Choose to plot where |Z| is above or below z-cutoff",
+                            className='header-button-text'),
+                    dcc.RadioItems(['below', 'above', 'all'],
+                                   'all',
+                                   id='z-score-cutoff',
+                                   className='graph-component-align'),
+                    html.Div(children=[
+                        dcc.Graph(id='p-scatter', className='side-by-side-graph'),
+                        dcc.Graph(id='p-bar', className='side-by-side-graph')
+                    ])
+                ])
+            elif dtype == 'singlecell': 
+                return need_to_run_layout() 
 
 
 ######################
@@ -935,12 +974,12 @@ def run_app():
                             html.Button("Run App",
                                         id='run_app_btn',
                                         className='button-default-style'),
-                            dcc.Loading(id="loading-app",
-                                        children=[
-                                            html.Div(
-                                                [html.Div(id="check-loading")])
-                                        ],
-                                        type="circle")
+                            #dcc.Loading(id="loading-app",
+                            #            children=[
+                            #                html.Div(
+                            #                    [html.Div(id="check-loading")])
+                            #            ],
+                            #            type="circle")
                         ])
                     ]),
 
