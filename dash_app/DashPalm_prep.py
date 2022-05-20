@@ -80,8 +80,7 @@ def prep_data(palmo_obj, datatype, na_cutoff):
     return palmo_obj
 
 
-def run_lmeVariance(palmo_obj, mean_threshold, feature_set, datatype,
-                    output_dir):
+def run_lmeVariance(palmo_obj, mean_threshold, feature_set, datatype):
     '''
     '''
     if datatype == 'bulk':
@@ -103,7 +102,7 @@ def run_lmeVariance(palmo_obj, mean_threshold, feature_set, datatype,
     return palmo_obj
 
 
-def run_outlier_detection(palmo_obj, z_cutoff, output_dir):
+def run_outlier_detection(palmo_obj, z_cutoff):
     '''
     '''
     # robject of outlierDetect function
@@ -171,33 +170,24 @@ def find_stable_features(palmo_obj, cv_threshold):
     return palmo_obj
 
 
-def run(data_filepath,
-        metadata_filepath,
-        datatype,
-        do_outlier,
-        z_cutoff,
-        mean_threshold,
-        cv_threshold,
-        na_threshold,
-        housekeeping_genes,
-        feature_set,
-        output_dir=None):
+def run(data_filepath, metadata_filepath, datatype, z_cutoff, mean_threshold,
+        cv_threshold, na_threshold, housekeeping_genes, feature_set):
     ''' main function 
         1. load datasets 
         2. run variance custom function 
         3. run outlier detection custom function  
     '''
     #palmo_obj = load_data(data_filepath, metadata_filepath, datatype)
-    #palmo_obj = prep_data(palmo_obj, datatype, na_threshold)
+    # palmo_obj = prep_data(palmo_obj, datatype, na_threshold)
     if datatype == 'bulk':
         print('in bulk')
         palmo_obj = run_lmeVariance(palmo_obj, mean_threshold, feature_set,
-                                    datatype, output_dir)
+                                    datatype)
         palmo_obj = run_cvCalc(palmo_obj,
                                meanThreshold=mean_threshold,
                                cvThreshold=cv_threshold,
                                datatype=datatype)
-        palmo_obj = run_outlier_detection(palmo_obj, z_cutoff, output_dir)
+        palmo_obj = run_outlier_detection(palmo_obj, z_cutoff)
 
         # extract curated data.frames and results
         datamatrix = rpy_2py(ro.r("palmo_obj@curated$data"))
@@ -229,22 +219,18 @@ if __name__ == "__main__":
     datamatrix_filepath = sys.argv[1]
     metadata_filepath = sys.argv[2]
     datatype = sys.argv[3]
-    do_outlier = bool(sys.argv[4])
-    z_cutoff = float(sys.argv[5])
-    mean_threshold = float(sys.argv[6])
-    cv_threshold = float(sys.argv[7])
-    na_threshold = float(sys.argv[8])
-    housekeeping_genes = list(sys.argv[9])
-    output_dir = sys.argv[10]
-    feature_set = sys.argv[11]
+    z_cutoff = float(sys.argv[4])
+    mean_threshold = float(sys.argv[5])
+    cv_threshold = float(sys.argv[6])
+    na_threshold = float(sys.argv[7])
+    housekeeping_genes = sys.argv[8]
+    feature_set = sys.argv[9]
     run(datamatrix_filepath=datamatrix_filepath,
         metadata_filepath=metadata_filepath,
         datatype=datatype,
-        do_outlier=do_outlier,
         z_cutoff=z_cutoff,
         mean_threshold=mean_threshold,
         cv_threshold=cv_threshold,
         na_threshold=na_threshold,
         housekeeping_genes=housekeeping_genes,
-        output_dir=output_dir,
         feature_set=feature_set)

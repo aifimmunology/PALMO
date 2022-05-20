@@ -27,6 +27,7 @@ import numpy as np
 
 # import prep module
 import DashPalm_prep as dpp
+import time
 
 # long callback manager set up
 cache = diskcache.Cache("./cache")
@@ -771,7 +772,7 @@ def download_cv_gene(n_clicks, dff):
 def get_datapath(data_entry):
     '''
     '''
-    print('getting filepath...')
+    print('getting filepath...{}'.format(data_entry))
     if data_entry == 'Bulk Plasma':
         return (
             '/Users/james.harvey/workplace/repos/PALM/dash_app/data/Olink_NPX_log2_Protein.Rda'
@@ -784,49 +785,23 @@ def get_metapath():
     return '/Users/james.harvey/workplace/repos/PALM/dash_app/data/data_Metadata.Rda'
 
 
-"""
-@app.callback(
-    Output('input-datamatrix', 'data'),
-    Output('input-metadata', 'data'),
-    Output('input-var', 'data'),
-    Output('input-outlier', 'data'),
-    Output('params-mean', 'value'),
-    Output('params-cv', 'value'),
-    Output('params-z-score', 'value'),
-    State('metadata-entry', 'value'),
-    State('datamatrix-entry', 'value'),
-    State('params-dtype', 'value'),
-    State('params-outlier', 'value'),
-    State('params-z-score', 'value'),
-    State('params-mean', 'value'),
-    State('params-cv', 'value'),
-    State('params-na', 'value'),
-    State('params-features', 'value'),
-    State('params-output', 'value')
-)
-def generate_bulk_results(metadata_fpath, data_fpath, datatype,
-                 run_outlier, z_score_cutoff, mean_cutoff, cv_cutoff,
-                 na_cutoff, feature_list, output_dir):
+def run_prep(data_fpath, datatype, z_score_cutoff, mean_cutoff, cv_cutoff,
+             na_cutoff):
+    meta_fpath = get_metapath()
     (datamatrix, metadata, lmem_py, cv_res,
-         outlier_res_py) = dpp.run(data_filepath=get_datapath(data_fpath),
-                                   metadata_filepath=metadata_fpath,
-                                   datatype=datatype,
-                                   do_outlier=run_outlier,
-                                   z_cutoff=z_score_cutoff,
-                                   mean_threshold=mean_cutoff,
-                                   cv_threshold=cv_cutoff,
-                                   na_threshold=na_cutoff,
-                                   housekeeping_genes=['GAPDH', 'ACTB'],
-                                   output_dir=output_dir,
-                                   feature_set=['PTID', 'Time'])
-        # convert objects to json and return
-        print('returning json blobs...')
-        return (datamatrix.to_json(orient='split'),
-                metadata.to_json(orient='split'),
-                lmem_py.to_json(orient='split'),
-                outlier_res_py.to_json(orient='split'), mean_cutoff, cv_cutoff,
-                z_score_cutoff)
-"""
+     outlier_res_py) = dpp.run(data_filepath=get_datapath(data_fpath),
+                               metadata_filepath=meta_fpath,
+                               datatype=datatype,
+                               z_cutoff=z_score_cutoff,
+                               mean_threshold=mean_cutoff,
+                               cv_threshold=cv_cutoff,
+                               na_threshold=na_cutoff,
+                               housekeeping_genes=['GAPDH', 'ACTB'],
+                               feature_set=['PTID', 'Time'])
+
+    return (datamatrix.to_json(orient='split'),
+            metadata.to_json(orient='split'), lmem_py.to_json(orient='split'),
+            outlier_res_py.to_json(orient='split'), 1, 4, 2, datatype)
 
 
 @app.long_callback(
@@ -835,56 +810,32 @@ def generate_bulk_results(metadata_fpath, data_fpath, datatype,
         Output('input-metadata', 'data'),
         Output('input-var', 'data'),
         Output('input-outlier', 'data'),
-        # Output('input-cvprof', 'data'),
         Output('params-mean', 'value'),
         Output('params-cv', 'value'),
-        Output('params-z-score', 'value')
+        Output('params-z-score', 'value'),
+        Output('params-dtype', 'value')
     ],
     inputs=[
         Input('run_app_btn', 'n_clicks'),
         # State('metadata-entry', 'value'),
         State('datamatrix-entry', 'value'),
         State('params-dtype', 'value'),
-        State('params-outlier', 'value'),
         State('params-z-score', 'value'),
         State('params-mean', 'value'),
         State('params-cv', 'value'),
         State('params-na', 'value'),
-        State('params-features', 'value'),
-        State('params-output', 'value')
     ],
     running=[(Output("run_app_btn", "disabled"), True, False)],
     prevent_initial_call=True)
-def parse_params(run_n_clicks, data_fpath, datatype, run_outlier,
-                 z_score_cutoff, mean_cutoff, cv_cutoff, na_cutoff,
-                 feature_list, output_dir):
-    print('hm...{}'.format(run_n_clicks))
+def parse_params(run_n_clicks, data_fpath, datatype, z_score_cutoff,
+                 mean_cutoff, cv_cutoff, na_cutoff):
     if (run_n_clicks is not None):
-        (datamatrix, metadata, lmem_py, cv_res,
-         outlier_res_py) = dpp.run(data_filepath=get_datapath(data_fpath),
-                                   metadata_filepath=get_metapath(),
-                                   datatype=datatype,
-                                   do_outlier=run_outlier,
-                                   z_cutoff=z_score_cutoff,
-                                   mean_threshold=mean_cutoff,
-                                   cv_threshold=cv_cutoff,
-                                   na_threshold=na_cutoff,
-                                   housekeeping_genes=['GAPDH', 'ACTB'],
-                                   output_dir=output_dir,
-                                   feature_set=['PTID', 'Time'])
+        obj = run_prep(data_fpath, datatype, z_score_cutoff, mean_cutoff,
+                       cv_cutoff, na_cutoff)
         # convert objects to json and return
         print(run_n_clicks)
         print('returning json blobs...')
-        return (datamatrix.to_json(orient='split'),
-                metadata.to_json(orient='split'),
-                lmem_py.to_json(orient='split'),
-                outlier_res_py.to_json(orient='split'), mean_cutoff, cv_cutoff,
-                z_score_cutoff)
-
-    else:
-        return pd.DataFrame().to_json(), pd.DataFrame().to_json(
-        ), pd.DataFrame().to_json(), pd.DataFrame().to_json(), pd.DataFrame(
-        ).to_json(), 0, 0, 0
+        return obj
 
 
 ######################
@@ -915,6 +866,7 @@ def need_to_run_layout2():
               Input('params-dtype', 'value'))
 def render_content(tab, run_n_clicks, outlier_input, datamatrix_input,
                    input_var, dtype):
+    print('RENDER BENDER')
     if run_n_clicks is None:
         if tab in [
                 'correlation', 'expression_level', 'variance',
@@ -1081,95 +1033,77 @@ def run_app():
             value='parameters',
             children=[
                 # we need to render this page at initial loading to gain access to the run_var_btn id
-                dcc.Tab(
-                    label='Submit Parameters',
-                    value='parameters',
-                    className='default-tab-style',
-                    selected_className='tab-selected-style',
-                    children=[
-                        html.Div([
-
-                            #dbc.Col([
-                            #    html.H4("Metadata filepath entry",
-                            #            className='header-button-text'),
-                            #    dcc.Input(value='{}/data/data_Metadata.Rda'.
-                            #              format(os.getcwd()),
-                            #              id='metadata-entry',
-                            #              type='text',
-                            #              className='center-component-style')
-                            #]),
-                            dbc.Col([
-                                html.H4("Choose datatype",
-                                        className='header-button-text'),
-                                dcc.RadioItems(
-                                    options=['bulk', 'singlecell'],
-                                    value='singlecell',
-                                    id='params-dtype',
-                                    className='center-component-style')
-                            ]),
-                            dbc.Row([
+                dcc.Tab(label='Submit Parameters',
+                        value='parameters',
+                        className='default-tab-style',
+                        selected_className='tab-selected-style',
+                        children=[
+                            html.Div([
+                                html.P(id='check-running',
+                                       children=['not yet clicked']),
+                                dbc.Col([
+                                    html.H4("Choose datatype",
+                                            className='header-button-text'),
+                                    dcc.RadioItems(
+                                        options=['bulk', 'singlecell'],
+                                        id='params-dtype',
+                                        className='center-component-style')
+                                ]),
                                 dbc.Col([
                                     html.H4("Choose dataset entry",
                                             className='header-button-text'),
                                     dcc.Dropdown(
                                         options=['Bulk Plasma', 'scRNA'],
-                                        id='datamatrix-entry')
-                                ]),
-                                dbc.Col([
-                                    html.
-                                    H4("Choose whether to run outlier analysis",
-                                       className='header-button-text'),
-                                    dcc.RadioItems(
-                                        options=['True', 'False'],
-                                        id='params-outlier',
-                                        value='True',
+                                        id='datamatrix-entry',
                                         className='center-component-style')
                                 ]),
-                                dbc.Col([
-                                    html.H4("Choose where to save outputs",
+                                dbc.Row([
+                                    dbc.Col([
+                                        html.H4(
+                                            "Choose z-score cutoff",
                                             className='header-button-text'),
-                                    dcc.Input(
-                                        id='params-output',
-                                        type='text',
-                                        value=os.getcwd(),
-                                        className='center-component-style')
-                                ])
-                            ]),
-                            html.H4("Choose z-score cutoff",
-                                    className='header-button-text'),
-                            dcc.Input(id='params-z-score',
-                                      type='number',
-                                      value=2,
-                                      className='center-component-style'),
-                            html.H4("Choose mean threshold",
-                                    className='header-button-text'),
-                            dcc.Input(id='params-mean',
-                                      type='number',
-                                      value=1,
-                                      className='center-component-style'),
-                            html.H4("Choose CV threshold",
-                                    className='header-button-text'),
-                            dcc.Input(id='params-cv',
-                                      type='number',
-                                      value=5,
-                                      className='center-component-style'),
-                            html.H4("Choose NA Threshold",
-                                    className='header-button-text'),
-                            dcc.Input(id='params-na',
-                                      type='number',
-                                      value=0.4,
-                                      className='center-component-style'),
-                            html.H4("Choose name of feature set",
-                                    className='header-button-text'),
-                            dcc.Input(id='params-features',
-                                      type='text',
-                                      value='PTID Time',
-                                      className='center-component-style'),
-                            html.Button("Run App",
-                                        id='run_app_btn',
-                                        className='button-default-style'),
-                        ])
-                    ]),
+                                        dcc.Input(
+                                            id='params-z-score',
+                                            type='number',
+                                            value=2,
+                                            className='center-component-style'
+                                        ),
+                                        html.H4(
+                                            "Choose mean threshold",
+                                            className='header-button-text'),
+                                        dcc.Input(
+                                            id='params-mean',
+                                            type='number',
+                                            value=1,
+                                            className='center-component-style'
+                                        ),
+                                    ]),
+                                    dbc.Col([
+                                        html.H4(
+                                            "Choose CV threshold",
+                                            className='header-button-text'),
+                                        dcc.Input(
+                                            id='params-cv',
+                                            type='number',
+                                            value=5,
+                                            className='center-component-style'
+                                        ),
+                                        html.H4(
+                                            "Choose NA Threshold",
+                                            className='header-button-text'),
+                                        dcc.Input(
+                                            id='params-na',
+                                            type='number',
+                                            value=0.4,
+                                            className='center-component-style')
+                                    ]),
+                                ],
+                                        justify='center'),
+                                html.Button("Run App",
+                                            id='run_app_btn',
+                                            className='button-default-style'),
+                            ])
+                        ]),
 
                 ## correlation
                 dcc.Tab(label='Correlation',
