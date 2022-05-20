@@ -6,12 +6,12 @@
 \usage{
 sample_correlation(
   data_object,
-  donor_sep = ":",
   cor_method = "spearman",
-  group_position = 2,
-  group_by = "donor",
+  group_by = NULL,
   col_break = NULL,
   col_max = 1,
+  cluster_rows = FALSE,
+  cluster_columns = FALSE,
   column_names_fontsize = 4,
   row_names_fontsize = 4,
   row_title_fontsize = 6,
@@ -25,19 +25,18 @@ sample_correlation(
 \item{data_object}{Input \emph{PALMO} S4 object. It contains annotation information
 and expression data from Bulk or single cell data.}
 
-\item{donor_sep}{Sample and group(celltype) separator like (donor_sep=':')}
-
 \item{cor_method}{(Optional) Correlation method 'pearson' or 'spearman'. Default
 is 'spearman'}
 
-\item{group_position}{(Optional) Position of group 1st or 2nd like (group_position=2, in
-Donor:group)}
-
 \item{group_by}{Cluster correlation heat plot by 'donor' or 'group'}
 
-\item{col_break}{Value between 0-1.}
+\item{col_break}{Value between 0 and 1}
 
 \item{col_max}{Maximum color limit (Default 1)}
+
+\item{cluster_rows}{\emph{ComplexHeatmap} cluster rows, Default FALSE}
+
+\item{cluster_columns}{\emph{ComplexHeatmap} cluster columns, Default FALSE}
 
 \item{column_names_fontsize}{Font size of the column names, Default 4}
 
@@ -63,7 +62,7 @@ celltype, or by donor).
 }
 \examples{
 \dontrun{
-palmo_obj <- sample_correlation(data_object=palmo_obj, donor_sep=':')
+palmo_obj <- sample_correlation(data_object=palmo_obj, group_by="Time")
 }
 }
 \keyword{sample_correlation}

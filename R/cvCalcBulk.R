@@ -7,19 +7,21 @@
 #' and expression matrix or data frame. Rows represent gene/proteins column
 #' represents participant samples (same as annotation table Sample column)
 #' @param meanThreshold Average expression threshold to filter lowly expressed
-#' genes Default is 0.1 (log2 scale)
+#' genes Default is 1 (log2 scale)
 #' @param cvThreshold Coefficient of variation threshold to select variable and
 #' stable genes. Default is 5 for bulk data. Users can use 10-20 for single cell
 #' average expression data.
 #' @param median_cvThreshold Optional, median of CVs from each donor/participant
 #' calculated. Threshold used to differentiate variable and stable features
 #' across donors/participants. Default, same as \emph{cvThreshold}.
-#' @param housekeeping_genes Optional, vector of housekeeping genes. Default is
-#' c("ACTB", "GAPDH")
+#' @param donorThreshold Donor threshold number to be used, Default is number of
+#' participants
 #' @param naThreshold Optional, For a give feature % of donors/participants
 #' showing non-NA CVs (NAs appear due to expression ~0 or absent). Default is 1
 #' means all donors/participants to consider. 0.5 means from 4 donors atleast 2
 #' donors should have non-NA CVs for a given feature.
+#' @param housekeeping_genes Optional, vector of housekeeping genes. Default is
+#' c("ACTB", "GAPDH")
 #' @param plot_log10 Optional, Plot CV vs Mean on log10 scale. Default FALSE
 #' @param selectedFeatures Optional, focus on selected genes/features.
 #' @param median_cv_max Optional, Remove features with greater than median CV
@@ -36,8 +38,10 @@
 #' palmo_obj=cvCalcBulk(data_object=palmo_obj, meanThreshold=0.1, cvThreshold=5)
 #' }
 
-cvCalcBulk <- function(data_object, meanThreshold=NULL,
-                       cvThreshold=5, median_cvThreshold=NULL,
+cvCalcBulk <- function(data_object, meanThreshold=1,
+                       cvThreshold=5,
+                       median_cvThreshold=NULL,
+                       donorThreshold=NULL,
                        housekeeping_genes=NULL,
                        naThreshold=1,
                        plot_log10=FALSE,
@@ -219,14 +223,36 @@ cvCalcBulk <- function(data_object, meanThreshold=NULL,
         #May be some samples are bad
         uniSample <- intersect(uniSample, colnames(res_var))
 
-        res_var$Mean <- apply(res_var[,uniSample],1,function(x){
+        #If donor cutoff NULL then use all donors
+        if(is.null(donorThreshold)) {
+          #Calculate feature Mean of CV by all donors
+          res_var$Mean <- apply(res_var[,uniSample],1,function(x){
             mean(abs(x),na.rm=TRUE)
-        })
-        res_var$Median <- apply(res_var[,uniSample],1,function(x){
+          })
+          #Calculate feature Median of CV by all donors
+          res_var$Median <- apply(res_var[,uniSample],1,function(x){
             median(abs(x),na.rm=TRUE)
-        })
+          })
+        } else {
+
+          if(donorThreshold > length(uniSample)) {
+            message(date(),": donorThreshold greater than number of donors")
+          }
+          #Calculate feature Mean of CV by donor threshold
+          res_var$Mean <- apply(res_var[,uniSample],1,function(x){
+            x <- sort(x)[1:donorThreshold]
+            mean(abs(x),na.rm=TRUE)
+          })
+          #Calculate feature Median of CV by donor threshold
+          res_var$Median <- apply(res_var[,uniSample],1,function(x){
+            x <- sort(x)[1:donorThreshold]
+            median(abs(x),na.rm=TRUE)
+          })
+        }
+
+        #Calculate number of NAs in all donors
         res_var$NAs <- apply(res_var[,uniSample],1,function(x){
-            sum(is.na(x),na.rm=TRUE)
+          sum(is.na(x),na.rm=TRUE)
         })
 
         ## Remove genes with CV cutoff (high noise)

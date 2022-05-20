@@ -10,7 +10,8 @@ variancefeaturePlot(
   featureSet = "PTID",
   Residual = FALSE,
   top_n = 15,
-  cols = NULL
+  cols = NULL,
+  ncol = NULL
 )
 }
 \arguments{
@@ -27,6 +28,8 @@ and expression data from Bulk or single cell data.}
 \item{top_n}{Number of top features to show. Default is 10.}
 
 \item{cols}{The colors associated with features. Default is NULL.}
+
+\item{ncol}{Plot_grid number of plot columns.}
 }
 \value{
 variance plot list

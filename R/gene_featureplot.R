@@ -34,7 +34,7 @@
 gene_featureplot <- function(data_object = NULL, data = NULL, anndata = NULL,
                              featureList, x_group_by = "PTID", var_oi = "Time",
                              xlab = "group_by", ylab = "Value/Expression",
-                             ncol = 2, facet_by = NULL, compare_means = FALSE,
+                             ncol = NULL, facet_by = NULL, compare_means = FALSE,
                              x_text_angle = NULL, text_font = NULL) {
 
     ## Check for input data
@@ -94,9 +94,18 @@ gene_featureplot <- function(data_object = NULL, data = NULL, anndata = NULL,
             p1 <- p1 + theme(text = element_text(size = text_font))
         }
         splots[[i]] <- p1
-        print(p1)
+        #print(p1)
     }
     names(splots) <- featureList
+
+    if(is.null(ncol) & length(splots) == 1) {
+       ncol <- 1 
+    } else if(is.null(ncol)) {
+       ncol <- 2 
+    } else {
+       ncol <- as.numeric(ncol)
+    }
+    print(plot_grid(plotlist = splots, ncol=ncol))
 
     return(splots)
 }

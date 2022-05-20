@@ -66,9 +66,6 @@ cvCalcBulkProfile <- function(data_object, cl = 2, fileName = NULL,
     cv_all <- do.call(rbind, res)
     cv_all <- data.frame(cv_all, check.names = FALSE, stringsAsFactors = FALSE)
 
-    ## Add CV result
-    data_object@result$cv_all <- cv_all
-
     ## histogram of CV
     plot1 <- ggplot(cv_all, aes(x = mean, y = CV)) +
         geom_point(size = 0.5, color = "grey") +
@@ -78,6 +75,18 @@ cvCalcBulkProfile <- function(data_object, cl = 2, fileName = NULL,
         theme_classic()
     print(plot1)
 
-    message(date(), ": Done")
-    return(data_object)
+    plot2 <- ggplot(cv_all, aes(x = mean, y = CV)) +
+        geom_point(size = 0.5, color = "grey") +
+        scale_x_continuous(trans = "log10") +
+        scale_y_continuous(trans = "log10") +
+        theme_classic()
+    
+    plot3 <- ggplot(cv_all, aes(x=CV)) +
+        geom_histogram(aes(y=..density..), colour="black",
+            fill="skyblue", bins=50)+
+        labs(x="CV") + theme_classic()
+    print(plot_grid(plot2, plot3, ncol= 2, align="hv", labels="AUTO"))
+
+    message(date(), ": Check out the plots")
+    return(cv_all)
 }
