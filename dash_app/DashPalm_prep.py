@@ -45,7 +45,7 @@ def load_data(data_fp, meta_fp, datatype):
             load("{}")
             palmo_obj <- createPALMOobject(anndata=ann, data=data)
         '''.format(data_fp, meta_fp))
-    elif datatype == 'singlecell': 
+    elif datatype == 'singlecell':
         palmo_obj = ro.r('''
             pbmc <- readRDS("{}")
             metaData <- pbmc@meta.data 
@@ -70,7 +70,7 @@ def prep_data(palmo_obj, datatype, na_cutoff):
             palmo_obj <- checkReplicates(data_object=palmo_obj, mergeReplicates=T)
             palmo_obj <- naFilter(data_object=palmo_obj, na_cutoff={na})
             '''.format(dt=datatype, na=float(na_cutoff)))
-    if datatype == "singlecell": 
+    if datatype == "singlecell":
         palmo_obj = ro.r('''
             palmo_obj <- annotateMetadata(data_object=palmo_obj, sample_column="Sample", donor_column="PTID", time_column="Time")
             palmo_obj <- mergePALMOdata(data_object=palmo_obj, datatype="{dt}")
@@ -80,7 +80,8 @@ def prep_data(palmo_obj, datatype, na_cutoff):
     return palmo_obj
 
 
-def run_lmeVariance(palmo_obj, mean_threshold, feature_set, datatype, output_dir):
+def run_lmeVariance(palmo_obj, mean_threshold, feature_set, datatype,
+                    output_dir):
     '''
     '''
     if datatype == 'bulk':
@@ -88,12 +89,17 @@ def run_lmeVariance(palmo_obj, mean_threshold, feature_set, datatype, output_dir
         palmo_obj = ro.r('''
             featureSet <- c("{f1}", "{f2}")
             palmo_obj <- lmeVariance(data_object=palmo_obj, featureSet=featureSet, meanThreshold={mean}, fileName="olink")
-            '''.format(f1=feature_set[0], f2=feature_set[1], mean=mean_threshold))
-    elif datatype=='singlecell': 
+            '''.format(f1=feature_set[0],
+                       f2=feature_set[1],
+                       mean=mean_threshold))
+    elif datatype == 'singlecell':
         palmo_obj = ro.r('''
             featureSet <- c("{f1}", "{f2}", "{f3}")
             palmo_obj <- lmeVariance(data_object=palmo_obj, cl=4, featureSet=featureSet, meanThreshold={mean}, fileName="scrna")
-            '''.format(f1=feature_set[0], f2=feature_set[1], f3=feature_set[2], mean=mean_threshold))
+            '''.format(f1=feature_set[0],
+                       f2=feature_set[1],
+                       f3=feature_set[2],
+                       mean=mean_threshold))
     return palmo_obj
 
 
@@ -117,20 +123,21 @@ def run_cvCalc(palmo_obj, meanThreshold, cvThreshold, datatype):
         palmo_obj = ro.r('''
             palmo_obj <- cvCalcBulk(data_object=palmo_obj, meanThreshold={m}, cvThreshold={c})
             '''.format(m=meanThreshold, c=cvThreshold))
-    elif datatype == 'singlecell': 
+    elif datatype == 'singlecell':
         palmo_obj = ro.r('''
             palmo_obj <- cvCalcSC(data_object=palmo_obj, meanThreshold={m}, cvThreshold={c})
             '''.format(m=meanThreshold, c=cvThreshold))
     return palmo_obj
 
 
-def run_cvcalc_scprofile(palmo_obj, mean_threshold, housekeeping_genes): 
+def run_cvcalc_scprofile(palmo_obj, mean_threshold, housekeeping_genes):
     palmo_obj = ro.r('''
     palmo_obj <- cvCalcSCProfile(data_object=palmo_obj, meanThreshold={avg}, housekeeping_genes=c("GAPDH", "ACTB"), fileName="scrna")
     '''.format(avg=mean_threshold))
     return palmo_obj
 
-def find_variable_features(palmo_obj, cv_threshold): 
+
+def find_variable_features(palmo_obj, cv_threshold):
     palmo_obj = ro.r('''
         donorThreshold <- 4 
         groupThreshold <- 40 
@@ -147,7 +154,7 @@ def find_variable_features(palmo_obj, cv_threshold):
     return palmo_obj
 
 
-def find_stable_features(palmo_obj, cv_threshold): 
+def find_stable_features(palmo_obj, cv_threshold):
     '''
     '''
     palmo_obj = ro.r('''
@@ -161,7 +168,7 @@ def find_stable_features(palmo_obj, cv_threshold):
                   "cDC2","pDC")
     StableFeatures(data_object=palmo_obj, group_oi=celltype_oi, cvThreshold={}, donorThreshold=donorThreshold, groupThreshold=groupThreshold, topFeatures=25, fileName="scrna")
     '''.format(cv_threshold))
-    return palmo_obj 
+    return palmo_obj
 
 
 def run(data_filepath,
@@ -182,13 +189,14 @@ def run(data_filepath,
     '''
     #palmo_obj = load_data(data_filepath, metadata_filepath, datatype)
     #palmo_obj = prep_data(palmo_obj, datatype, na_threshold)
-    print(datatype)
     if datatype == 'bulk':
-        palmo_obj = run_lmeVariance(palmo_obj, mean_threshold, feature_set, datatype,
-                                    output_dir)
+        print('in bulk')
+        palmo_obj = run_lmeVariance(palmo_obj, mean_threshold, feature_set,
+                                    datatype, output_dir)
         palmo_obj = run_cvCalc(palmo_obj,
-                                   meanThreshold=mean_threshold,
-                                   cvThreshold=cv_threshold, datatype=datatype)
+                               meanThreshold=mean_threshold,
+                               cvThreshold=cv_threshold,
+                               datatype=datatype)
         palmo_obj = run_outlier_detection(palmo_obj, z_cutoff, output_dir)
 
         # extract curated data.frames and results
@@ -199,35 +207,22 @@ def run(data_filepath,
         cv_all = rpy_2py(ro.r("palmo_obj@result$cv_all"))
         outlier_res = rpy_2py(ro.r("palmo_obj@result[['outlier_res']]"))
         return (datamatrix, metadata, decomp_var_df, cv_all, outlier_res)
-    elif datatype == 'singlecell':
-        print('in singlecell') 
-        """
-        palmo_obj = run_cvcalc_scprofile(palmo_obj, mean_threshold, housekeeping_genes)
-        palmo_obj = run_lmeVariance(palmo_obj, mean_threshold, feature_set, datatype, output_dir)
-        palmo_obj = run_cvCalc(palmo_obj, datatype=datatype,
-                               meanThreshold=mean_threshold, 
-                               cvThreshold=cv_threshold)
-        palmo_obj = find_variable_features(palmo_obj, cv_threshold)
-        palmo_obj = find_stable_features(palmo_obj, cv_threshold) 
-        """
-        # extract cureated data.frames and results 
-        """
-        data = rpy_2py(ro.r("palmo_obj@curated$data"))
-        metadata = rpy_2py(ro.r("palmo_obj@curated$anndata"))
-        cv_res = rpy_2py(ro.r("palmo_obj@result$cv_meanthreshold"))
-        var_decomp = rpy_2py(ro.r("palmo_obj@result$variance_decomposition"))
-        var_genes = rpy_2py(ro.r('palmo_obj@result$variable_gene'))
-        stable_genes = var_genes = rpy_2py(ro.r('palmo_obj@result$non_variable_gene'))
-        """
-        work_dir = '/home/jupyter/scrna_dash'
+    if datatype == 'singlecell':
+        print('loading datasets...')
+        work_dir = '/Users/james.harvey/workplace/scrna_dash'
         data = pd.read_csv('{}/data.csv'.format(work_dir))
         metadata = pd.read_csv('{}/metadata.csv'.format(work_dir))
-        cv_res = pd.read_csv('{}/cv_res.csv'.format(work_dir))
+        # cv_res = pd.read_csv('{}/cv_res.csv'.format(work_dir))
         var_decomp = pd.read_csv('{}/var_decomp.csv'.format(work_dir))
-        #var_gemes = pd.read_csv('{}/var_genes.csv'.format(work_dir)) 
-        #stable_genes = pd.read_csv('{}/non_var_genes.csv'.format(work_dir))
-        outlier_res = pd.DataFrame() 
-        return (data, metadata, var_decomp, cv_res, outlier_res)
+        var_genes = pd.read_csv('{}/var_genes.csv'.format(work_dir))
+        var_genes['is_var_gene'] = 1
+        stable_genes = pd.read_csv('{}/non_var_genes.csv'.format(work_dir))
+        stable_genes['is_var_gene'] = 0
+        cv_res = pd.concat([var_genes, stable_genes])
+        outlier_res = pd.DataFrame()
+        print('got data')
+        return (data, metadata, var_decomp, pd.DataFrame(), outlier_res)
+
 
 if __name__ == "__main__":
     import sys
