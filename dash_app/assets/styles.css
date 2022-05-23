@@ -13,7 +13,7 @@
 }
 .header-button-text {
     text-align: center;
-    color: rgb(0, 48, 87);
+    color: white;
     padding-top: 20px;
     display: grid;
     justify-content: center;
@@ -55,7 +55,8 @@
 }
 .custom-h2-header { 
     text-align: center;
-    color: rgb(120, 156, 74);
+    color: white;
+    background-color: rgb(0, 48, 87);
 }
 .need-to-run-message { 
     text-align: center;
