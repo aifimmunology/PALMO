@@ -738,9 +738,6 @@ def cv_density_plot(gene_df, metadata_input):
               Input('params-cv', 'value'))
 def cvplot(gene_type, metadata_input, matrix_input, mean_threshold,
            cv_threshold):
-    ''' here we can either pick the genes of interest for heatmap
-        or we could explore by making the mean & cv threshold interactive. (think a slider) 
-    '''
     datamatrix = pd.read_json(matrix_input, orient='split')
     metadata = pd.read_json(metadata_input, orient='split')
     mat_input = prep_cvcalc_bulk(mean_threshold, cv_threshold, datamatrix,
@@ -1148,17 +1145,13 @@ def get_datapath(data_entry):
     '''
     print('getting filepath...{}'.format(data_entry))
     if data_entry == 'Bulk Plasma':
-        return (
-            '/Users/james.harvey/workplace/repos/PALM/dash_app/data/Olink_NPX_log2_Protein.Rda'
-        )
+        return ('{}/data/Olink_NPX_log2_Protein.Rda'.format(os.getcwd()))
     if data_entry == "Single-Cell":
-        return (
-            '/Users/james.harvey/workplace/repos/PALM/dash_app/data/AIFI_scRNA_PBMC_FinalData.RDS'
-        )
+        return ('{}/data/AIFI_scRNA_PBMC_FinalData.RDS'.format(os.getcwd()))
 
 
 def get_metapath():
-    return '/Users/james.harvey/workplace/repos/PALM/dash_app/data/data_Metadata.Rda'
+    return '{}/data/data_Metadata.Rda'.format(os.getcwd())
 
 
 def determine_datatype(user_input):

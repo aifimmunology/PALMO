@@ -3,6 +3,7 @@
 import rpy2.robjects.packages as rpackages
 import pandas as pd
 import numpy as np
+import os
 
 # working with dataframes
 from rpy2.robjects.conversion import localconverter
@@ -178,11 +179,9 @@ def run(data_filepath, metadata_filepath, datatype, z_cutoff, mean_threshold,
         3. run outlier detection custom function  
     '''
     print('datatype is..{}'.format(datatype))
-
+    palmo_obj = load_data(data_filepath, metadata_filepath, datatype)
+    palmo_obj = prep_data(palmo_obj, datatype, na_threshold)
     if datatype == 'bulk':
-        print('in bulk')
-        palmo_obj = load_data(data_filepath, metadata_filepath, datatype)
-        palmo_obj = prep_data(palmo_obj, datatype, na_threshold)
         palmo_obj = run_lmeVariance(palmo_obj, mean_threshold, feature_set,
                                     datatype)
         palmo_obj = run_cvCalc(palmo_obj,
@@ -199,15 +198,17 @@ def run(data_filepath, metadata_filepath, datatype, z_cutoff, mean_threshold,
             ro.r("palmo_obj@result$variance_decomposition"))
         cv_all = rpy_2py(ro.r("palmo_obj@result$cv_all"))
         outlier_res = rpy_2py(ro.r("palmo_obj@result[['outlier_res']]"))
+        """
         workdir = '/Users/james.harvey/workplace/bulk'
         datamatrix.to_csv('{}/data.csv'.format(workdir))
         decomp_var_df.to_csv('{}/var_decomp.csv'.format(workdir))
         cv_all.to_csv('{}/cv_res.csv'.format(workdir))
         outlier_res.to_csv('{}/outlier.csv'.format(workdir))
+        """
         return (datamatrix, metadata, decomp_var_df, cv_all, outlier_res)
     if datatype == 'singlecell':
-
-        work_dir = '/Users/james.harvey/workplace/scrna_dash'
+        """
+        work_dir = '{}/data'.format(os.getcwd())
         data = pd.read_csv('{}/data.csv'.format(work_dir))
         metadata = pd.read_csv('{}/metadata.csv'.format(work_dir))
         var_decomp = pd.read_csv('{}/var_decomp.csv'.format(work_dir))
@@ -237,7 +238,7 @@ def run(data_filepath, metadata_filepath, datatype, z_cutoff, mean_threshold,
         stable_genes = rpy_2py(ro.r("palmo_obj@result$non_variable_gene"))
         cv_res = pd.concat([var_genes, stable_genes])
         outlier_res = pd.DataFrame()
-        """
+
         return (data, metadata, var_decomp, cv_res, outlier_res)
 
 
