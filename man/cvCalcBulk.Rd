@@ -6,9 +6,10 @@
 \usage{
 cvCalcBulk(
   data_object,
-  meanThreshold = NULL,
+  meanThreshold = 1,
   cvThreshold = 5,
   median_cvThreshold = NULL,
+  donorThreshold = NULL,
   housekeeping_genes = NULL,
   naThreshold = 1,
   plot_log10 = FALSE,
@@ -26,7 +27,7 @@ and expression matrix or data frame. Rows represent gene/proteins column
 represents participant samples (same as annotation table Sample column)}
 
 \item{meanThreshold}{Average expression threshold to filter lowly expressed
-genes Default is 0.1 (log2 scale)}
+genes Default is 1 (log2 scale)}
 
 \item{cvThreshold}{Coefficient of variation threshold to select variable and
 stable genes. Default is 5 for bulk data. Users can use 10-20 for single cell
@@ -35,6 +36,9 @@ average expression data.}
 \item{median_cvThreshold}{Optional, median of CVs from each donor/participant
 calculated. Threshold used to differentiate variable and stable features
 across donors/participants. Default, same as \emph{cvThreshold}.}
+
+\item{donorThreshold}{Donor threshold number to be used, Default is number of
+participants}
 
 \item{housekeeping_genes}{Optional, vector of housekeeping genes. Default is
 c("ACTB", "GAPDH")}

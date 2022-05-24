@@ -13,7 +13,7 @@ gene_featureplot(
   var_oi = "Time",
   xlab = "group_by",
   ylab = "Value/Expression",
-  ncol = 2,
+  ncol = NULL,
   facet_by = NULL,
   compare_means = FALSE,
   x_text_angle = NULL,
