@@ -1147,7 +1147,7 @@ def get_datapath(data_entry):
     if data_entry == 'Bulk Plasma':
         return ('{}/data/Olink_NPX_log2_Protein.Rda'.format(os.getcwd()))
     if data_entry == "Single-Cell":
-        return ('{}/data/AIFI_scRNA_PBMC_FinalData.RDS'.format(os.getcwd()))
+        return ('{}/data/AIFI-scRNA-PBMC-FinalData.RDS'.format(os.getcwd()))
 
 
 def get_metapath():
