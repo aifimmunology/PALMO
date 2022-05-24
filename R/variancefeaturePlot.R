@@ -10,6 +10,7 @@
 #' @param Residual Add residual in plot, Default FALSE
 #' @param top_n Number of top features to show. Default is 10.
 #' @param cols The colors associated with features. Default is NULL.
+#' @param ncol Plot_grid number of plot columns.
 #' @return variance plot list
 #' @keywords variancefeaturePlot
 #' @export
@@ -20,7 +21,7 @@
 
 variancefeaturePlot <- function(data_object = NULL, vardata = NULL,
                                 featureSet = "PTID", Residual = FALSE,
-                                top_n = 15, cols = NULL) {
+                                top_n = 15, cols = NULL, ncol=NULL) {
 
     ## Check for input data
     if (!is.null(data_object)) {
@@ -87,10 +88,19 @@ variancefeaturePlot <- function(data_object = NULL, vardata = NULL,
             theme(axis.text.x = element_text(angle=90, hjust=0.5, vjust=1),
                   legend.position = "right") +
             coord_flip()
-        print(plot)
+        #print(plot)
         splots[[i]] <- plot
     }
     names(splots) <- featureSet
+    
+    if(is.null(ncol) & length(splots) == 1) {
+       ncol <- 1 
+    } else if(is.null(ncol)) {
+       ncol <- 2 
+    } else {
+       ncol <- as.numeric(ncol)
+    }
+    print(plot_grid(plotlist = splots, ncol=ncol))
 
     # Return plots
     return(splots)
