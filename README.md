@@ -23,9 +23,9 @@ There are couple of tutorials presented to help users to run PALMO on bulk and s
 * [Tutorial-3: scATAC longitudinal data](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.1.pdf#page=23)
 * [Tutorial-4: Multi-modal data integration](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.1.pdf#page=31)
 * [Tutorial-5: CNP0001102 data (longitudinal COVID dataset)](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.1.pdf#page=33)
-* [Tutorial-6: GSE129788 data (Mouse brain)](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.1.pdf#page=41)
-* [Tutorial-7: Differential Gene analysis in longitudinal data](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.1.pdf#page=43)
-
+* [Tutorial-6: Differential Gene analysis in longitudinal data](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.1.pdf#page=41)
+* [Tutorial-7: GSE129788 data (Mouse brain)](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.1.pdf#page=43)
+ 
 
 # <a name="authors"></a> Authors
 
