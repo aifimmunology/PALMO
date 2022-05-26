@@ -33,6 +33,7 @@ external_stylesheets = [
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.config['suppress_callback_exceptions'] = True
 
+THISCOLORSCALE = px.colors.qualitative.Dark2
 pio.templates.default = "plotly_white"
 colors = {
     'aiwhite': 'rgb(64, 85, 100)',
@@ -175,7 +176,8 @@ def plot_no_features(df, z_cutoff, select_samples):
                     color='zgroup',
                     width=500,
                     barmode='group',
-                    text='no_features')
+                    text='no_features',
+                    color_discrete_sequence=THISCOLORSCALE)
     nofeat.update_traces(texttemplate='%{text:.2s}', textposition='outside')
     return nofeat
 
@@ -204,7 +206,8 @@ def outlier_p_scatter_plot(data_input, z_subset, z_score_cutoff,
                      labels={
                          'Freq': '# Features',
                          'signP': '-log10(p-value)'
-                     })
+                     },
+                     color_discrete_sequence=THISCOLORSCALE)
     return fig
 
 
@@ -232,7 +235,8 @@ def outlier_p_bar_plot(data_input, z_subset, z_score_cutoff, select_samples):
                  labels={
                      'sample_time': 'Sample',
                      'signP': '-log10(pvalue)'
-                 })
+                 },
+                 color_discrete_sequence=THISCOLORSCALE)
     return fig
 
 
@@ -299,7 +303,20 @@ def define_gene_options(this_gene, var_decomp):
     return gene_list
 
 
+@app.callback(Output('download-scrna-exp-df', 'data'),
+              Input('scrna_exp_dl_btn', 'n_clicks'),
+              State('scrna-subset-data', 'data'))
+def download_scrna_exp(n_clicks, dff):
+    '''
+    '''
+    if n_clicks is not None:
+        dff = pd.read_json(dff, orient='split')
+        # create json blob that will hold these values
+        return dcc.send_data_frame(dff.to_csv, 'scrna_exp_data.csv')
+
+
 @app.callback(Output('scrna_exp_gene_plot', 'figure'),
+              Output('scrna-subset-data', 'data'),
               Input('this-gene-scrna', 'value'), State('input-data', 'data'),
               State('input-metadata', 'data'))
 def plot_scrna_gene_exp(this_gene, input_data, input_metadata):
@@ -311,10 +328,17 @@ def plot_scrna_gene_exp(this_gene, input_data, input_metadata):
     metadata['exp'] = list(this_gene_vals[0])
 
     # plot
-    gfig = px.strip(metadata, x='PTID', y='exp', color='Time')
-    boxf = px.box(metadata, x='PTID', y='exp')
+    gfig = px.strip(metadata,
+                    x='PTID',
+                    y='exp',
+                    color='Time',
+                    color_discrete_sequence=THISCOLORSCALE)
+    boxf = px.box(metadata,
+                  x='PTID',
+                  y='exp',
+                  color_discrete_sequence=THISCOLORSCALE)
     combined_plot = go.Figure(data=boxf.data + gfig.data)
-    return combined_plot
+    return combined_plot, metadata.to_json(orient='split')
 
 
 @app.callback(
@@ -330,7 +354,12 @@ def plot_scrna_gene_bytime(this_gene, input_data, input_metadata):
     del data['Unnamed: 0']
     this_gene_vals = data.loc[data.index == this_gene, ].values
     metadata['exp'] = list(this_gene_vals[0])
-    fig = px.strip(metadata, x='PTID', y='exp', color='Time', facet_col='Time')
+    fig = px.strip(metadata,
+                   x='PTID',
+                   y='exp',
+                   color='Time',
+                   facet_col='Time',
+                   color_discrete_sequence=THISCOLORSCALE)
     fig.for_each_annotation(
         lambda a: a.update(text=""))  # remove annotation from each subplot
     return fig
@@ -366,8 +395,16 @@ def var_gene_plot(df):
     '''
     '''
     gene_df = pd.read_json(df, orient='split')
-    gfig = px.scatter(gene_df, x='PTID', y='exp', symbol='Time', color='Time')
-    boxf = px.box(gene_df, x='PTID', y='exp')
+    gfig = px.scatter(gene_df,
+                      x='PTID',
+                      y='exp',
+                      symbol='Time',
+                      color='Time',
+                      color_discrete_sequence=THISCOLORSCALE)
+    boxf = px.box(gene_df,
+                  x='PTID',
+                  y='exp',
+                  color_discrete_sequence=THISCOLORSCALE)
     combined_plot = go.Figure(data=boxf.data + gfig.data)
     return combined_plot
 
@@ -377,7 +414,12 @@ def geneplot(df):
     '''
     '''
     ann = pd.read_json(df, orient='split')
-    fig = px.scatter(ann, x='PTID', y='exp', color='Time', facet_col='Time')
+    fig = px.scatter(ann,
+                     x='PTID',
+                     y='exp',
+                     color='Time',
+                     facet_col='Time',
+                     color_discrete_sequence=THISCOLORSCALE)
     fig.for_each_annotation(
         lambda a: a.update(text=""))  # remove annotation from each subplot
     return fig
@@ -393,6 +435,18 @@ def define_gene_options(var_decomp):
 ##########################
 # --- Variance Plots --- #
 ##########################
+
+
+@app.callback(Output('download-scrna-variance', 'data'),
+              Input('scrna_variance_dl_btn', 'n_clicks'),
+              State('scrna_gene_subset_output', 'data'))
+def download_scrna_variance(n_clicks, dff):
+    '''
+    '''
+    if n_clicks is not None:
+        dff = pd.read_json(dff, orient='split')
+        # create json blob that will hold these values
+        return dcc.send_data_frame(dff.to_csv, 'scrna_variance_data.csv')
 
 
 @app.callback(Output('scrna_variance_decomp', 'figure'),
@@ -421,6 +475,7 @@ def scrna_variance_decomp_plot(var_input):
 
 
 @app.callback(Output('scrna_features_decomp', 'figure'),
+              Output('scrna_gene_subset_output', 'data'),
               Input('var-decomp', 'data'), Input('var-select-btn', 'n_clicks'),
               State('gene-dropdown-select', 'value'))
 def scrna_features_decomp_plot(var_input, clicks, var_chosen):
@@ -450,10 +505,11 @@ def scrna_features_decomp_plot(var_input, clicks, var_chosen):
                      labels={
                          'Gene': 'Features',
                          'value': '% variance explained'
-                     })
+                     },
+                     color_discrete_sequence=THISCOLORSCALE)
     var_fig.update_traces().update_layout(title_x=0.5,
                                           legend_title_text='FeatureList')
-    return var_fig
+    return var_fig, var_decomp.to_json(orient='split')
 
 
 def prep_var_contribute_df(tbl: pd.DataFrame, mean_threshold):
@@ -512,7 +568,8 @@ def var_contribute_plot(dff):
         labels={
             'genes': 'Features',
             'value': '% variance explained'
-        })
+        },
+        color_discrete_sequence=THISCOLORSCALE)
     var_fig.update_traces().update_layout(title_x=0.5,
                                           legend_title_text='FeatureList')
     return (var_fig)
@@ -567,12 +624,28 @@ def download_var_test(n_clicks, dff):
 ##################################
 
 
+@app.callback(Output('download-scrna-cv-gene-df', 'data'),
+              Input('scrna_cv_gene_btn', 'n_clicks'),
+              State('scrna_stablevar_output', 'data'))
+def download_scrna_cv_gene(n_clicks, dff):
+    '''
+    '''
+    if n_clicks is not None:
+        dff = pd.read_json(dff, orient='split')
+        # create json blob that will hold these values
+        return dcc.send_data_frame(dff.to_csv, 'scrna_cv_gene_data.csv')
+
+
 @app.callback(Output('cvprof-hg-fig', 'figure'), Input('input-cvprof', 'data'))
 def scrna_hg_cvprofile(input_data):
     cv_input = pd.read_json(input_data, orient='split')
     housekeeping_genes = ['GAPDH', 'ACTB']
     housekeep_input = cv_input.loc[cv_input['gene'].isin(housekeeping_genes), ]
-    fig = px.scatter(housekeep_input, x='mean', y='CV', facet_col='gene')
+    fig = px.scatter(housekeep_input,
+                     x='mean',
+                     y='CV',
+                     facet_col='gene',
+                     color_discrete_sequence=THISCOLORSCALE)
     return fig
 
 
@@ -726,9 +799,13 @@ def cv_density_plot(gene_df, metadata_input):
     bar_plot_input = pd.wide_to_long(dff, stubnames='PTID', i='gene',
                                      j='var').reset_index()
 
-    fig = px.histogram(bar_plot_input, x='PTID', labels={
-        'PTID': 'CV'
-    }).update_layout(yaxis_title='density')
+    fig = px.histogram(bar_plot_input,
+                       x='PTID',
+                       labels={
+                           'PTID': 'CV'
+                       },
+                       color_discrete_sequence=THISCOLORSCALE).update_layout(
+                           yaxis_title='density')
     return fig
 
 
@@ -842,6 +919,7 @@ def subset_scrna_stablevar(var_or_stable, clicks, data, genes_chosen):
 
 
 @app.callback(Output('scrna_stable_plot', 'figure'),
+              Output('scrna_stablevar_output', 'data'),
               Input('input_stablevar', 'data'),
               State('scrna_stablevar_select', 'value'))
 def scrna_variable_gene_plot(dff, is_stable):
@@ -872,7 +950,8 @@ def scrna_variable_gene_plot(dff, is_stable):
                                         x=var_genes['donor'],
                                         y=var_genes['gene'],
                                         colorscale=this_col_scale))
-        return fig
+        # fig.update_layout(zaxis_title={'title': 'CV'})
+        return fig, var_genes.to_json(orient='split')
     elif is_stable == "Variable":
         var_genes = input_df.loc[input_df['is_var_gene'].eq(1), ]
         var_genes['freq'] = 1
@@ -890,7 +969,8 @@ def scrna_variable_gene_plot(dff, is_stable):
                                         x=var_genes['donor'],
                                         y=var_genes['gene'],
                                         colorscale=this_col_scale))
-        return fig
+        #fig.update_layout(z='CV')
+        return fig, var_genes.to_json(orient='split')
 
 
 ######################
@@ -931,11 +1011,15 @@ def render_tabs(click1, dtype, zscore_cutoff, mean_cutoff, cv_cutoff,
         (data, metadata, var_decomp, cv_res,
          outlier) = run_prep(dtype, zscore_cutoff, mean_cutoff, cv_cutoff,
                              na_cutoff)
+        # if user doesn't specify z-score: return empty data.frame
 
         # get gene options
         tabs = []
         for num in dtype_dict[dtype]:
             content = get_tab_content(dtype, num)
+            if (zscore_cutoff is None) and (num == 'Outliers'):
+                outlier = pd.DataFrame()
+                continue
             tabs.append(
                 dcc.Tab(label=num,
                         value=num,
@@ -969,7 +1053,6 @@ def run_prep(datatype, zscore_cutoff, mean_cutoff, cv_cutoff, na_cutoff):
                         na_threshold=na_cutoff,
                         housekeeping_genes=['GAPDH', 'ACTB'],
                         feature_set=['PTID', 'Time'])
-    print('got an output')
     return (data, metadata, var_decomp, cv_res, outlier)
 
 
@@ -979,51 +1062,54 @@ dtype_dict = {
         'Correlation', 'Expression Level', 'Variance', 'Intra-donor Variation',
         'Outliers'
     ],
-    'Single-Cell': ['Expression Level', 'Variance', 'Intra-donor Variation']
+    'Single-Cell':
+    ['Expression Level', 'Variance', 'Intra-donor Variation', 'UMAP']
 }
 
 # some sort of tab handler maps tab-dtype to content
 bulk_tab_content = {
     'Correlation':
     html.Div([
+        html.Br(),
+        html.Button("Download CSV",
+                    id='corr_btn',
+                    className='button-default-style'),
         html.H4("Choose the correlation coefficient method",
                 className='header-button-text'),
         dcc.Dropdown(id='corr-dropdown',
                      options=['pearson', 'spearman'],
                      value='spearman',
                      className='graph-component-align'),
-        html.H4("Download dataset", className='header-button-text'),
-        html.Button("Download CSV",
-                    id='corr_btn',
-                    className='button-default-style'),
         dcc.Download(id='download-corr-df'),
         dcc.Graph(id='corr-fig', className='matrix-graph-style'),
     ]),
     'Expression Level':
     html.Div([
-        html.H4('Pick gene of interest', className='header-button-text'),
-        dcc.Dropdown(value='ABL1', id='this-gene',
-                     className='custom-dropdown'),
-        html.H4("Download dataset", className='header-button-text'),
+        html.Br(),
         html.Button('Download CSV',
                     id='expression_dl_button',
                     className='button-default-style'),
+        html.H4('Pick gene of interest', className='header-button-text'),
+        dcc.Dropdown(value='ABL1', id='this-gene',
+                     className='custom-dropdown'),
         dcc.Download(id='download-expression-df'),
         dcc.Graph(id='var-gene-plot', className='side-by-side-graph'),
         dcc.Graph(id='geneplot', className='side-by-side-graph')
     ]),
     'Variance':
     html.Div([
+        html.Br(),
+        html.Button("Download CSV",
+                    id='var_btn',
+                    className='button-default-style'),
         html.H4("Select feature(s) of interest",
                 className='header-button-text'),
-        dcc.Dropdown(id='gene-dropdown-select', multi=True),
+        dcc.Dropdown(id='gene-dropdown-select',
+                     multi=True,
+                     className='custom-dropdown'),
         html.Button(id='feature-button',
                     n_clicks=0,
                     children='Update feature plot',
-                    className='button-default-style'),
-        html.H4("Download dataset", className='header-button-text'),
-        html.Button("Download CSV",
-                    id='var_btn',
                     className='button-default-style'),
         dcc.Download(id='download-var-df'),
         dcc.Graph(id='variance-contribution'),
@@ -1031,22 +1117,26 @@ bulk_tab_content = {
     ]),
     'Intra-donor Variation':
     html.Div([
+        html.Br(),
+        html.Button("Download CSV",
+                    id='cv_gene_btn',
+                    className='button-default-style'),
         html.H4("Choose to plot variable or stable genes",
                 className='header-button-text'),
         dcc.RadioItems(['stable', 'variable'],
                        'stable',
                        id='gene-type',
                        className='graph-component-align'),
-        html.H4("Download dataset", className='header-button-text'),
-        html.Button("Download CSV",
-                    id='cv_gene_btn',
-                    className='button-default-style'),
         dcc.Download(id='download-cv-gene-df'),
         dcc.Graph(id='cvplot', className='custom-cv-graph'),
         dcc.Graph(id='cv-density'),
     ]),
     'Outliers':
     html.Div([
+        html.Br(),
+        html.Button('Download CSV',
+                    id='outlier_dl_button',
+                    className='button-default-style'),
         html.H4('Select a sample of interest', className='header-button-text'),
         dcc.Dropdown(id='sample-selector',
                      multi=True,
@@ -1057,10 +1147,6 @@ bulk_tab_content = {
         html.Button('Update Plots',
                     id='z-submit',
                     n_clicks=0,
-                    className='button-default-style'),
-        html.H4("Download dataset", className='header-button-text'),
-        html.Button('Download CSV',
-                    id='outlier_dl_button',
                     className='button-default-style'),
         dcc.Download(id='download-outlier-df'),
         dcc.RadioItems(
@@ -1089,6 +1175,10 @@ bulk_tab_content = {
 scrna_tab_content = {
     'Expression Level':
     html.Div([
+        html.Button("Download CSV",
+                    id='scrna_exp_dl_btn',
+                    className='button-default-style'),
+        dcc.Download(id='download-scrna-exp-df'),
         html.H4('Pick gene of interest', className='header-button-text'),
         dcc.Dropdown(value='ABL1',
                      id='this-gene-scrna',
@@ -1099,9 +1189,16 @@ scrna_tab_content = {
     ]),
     'Variance':
     html.Div([
+        html.Br(),
+        html.Button("Download CSV",
+                    id='scrna_variance_dl_btn',
+                    className='button-default-style'),
+        dcc.Download(id='download-scrna-variance'),
         html.H4("Select feature(s) of interest",
                 className='header-button-text'),
-        dcc.Dropdown(id='gene-dropdown-select', multi=True),
+        dcc.Dropdown(id='gene-dropdown-select',
+                     multi=True,
+                     className='custom-dropdown'),
         html.Button(id='var-select-btn',
                     n_clicks=0,
                     children='Update feature plot',
@@ -1111,6 +1208,10 @@ scrna_tab_content = {
     ]),
     'Intra-donor Variation':
     html.Div([
+        html.Br(),
+        html.Button("Download CSV",
+                    id='scrna_cv_gene_btn',
+                    className='button-default-style'),
         html.H4("Select between variale or stable",
                 className='header-button-text'),
         dcc.RadioItems(['Stable', 'Variable'],
@@ -1119,17 +1220,23 @@ scrna_tab_content = {
                        className='graph-component-align'),
         dcc.Dropdown(id='stablevar-selector',
                      multi=True,
-                     placeholder='Select genes of interest'),
+                     placeholder='Select genes of interest',
+                     className='custom-dropdown'),
         html.Button(id='subset-stablevar',
                     n_clicks=0,
                     children='Update Plot',
                     className='button-default-style'),
+        dcc.Download(id='download-scrna-cv-gene-df'),
         dcc.Graph(id='scrna_stable_plot'),
         html.H4("Select celltype of interest", className='header-button-text'),
-        dcc.Dropdown(id='this-gene-intra', value='ASDC'),
+        dcc.Dropdown(id='this-gene-intra',
+                     value='ASDC',
+                     className='custom-dropdown'),
         dcc.Graph(id='scrna_cv_profile'),
         # dcc.Graph(id='cvprof-hg-fig'),
-    ])
+    ]),
+    'UMAP':
+    html.Div([])
 }
 
 
@@ -1165,13 +1272,12 @@ def determine_datatype(user_input):
               Input('params-dtype', 'value'))
 def render_params(dtype):
     """ returns div object that holds submission for parameters """
-    print('triggered')
     if dtype == 'Bulk Plasma':
         return html.Div(children=[
+            dbc.Row([]),
             dbc.Row([
                 dbc.Col([
-                    html.H4("Choose CV threshold",
-                            className='header-button-text'),
+                    html.H4("Choose CV threshold", className='params-header'),
                     dcc.Input(id='params-cv',
                               type='number',
                               value=5,
@@ -1179,7 +1285,7 @@ def render_params(dtype):
                 ]),
                 dbc.Col([
                     html.H4("Choose mean threshold",
-                            className='header-button-text'),
+                            className='params-header'),
                     dcc.Input(id='params-mean',
                               type='number',
                               value=1,
@@ -1187,14 +1293,14 @@ def render_params(dtype):
                 ]),
                 dbc.Col([
                     html.H4("**Choose z-score cutoff",
-                            className='header-button-text'),
+                            className='params-header'),
                     dcc.Input(id='params-z-score',
                               type='number',
                               className='center-component-style'),
                 ]),
                 dbc.Col([
                     html.H4("**Choose NA Threshold",
-                            className='header-button-text'),
+                            className='params-header'),
                     dcc.Input(id='params-na',
                               type='number',
                               className='center-component-style')
@@ -1206,8 +1312,21 @@ def render_params(dtype):
         return html.Div(children=[
             dbc.Row([
                 dbc.Col([
-                    html.H4("Choose CV threshold",
-                            className='header-button-text'),
+                    dcc.Input(id='params-z-score',
+                              type='number',
+                              className='center-component-style',
+                              style={'display': 'none'})
+                ]),
+                dbc.Col([
+                    dcc.Input(id='params-na',
+                              type='number',
+                              className='center-component-style',
+                              style={'display': 'none'})
+                ])
+            ]),
+            dbc.Row([
+                dbc.Col([
+                    html.H4("Choose CV threshold", className='params-header'),
                     dcc.Input(id='params-cv',
                               type='number',
                               value=10,
@@ -1215,7 +1334,7 @@ def render_params(dtype):
                 ]),
                 dbc.Col([
                     html.H4("Choose mean threshold",
-                            className='header-button-text'),
+                            className='params-header'),
                     dcc.Input(id='params-mean',
                               type='number',
                               value=0.1,
@@ -1230,7 +1349,7 @@ submit_params_page = html.Div(children=[
     html.H2('Platform for Analyzing Longitudinal Multi-omics data',
             className='custom-h2-header'),
     html.Div(children=[
-        html.H4("Choose datatype", className='header-button-text'),
+        html.H4("Choose datatype", className='params-header'),
         dcc.Dropdown(id='params-dtype',
                      options=list(dtype_dict.keys()),
                      className='custom-dropdown'),
@@ -1247,8 +1366,11 @@ submit_params_page = html.Div(children=[
 
 data_store = html.Div(children=[
     dcc.Store('input-data'),
+    dcc.Store('scrna_stablevar_output'),
+    dcc.Store('scrna_gene_subset_output'),
     dcc.Store('input-metadata'),
     dcc.Store('var-decomp'),
+    dcc.Store('scrna-subset-data'),
     dcc.Store('input-cvprof'),
     dcc.Store('input-outlier'),
     dcc.Store('corr-matrix'),

@@ -11,10 +11,17 @@
     font-weight: bold;
     color: white; 
 }
-.header-button-text {
+.params-header { 
     text-align: center;
     color: white;
-    padding-top: 20px;
+    padding-top: 12px;
+    display: grid;
+    justify-content: center;
+}
+.header-button-text {
+    text-align: center;
+    color:  rgb(0, 48, 87);
+    padding-top: 16px;
     display: grid;
     justify-content: center;
 }
