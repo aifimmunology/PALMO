@@ -14,11 +14,10 @@ from rpy2.robjects.vectors import StrVector
 # TODO: suppress system warnings from imports
 from rpy2.robjects.packages import importr
 
-utils = importr('utils')
+#utils = importr('utils')
 # getting ready to download these packages...
-importr('PALMO')
-importr('Hmisc')
-rpackages.importr('ggpubr')
+#importr('Hmisc')
+# rpackages.importr('ggpubr')
 
 
 def rpy_2py(df):
@@ -48,6 +47,7 @@ def load_data(data_fp, meta_fp, datatype):
         '''.format(data_fp, meta_fp))
     elif datatype == 'singlecell':
         palmo_obj = ro.r('''
+            library("PALMO")
             pbmc <- readRDS("{}")
             metaData <- pbmc@meta.data 
             pbmc@meta.data$Sample <- pbmc@meta.data$orig.ident
@@ -170,6 +170,29 @@ def find_stable_features(palmo_obj, cv_threshold):
     '''.format(cv_threshold))
     return palmo_obj
 
+def get_umap(palmo_obj): 
+    po = ro.r("""
+        library("PALMO") 
+        library(Seurat) 
+        group_column <- 'celltype'
+        data = palmo_obj@raw$data
+        metadata <- palmo_obj@raw$data@meta.data
+        
+        metadata['ident_merge'] <- rownames(metadata) 
+        umap_data <- data.frame(Embeddings(data[["umap"]])) 
+        umap_data['ident_merge'] <- rownames(umap_data) 
+
+        # merge in celltype 
+        umap_input <- merge(umap_data, metadata, by='ident_merge') 
+        pca_data <- data.frame(Embeddings(data[['pca']]))
+        pca_data['ident_merge'] <- rownames(pca_data) 
+
+        pca_input <- merge(pca_data, metadata, by='ident_merge') 
+        master_dimreduc <- merge(pca_input, umap_input, by='ident_merge') 
+        """)
+    return rpy_2py(ro.r('master_dimreduc')) 
+    
+
 
 def run(data_filepath, metadata_filepath, datatype, z_cutoff, mean_threshold,
         cv_threshold, na_threshold, housekeeping_genes, feature_set):
@@ -178,10 +201,9 @@ def run(data_filepath, metadata_filepath, datatype, z_cutoff, mean_threshold,
         2. run variance custom function 
         3. run outlier detection custom function  
     '''
-    print('datatype is..{}'.format(datatype))
-    palmo_obj = load_data(data_filepath, metadata_filepath, datatype)
-    palmo_obj = prep_data(palmo_obj, datatype, na_threshold)
     if datatype == 'bulk':
+        palmo_obj = load_data(data_filepath, metadata_filepath, datatype)
+        palmo_obj = prep_data(palmo_obj, datatype, na_threshold)
         palmo_obj = run_lmeVariance(palmo_obj, mean_threshold, feature_set,
                                     datatype)
         palmo_obj = run_cvCalc(palmo_obj,
@@ -218,7 +240,7 @@ def run(data_filepath, metadata_filepath, datatype, z_cutoff, mean_threshold,
         stable_genes['is_var_gene'] = 0
         cv_res = pd.concat([var_genes, stable_genes])
         outlier_res = pd.DataFrame()
-        """
+
         palmo_obj = run_cvcalc_scprofile(palmo_obj, mean_threshold,
                                          housekeeping_genes)
         palmo_obj = run_lmeVariance(palmo_obj, mean_threshold, feature_set,
@@ -237,8 +259,10 @@ def run(data_filepath, metadata_filepath, datatype, z_cutoff, mean_threshold,
         var_genes = rpy_2py(ro.r("palmo_obj@result$variable_gene"))
         stable_genes = rpy_2py(ro.r("palmo_obj@result$non_variable_gene"))
         cv_res = pd.concat([var_genes, stable_genes])
+        import pdb; pdb.set_trace()
+        """
+        test = get_umap(palmo_obj)
         outlier_res = pd.DataFrame()
-
         return (data, metadata, var_decomp, cv_res, outlier_res)
 
 
