@@ -1143,7 +1143,6 @@ def get_tab_content(datatype, this_tab):
 def get_datapath(data_entry):
     '''
     '''
-    print('getting filepath...{}'.format(data_entry))
     if data_entry == 'Bulk Plasma':
         return ('{}/data/Olink_NPX_log2_Protein.Rda'.format(os.getcwd()))
     if data_entry == "Single-Cell":
@@ -1162,6 +1161,71 @@ def determine_datatype(user_input):
         return 'singlecell'
 
 
+@app.callback(Output('params-content', 'children'),
+              Input('params-dtype', 'value'))
+def render_params(dtype):
+    """ returns div object that holds submission for parameters """
+    print('triggered')
+    if dtype == 'Bulk Plasma':
+        return html.Div(children=[
+            dbc.Row([
+                dbc.Col([
+                    html.H4("Choose CV threshold",
+                            className='header-button-text'),
+                    dcc.Input(id='params-cv',
+                              type='number',
+                              value=5,
+                              className='center-component-style'),
+                ]),
+                dbc.Col([
+                    html.H4("Choose mean threshold",
+                            className='header-button-text'),
+                    dcc.Input(id='params-mean',
+                              type='number',
+                              value=1,
+                              className='center-component-style'),
+                ]),
+                dbc.Col([
+                    html.H4("**Choose z-score cutoff",
+                            className='header-button-text'),
+                    dcc.Input(id='params-z-score',
+                              type='number',
+                              className='center-component-style'),
+                ]),
+                dbc.Col([
+                    html.H4("**Choose NA Threshold",
+                            className='header-button-text'),
+                    dcc.Input(id='params-na',
+                              type='number',
+                              className='center-component-style')
+                ])
+            ],
+                    style={"background-color": colors['aiblue']})
+        ])
+    elif dtype == "Single-Cell":
+        return html.Div(children=[
+            dbc.Row([
+                dbc.Col([
+                    html.H4("Choose CV threshold",
+                            className='header-button-text'),
+                    dcc.Input(id='params-cv',
+                              type='number',
+                              value=10,
+                              className='center-component-style')
+                ]),
+                dbc.Col([
+                    html.H4("Choose mean threshold",
+                            className='header-button-text'),
+                    dcc.Input(id='params-mean',
+                              type='number',
+                              value=0.1,
+                              className='center-component-style'),
+                ])
+            ]),
+        ],
+                        style={"background-color": colors['aiblue']})
+
+
 submit_params_page = html.Div(children=[
     html.H2('Platform for Analyzing Longitudinal Multi-omics data',
             className='custom-h2-header'),
@@ -1169,39 +1233,10 @@ submit_params_page = html.Div(children=[
         html.H4("Choose datatype", className='header-button-text'),
         dcc.Dropdown(id='params-dtype',
                      options=list(dtype_dict.keys()),
-                     className='custom-dropdown')
-    ],
-             style={'background-color': colors['aiblue']}),
-    dbc.Row([
-        dbc.Col([
-            html.H4("Choose z-score cutoff", className='header-button-text'),
-            dcc.Input(id='params-z-score',
-                      type='number',
-                      value=2,
-                      className='center-component-style'),
-            html.H4("Choose mean threshold", className='header-button-text'),
-            dcc.Input(id='params-mean',
-                      type='number',
-                      value=1,
-                      className='center-component-style'),
-        ]),
-        dbc.Col([
-            html.H4("Choose CV threshold", className='header-button-text'),
-            dcc.Input(id='params-cv',
-                      type='number',
-                      value=5,
-                      className='center-component-style'),
-            html.H4("Choose NA Threshold", className='header-button-text'),
-            dcc.Input(id='params-na',
-                      type='number',
-                      value=0.4,
-                      className='center-component-style')
-        ])
-    ],
-            style={"background-color": colors['aiblue']}),
-    html.Div(children=[
+                     className='custom-dropdown'),
+        html.Div(id='params-content'),
         html.Button(
-            "Run App", id='run_app_btn', className='button-default-style')
+            "Run App", id='run_app_btn', className='button-default-style'),
     ],
              style={'background-color': colors['aiblue']}),
     dbc.Spinner(id='loading-content',
