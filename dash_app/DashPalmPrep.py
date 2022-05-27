@@ -15,6 +15,9 @@ from rpy2.robjects.vectors import StrVector
 # TODO: suppress system warnings from imports
 from rpy2.robjects.packages import importr
 
+utils = importr('utils')
+importr("PALMO")
+
 
 def rpy_2py(df):
     ''' convenient function that will convert rpy object to a pandas data.frame 
@@ -202,8 +205,6 @@ def run(data_filepath, metadata_filepath, datatype, z_cutoff, mean_threshold,
     palmo_obj = load_data(data_filepath, metadata_filepath, datatype)
     palmo_obj = prep_data(palmo_obj, datatype, na_threshold)
     if datatype == 'bulk':
-        palmo_obj = load_data(data_filepath, metadata_filepath, datatype)
-        palmo_obj = prep_data(palmo_obj, datatype, na_threshold)
         palmo_obj = run_lmeVariance(palmo_obj, mean_threshold, feature_set,
                                     datatype)
         palmo_obj = run_cvCalc(palmo_obj,
