@@ -199,6 +199,8 @@ def run(data_filepath, metadata_filepath, datatype, z_cutoff, mean_threshold,
         2. run variance custom function 
         3. run outlier detection custom function  
     '''
+    palmo_obj = load_data(data_filepath, metadata_filepath, datatype)
+    palmo_obj = prep_data(palmo_obj, datatype, na_threshold)
     if datatype == 'bulk':
         palmo_obj = load_data(data_filepath, metadata_filepath, datatype)
         palmo_obj = prep_data(palmo_obj, datatype, na_threshold)
@@ -220,28 +222,8 @@ def run(data_filepath, metadata_filepath, datatype, z_cutoff, mean_threshold,
         cv_all = rpy_2py(ro.r("palmo_obj@result$cv_all"))
         outlier_res = rpy_2py(ro.r("palmo_obj@result[['outlier_res']]"))
         umap = pd.DataFrame()
-        """
-        workdir = '/Users/james.harvey/workplace/bulk'
-        datamatrix.to_csv('{}/data.csv'.format(workdir))
-        decomp_var_df.to_csv('{}/var_decomp.csv'.format(workdir))
-        cv_all.to_csv('{}/cv_res.csv'.format(workdir))
-        outlier_res.to_csv('{}/outlier.csv'.format(workdir))
-        """
         return (datamatrix, metadata, decomp_var_df, cv_all, outlier_res, umap)
     if datatype == 'singlecell':
-        """
-        work_dir = '{}/data'.format(os.getcwd())
-        data = pd.read_csv('{}/data.csv'.format(work_dir))
-        metadata = pd.read_csv('{}/metadata.csv'.format(work_dir))
-        var_decomp = pd.read_csv('{}/var_decomp.csv'.format(work_dir))
-        var_genes = pd.read_csv('{}/var_genes.csv'.format(work_dir))
-        var_genes['is_var_gene'] = 1
-        stable_genes = pd.read_csv('{}/non_var_genes.csv'.format(work_dir))
-        stable_genes['is_var_gene'] = 0
-        cv_res = pd.concat([var_genes, stable_genes])
-        outlier_res = pd.DataFrame()
-        umap = pd.read_csv('{}/umap_input.csv'.format(work_dir))
-        """
         palmo_obj = run_cvcalc_scprofile(palmo_obj, mean_threshold,
                                          housekeeping_genes)
         palmo_obj = run_lmeVariance(palmo_obj, mean_threshold, feature_set,

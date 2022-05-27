@@ -148,16 +148,13 @@ def prep_outlierP_data(outlier_df, z_cutoff, z_score_subset, nGenes, groupby):
               [State('sample-selector', 'value')],
               prevent_initial_call=True)
 def run_and_cache_outlier_input(data_input, n_clicks, select_samples):
+    outlier_res_py = pd.read_json(data_input, orient='split')
     if n_clicks is None:
-        raise PreventUpdate
+        return outlier_res_py.to_json(date_format='iso', orient='split')
     else:
-        outlier_res_py = pd.read_json(data_input, orient='split')
-        if n_clicks == 0:
-            return outlier_res_py.to_json(date_format='iso', orient='split')
-        else:
-            outlier_res_py = outlier_res_py.loc[
-                outlier_res_py['Sample'].isin(select_samples), ]
-            return outlier_res_py.to_json(date_format='iso', orient='split')
+        outlier_res_py = outlier_res_py.loc[
+            outlier_res_py['Sample'].isin(select_samples), ]
+        return outlier_res_py.to_json(date_format='iso', orient='split')
 
 
 @app.callback(Output('number-features-bar', 'figure'),
@@ -493,42 +490,37 @@ def scrna_variance_decomp_plot(var_input):
               State('gene-dropdown-select', 'value'),
               prevent_initial_call=True)
 def scrna_features_decomp_plot(var_input, clicks, var_chosen):
-    if clicks is None:
-        raise PreventUpdate
+    var_decomp = pd.read_json(var_input, orient='split')
+    var_decomp.index = var_decomp['Gene']
+    var_decomp = pd.melt(var_decomp,
+                         id_vars='Gene',
+                         value_vars=['PTID', 'Time', 'Residual', 'celltype'])
+    donors_sorted = var_decomp.loc[var_decomp['variable'].eq('donor'), ]
+    if clicks is not None:
+        var_decomp = var_decomp.loc[var_decomp['Gene'].isin(var_chosen), ]
     else:
-        var_decomp = pd.read_json(var_input, orient='split')
-        var_decomp.index = var_decomp['Gene']
-        var_decomp = pd.melt(
-            var_decomp,
-            id_vars='Gene',
-            value_vars=['PTID', 'Time', 'Residual', 'celltype'])
-        donors_sorted = var_decomp.loc[var_decomp['variable'].eq('donor'), ]
-        if clicks > 0:
-            var_decomp = var_decomp.loc[var_decomp['Gene'].isin(var_chosen), ]
-        else:
-            # choose some default genes - top 15
-            top_vars = var_decomp.sort_values(
-                by='value', ascending=False)[0:15]['Gene'].unique().tolist()
-            var_decomp = var_decomp.loc[var_decomp['Gene'].isin(top_vars), ]
-        donors_sorted.sort_values(by='value', ascending=False, inplace=True)
-        var_fig = px.bar(var_decomp,
-                         x='value',
-                         y='Gene',
-                         color='variable',
-                         orientation='h',
-                         category_orders={
-                             'Gene': donors_sorted['Gene'].tolist(),
-                             'variable':
-                             ['PTID', 'Time', 'celltype', 'Residual']
-                         },
-                         labels={
-                             'Gene': 'Features',
-                             'value': '% variance explained'
-                         },
-                         color_discrete_sequence=THISCOLORSCALE)
-        var_fig.update_traces().update_layout(title_x=0.5,
-                                              legend_title_text='FeatureList')
-        return var_fig, var_decomp.to_json(orient='split')
+        # choose some default genes - top 15
+        top_vars = var_decomp.sort_values(
+            by='value', ascending=False)[0:15]['Gene'].unique().tolist()
+        var_decomp = var_decomp.loc[var_decomp['Gene'].isin(top_vars), ]
+    donors_sorted.sort_values(by='value', ascending=False, inplace=True)
+    var_fig = px.bar(var_decomp,
+                     x='value',
+                     y='Gene',
+                     color='variable',
+                     orientation='h',
+                     category_orders={
+                         'Gene': donors_sorted['Gene'].tolist(),
+                         'variable': ['PTID', 'Time', 'celltype', 'Residual']
+                     },
+                     labels={
+                         'Gene': 'Features',
+                         'value': '% variance explained'
+                     },
+                     color_discrete_sequence=THISCOLORSCALE)
+    var_fig.update_traces().update_layout(title_x=0.5,
+                                          legend_title_text='FeatureList')
+    return var_fig, var_decomp.to_json(orient='split')
 
 
 def prep_var_contribute_df(tbl: pd.DataFrame, mean_threshold):
@@ -998,6 +990,19 @@ def scrna_variable_gene_plot(dff, is_stable):
 ######################
 # --- scRNA UMAP --- #
 ######################
+
+
+@app.callback(Output('download-umap-df', 'data'),
+              Input('umap_btn', 'n_clicks'), State('umap_input', 'data'))
+def download_cv_gene(n_clicks, dff):
+    '''
+    '''
+    if n_clicks is not None:
+        dff = pd.read_json(dff, orient='split')
+        # create json blob that will hold these values
+        return dcc.send_data_frame(dff.to_csv, 'umap_data.csv')
+
+
 @app.callback(Output('celltype_umap', 'figure'), Output('pc_fig', 'figure'),
               Input('umap_input', 'data'))
 def plot_umap(dff):
@@ -1284,8 +1289,12 @@ scrna_tab_content = {
     ]),
     'UMAP':
     html.Div([
+        html.Button("Download CSV",
+                    id='umap_btn',
+                    className='button-default-style'),
         dcc.Graph(id='pc_fig', className='side-by-side-graph'),
         dcc.Graph(id='celltype_umap', className='side-by-side-graph'),
+        dcc.Download(id='download-umap-df'),
     ])
 }
 
@@ -1402,7 +1411,7 @@ def render_params(dtype):
 
 submit_params_page = html.Div(children=[
     html.Div(children=[
-        html.H2('Platform for Analyzing Longitudinal Multi-omics data',
+        html.H2('Platform for Analyzing Longitudinal Multi-omics Data',
                 className='custom-h2-header'),
         html.H4("Choose datatype", className='params-header'),
         dcc.Dropdown(id='params-dtype',
