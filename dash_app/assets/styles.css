@@ -18,6 +18,11 @@
     display: grid;
     justify-content: center;
 }
+.optional-text { 
+    color: white; 
+    justify-content: center;
+    display: grid;
+}
 .header-button-text {
     text-align: center;
     color:  rgb(0, 48, 87);

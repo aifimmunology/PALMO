@@ -976,6 +976,33 @@ def scrna_variable_gene_plot(dff, is_stable):
 ######################
 # --- scRNA UMAP --- #
 ######################
+@app.callback(Output('celltype_umap', 'figure'), Output('pc_fig', 'figure'),
+              Input('umap_input', 'data'))
+def plot_umap(dff):
+    umap_input = pd.read_json(dff, orient='split')
+    umap_input.sort_values(by='predicted.celltype.l2.y', inplace=True)
+    # plot umap
+    umap_celltype = px.scatter(umap_input,
+                               x='UMAP_1',
+                               y='UMAP_2',
+                               color='predicted.celltype.l2.y',
+                               height=600,
+                               labels={'predicted.celltype.l2.y': 'celltype'})
+    umap_celltype.update_layout(xaxis=dict(showgrid=False),
+                                yaxis=dict(showgrid=False))
+    umap_celltype.update_traces(marker=dict(size=1.5))
+
+    # plot PC1 PC2
+    pc_fig = px.scatter(umap_input,
+                        x='PC_1',
+                        y='PC_2',
+                        color='predicted.celltype.l2.y',
+                        height=600,
+                        labels={'predicted.celltype.l2.y': 'celltype'})
+    pc_fig.update_layout(xaxis=dict(showgrid=False),
+                         yaxis=dict(showgrid=False))
+    pc_fig.update_traces(marker=dict(size=1.5))
+    return umap_celltype, pc_fig
 
 
 ##################################
@@ -995,7 +1022,7 @@ def define_gene_options(var_decomp):
               Output('var-decomp', 'data'),
               Output('input-cvprof', 'data'),
               Output('input-outlier', 'data'),
-              [Input('run_app_btn', 'n_clicks')],
+              Output('umap_input', 'data'), [Input('run_app_btn', 'n_clicks')],
               State('params-dtype', 'value'),
               State('params-z-score', 'value'),
               State('params-mean', 'value'),
@@ -1008,9 +1035,9 @@ def render_tabs(click1, dtype, zscore_cutoff, mean_cutoff, cv_cutoff,
     ctx = dash.callback_context
     action = ctx.triggered[0]['prop_id'].split('.')[0]
     if (action == 'run_app_btn') and (click1 is not None):
-        (data, metadata, var_decomp, cv_res,
-         outlier) = run_prep(dtype, zscore_cutoff, mean_cutoff, cv_cutoff,
-                             na_cutoff)
+        (data, metadata, var_decomp, cv_res, outlier,
+         umap) = run_prep(dtype, zscore_cutoff, mean_cutoff, cv_cutoff,
+                          na_cutoff)
         # if user doesn't specify z-score: return empty data.frame
 
         # get gene options
@@ -1038,22 +1065,22 @@ def render_tabs(click1, dtype, zscore_cutoff, mean_cutoff, cv_cutoff,
                 metadata.to_json(orient='split'),
                 var_decomp.to_json(orient='split'),
                 cv_res.to_json(orient='split'),
-                outlier.to_json(orient='split'))
+                outlier.to_json(orient='split'), umap.to_json(orient='split'))
 
 
 def run_prep(datatype, zscore_cutoff, mean_cutoff, cv_cutoff, na_cutoff):
     meta_fpath = get_metapath()
-    (data, metadata, var_decomp, cv_res,
-     outlier) = dpp.run(data_filepath=get_datapath(datatype),
-                        metadata_filepath=meta_fpath,
-                        datatype=determine_datatype(datatype),
-                        z_cutoff=zscore_cutoff,
-                        mean_threshold=mean_cutoff,
-                        cv_threshold=cv_cutoff,
-                        na_threshold=na_cutoff,
-                        housekeeping_genes=['GAPDH', 'ACTB'],
-                        feature_set=['PTID', 'Time'])
-    return (data, metadata, var_decomp, cv_res, outlier)
+    (data, metadata, var_decomp, cv_res, outlier,
+     umap) = dpp.run(data_filepath=get_datapath(datatype),
+                     metadata_filepath=meta_fpath,
+                     datatype=determine_datatype(datatype),
+                     z_cutoff=zscore_cutoff,
+                     mean_threshold=mean_cutoff,
+                     cv_threshold=cv_cutoff,
+                     na_threshold=na_cutoff,
+                     housekeeping_genes=['GAPDH', 'ACTB'],
+                     feature_set=['PTID', 'Time'])
+    return (data, metadata, var_decomp, cv_res, outlier, umap)
 
 
 # structure to determine number/names of tabs
@@ -1236,7 +1263,10 @@ scrna_tab_content = {
         # dcc.Graph(id='cvprof-hg-fig'),
     ]),
     'UMAP':
-    html.Div([])
+    html.Div([
+        dcc.Graph(id='pc_fig', className='side-by-side-graph'),
+        dcc.Graph(id='celltype_umap', className='side-by-side-graph'),
+    ])
 }
 
 
@@ -1278,6 +1308,7 @@ def render_params(dtype):
             dbc.Row([
                 dbc.Col([
                     html.H4("Choose CV threshold", className='params-header'),
+                    html.P('(Required)', className='optional-text'),
                     dcc.Input(id='params-cv',
                               type='number',
                               value=5,
@@ -1286,21 +1317,23 @@ def render_params(dtype):
                 dbc.Col([
                     html.H4("Choose mean threshold",
                             className='params-header'),
+                    html.P('(Required)', className='optional-text'),
                     dcc.Input(id='params-mean',
                               type='number',
                               value=1,
                               className='center-component-style'),
                 ]),
                 dbc.Col([
-                    html.H4("**Choose z-score cutoff",
+                    html.H4("Choose z-score cutoff",
                             className='params-header'),
+                    html.P('(Optional)', className='optional-text'),
                     dcc.Input(id='params-z-score',
                               type='number',
                               className='center-component-style'),
                 ]),
                 dbc.Col([
-                    html.H4("**Choose NA Threshold",
-                            className='params-header'),
+                    html.H4("Choose NA Threshold", className='params-header'),
+                    html.P('(Optional)', className='optional-text'),
                     dcc.Input(id='params-na',
                               type='number',
                               className='center-component-style')
@@ -1327,6 +1360,7 @@ def render_params(dtype):
             dbc.Row([
                 dbc.Col([
                     html.H4("Choose CV threshold", className='params-header'),
+                    html.P('(Required)', className='optional-text'),
                     dcc.Input(id='params-cv',
                               type='number',
                               value=10,
@@ -1335,6 +1369,7 @@ def render_params(dtype):
                 dbc.Col([
                     html.H4("Choose mean threshold",
                             className='params-header'),
+                    html.P('(Required)', className='optional-text'),
                     dcc.Input(id='params-mean',
                               type='number',
                               value=0.1,
@@ -1346,9 +1381,9 @@ def render_params(dtype):
 
 
 submit_params_page = html.Div(children=[
-    html.H2('Platform for Analyzing Longitudinal Multi-omics data',
-            className='custom-h2-header'),
     html.Div(children=[
+        html.H2('Platform for Analyzing Longitudinal Multi-omics data',
+                className='custom-h2-header'),
         html.H4("Choose datatype", className='params-header'),
         dcc.Dropdown(id='params-dtype',
                      options=list(dtype_dict.keys()),
@@ -1371,6 +1406,7 @@ data_store = html.Div(children=[
     dcc.Store('input-metadata'),
     dcc.Store('var-decomp'),
     dcc.Store('scrna-subset-data'),
+    dcc.Store('umap_input'),
     dcc.Store('input-cvprof'),
     dcc.Store('input-outlier'),
     dcc.Store('corr-matrix'),

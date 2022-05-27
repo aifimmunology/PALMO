@@ -1,5 +1,6 @@
 ## Libraries
 
+from re import U
 import rpy2.robjects.packages as rpackages
 import pandas as pd
 import numpy as np
@@ -65,6 +66,8 @@ def prep_data(palmo_obj, datatype, na_cutoff):
     """
     """
     if datatype == "bulk":
+        if na_cutoff is None:
+            na_cutoff = 0
         palmo_obj = ro.r('''
             palmo_obj <- annotateMetadata(data_object=palmo_obj, sample_column="Sample", donor_column="PTID", time_column="Time")
             palmo_obj <- mergePALMOdata(data_object=palmo_obj, datatype="{dt}")
@@ -170,7 +173,8 @@ def find_stable_features(palmo_obj, cv_threshold):
     '''.format(cv_threshold))
     return palmo_obj
 
-def get_umap(palmo_obj): 
+
+def get_umap(palmo_obj):
     po = ro.r("""
         library("PALMO") 
         library(Seurat) 
@@ -190,8 +194,7 @@ def get_umap(palmo_obj):
         pca_input <- merge(pca_data, metadata, by='ident_merge') 
         master_dimreduc <- merge(pca_input, umap_input, by='ident_merge') 
         """)
-    return rpy_2py(ro.r('master_dimreduc')) 
-    
+    return rpy_2py(ro.r('master_dimreduc'))
 
 
 def run(data_filepath, metadata_filepath, datatype, z_cutoff, mean_threshold,
@@ -210,7 +213,8 @@ def run(data_filepath, metadata_filepath, datatype, z_cutoff, mean_threshold,
                                meanThreshold=mean_threshold,
                                cvThreshold=cv_threshold,
                                datatype=datatype)
-        palmo_obj = run_outlier_detection(palmo_obj, z_cutoff)
+        if z_cutoff is not None:
+            palmo_obj = run_outlier_detection(palmo_obj, z_cutoff)
 
         # extract curated data.frames and results
 
@@ -220,6 +224,7 @@ def run(data_filepath, metadata_filepath, datatype, z_cutoff, mean_threshold,
             ro.r("palmo_obj@result$variance_decomposition"))
         cv_all = rpy_2py(ro.r("palmo_obj@result$cv_all"))
         outlier_res = rpy_2py(ro.r("palmo_obj@result[['outlier_res']]"))
+        umap = pd.DataFrame()
         """
         workdir = '/Users/james.harvey/workplace/bulk'
         datamatrix.to_csv('{}/data.csv'.format(workdir))
@@ -227,7 +232,7 @@ def run(data_filepath, metadata_filepath, datatype, z_cutoff, mean_threshold,
         cv_all.to_csv('{}/cv_res.csv'.format(workdir))
         outlier_res.to_csv('{}/outlier.csv'.format(workdir))
         """
-        return (datamatrix, metadata, decomp_var_df, cv_all, outlier_res)
+        return (datamatrix, metadata, decomp_var_df, cv_all, outlier_res, umap)
     if datatype == 'singlecell':
         """
         work_dir = '{}/data'.format(os.getcwd())
@@ -240,7 +245,8 @@ def run(data_filepath, metadata_filepath, datatype, z_cutoff, mean_threshold,
         stable_genes['is_var_gene'] = 0
         cv_res = pd.concat([var_genes, stable_genes])
         outlier_res = pd.DataFrame()
-
+        umap = pd.read_csv('{}/umap_input.csv'.format(work_dir))
+        """
         palmo_obj = run_cvcalc_scprofile(palmo_obj, mean_threshold,
                                          housekeeping_genes)
         palmo_obj = run_lmeVariance(palmo_obj, mean_threshold, feature_set,
@@ -259,11 +265,9 @@ def run(data_filepath, metadata_filepath, datatype, z_cutoff, mean_threshold,
         var_genes = rpy_2py(ro.r("palmo_obj@result$variable_gene"))
         stable_genes = rpy_2py(ro.r("palmo_obj@result$non_variable_gene"))
         cv_res = pd.concat([var_genes, stable_genes])
-        import pdb; pdb.set_trace()
-        """
-        test = get_umap(palmo_obj)
-        outlier_res = pd.DataFrame()
-        return (data, metadata, var_decomp, cv_res, outlier_res)
+        umap = get_umap(palmo_obj)
+
+        return (data, metadata, var_decomp, cv_res, outlier_res, umap)
 
 
 if __name__ == "__main__":
