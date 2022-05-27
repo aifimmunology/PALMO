@@ -1,6 +1,4 @@
 ## Libraries
-
-from re import U
 import rpy2.robjects.packages as rpackages
 import pandas as pd
 import numpy as np

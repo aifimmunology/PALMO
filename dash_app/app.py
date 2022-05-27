@@ -1,3 +1,11 @@
+# debugging
+import os
+import time
+
+# data manipulation
+import pandas as pd
+import numpy as np
+
 # dash stuff
 from dash import Dash, html, dcc
 import dash
@@ -13,18 +21,9 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import plotly.io as pio
 
-# data manipulation
-import pandas as pd
-import numpy as np
-import rpy2.robjects as robjects
-
 # custom prep module
 import DashPalmPrep as dpp
-
-# debugging
-import pdb
-import os
-import time
+import rpy2.robjects as robjects
 
 # bootstrap - style sheet
 external_stylesheets = [
@@ -102,7 +101,6 @@ def download_outlier_data(n_clicks, dff):
 def prep_outlierP_data(outlier_df, z_cutoff, z_score_subset, nGenes, groupby):
     '''
     '''
-
     # load custom function to calcualte p-values
     p_value_for_event = robjects.r['p_value_for_event']
     rpnorm = robjects.r['pnorm']
