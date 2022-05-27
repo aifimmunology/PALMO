@@ -15,11 +15,6 @@ from rpy2.robjects.vectors import StrVector
 # TODO: suppress system warnings from imports
 from rpy2.robjects.packages import importr
 
-#utils = importr('utils')
-# getting ready to download these packages...
-#importr('Hmisc')
-# rpackages.importr('ggpubr')
-
 
 def rpy_2py(df):
     ''' convenient function that will convert rpy object to a pandas data.frame 
