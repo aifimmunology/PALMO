@@ -44,7 +44,7 @@ def load_data(data_fp, meta_fp, datatype):
             library("PALMO")
             load("{}")
             load("{}")
-            palmo_obj <- createPALMOobject(anndata=ann, data=data)
+            invisible(capture.output(palmo_obj <- createPALMOobject(anndata=ann, data=data)))
         '''.format(data_fp, meta_fp))
     elif datatype == 'singlecell':
         palmo_obj = ro.r('''
@@ -71,7 +71,7 @@ def prep_data(palmo_obj, datatype, na_cutoff):
         palmo_obj = ro.r('''
             palmo_obj <- annotateMetadata(data_object=palmo_obj, sample_column="Sample", donor_column="PTID", time_column="Time")
             palmo_obj <- mergePALMOdata(data_object=palmo_obj, datatype="{dt}")
-            palmo_obj <- checkReplicates(data_object=palmo_obj, mergeReplicates=T)
+            invisible(capture.output(palmo_obj <- checkReplicates(data_object=palmo_obj, mergeReplicates=T)))
             palmo_obj <- naFilter(data_object=palmo_obj, na_cutoff={na})
             '''.format(dt=datatype, na=float(na_cutoff)))
     if datatype == "singlecell":
@@ -91,7 +91,7 @@ def run_lmeVariance(palmo_obj, mean_threshold, feature_set, datatype):
         # load lmeVariance object function and run
         palmo_obj = ro.r('''
             featureSet <- c("{f1}", "{f2}")
-            palmo_obj <- lmeVariance(data_object=palmo_obj, featureSet=featureSet, meanThreshold={mean}, fileName="olink")
+            invisible(capture.output(palmo_obj <- lmeVariance(data_object=palmo_obj, featureSet=featureSet, meanThreshold={mean}, fileName="olink")))
             '''.format(f1=feature_set[0],
                        f2=feature_set[1],
                        mean=mean_threshold))
@@ -111,7 +111,7 @@ def run_outlier_detection(palmo_obj, z_cutoff):
     '''
     # robject of outlierDetect function
     palmo_obj = ro.r('''
-        palmo_obj <- outlierDetect(data_object=palmo_obj, z_cutoff={})
+        invisible(capture.output(palmo_obj <- outlierDetect(data_object=palmo_obj, z_cutoff={})))
         
         # assign cutoffs 
         '''.format(z_cutoff))

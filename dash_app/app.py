@@ -5,6 +5,7 @@ import dash_html_components as html
 import dash_core_components as dcc
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
+from dash.exceptions import PreventUpdate
 
 # plotting
 import plotly.express as px
@@ -49,8 +50,11 @@ colors = {
 ##############################
 
 
-@app.callback(Output('corr-matrix', 'data'), Output('corr-fig', 'figure'),
-              Input('input-data', 'data'), Input('corr-dropdown', 'value'))
+@app.callback(Output('corr-matrix', 'data'),
+              Output('corr-fig', 'figure'),
+              Input('input-data', 'data'),
+              Input('corr-dropdown', 'value'),
+              prevent_initial_call=True)
 def correlation_matrix_plot(data_input, correlation_method='spearman'):
     datamatrix = pd.read_json(data_input, orient='split')
     cols = datamatrix.columns.tolist()
@@ -139,21 +143,26 @@ def prep_outlierP_data(outlier_df, z_cutoff, z_score_subset, nGenes, groupby):
 
 
 @app.callback(Output('outlier-input-state', 'data'),
-              Input('z-submit', 'n_clicks'), Input('input-outlier', 'data'),
-              [State('sample-selector', 'value')])
-def run_and_cache_outlier_input(n_clicks, data_input, select_samples):
-    outlier_res_py = pd.read_json(data_input, orient='split')
-    if n_clicks == 0:
-        return outlier_res_py.to_json(date_format='iso', orient='split')
+              Input('input-outlier', 'data'),
+              State('z-submit', 'n_clicks'),
+              [State('sample-selector', 'value')],
+              prevent_initial_call=True)
+def run_and_cache_outlier_input(data_input, n_clicks, select_samples):
+    if n_clicks is None:
+        raise PreventUpdate
     else:
-        outlier_res_py = outlier_res_py.loc[
-            outlier_res_py['Sample'].isin(select_samples), ]
-        return outlier_res_py.to_json(date_format='iso', orient='split')
+        outlier_res_py = pd.read_json(data_input, orient='split')
+        if n_clicks == 0:
+            return outlier_res_py.to_json(date_format='iso', orient='split')
+        else:
+            outlier_res_py = outlier_res_py.loc[
+                outlier_res_py['Sample'].isin(select_samples), ]
+            return outlier_res_py.to_json(date_format='iso', orient='split')
 
 
 @app.callback(Output('number-features-bar', 'figure'),
               Input('outlier-input-state', 'data'),
-              Input('params-z-score', 'value'),
+              State('params-z-score', 'value'),
               [State('sample-selector', 'value')])
 def plot_no_features(df, z_cutoff, select_samples):
     '''
@@ -184,7 +193,7 @@ def plot_no_features(df, z_cutoff, select_samples):
 
 @app.callback(Output('p-scatter', 'figure'),
               Input('outlier-input-state', 'data'),
-              Input('z-score-cutoff', 'value'), Input('params-z-score',
+              Input('z-score-cutoff', 'value'), State('params-z-score',
                                                       'value'),
               [State('sample-selector', 'value')])
 def outlier_p_scatter_plot(data_input, z_subset, z_score_cutoff,
@@ -212,7 +221,7 @@ def outlier_p_scatter_plot(data_input, z_subset, z_score_cutoff,
 
 
 @app.callback(Output('p-bar', 'figure'), Input('outlier-input-state', 'data'),
-              Input('z-score-cutoff', 'value'), Input('params-z-score',
+              Input('z-score-cutoff', 'value'), State('params-z-score',
                                                       'value'),
               [State('sample-selector', 'value')])
 def outlier_p_bar_plot(data_input, z_subset, z_score_cutoff, select_samples):
@@ -243,7 +252,7 @@ def outlier_p_bar_plot(data_input, z_subset, z_score_cutoff, select_samples):
 @app.callback(Output('outlier-plot', 'figure'), Input('center-measure',
                                                       'value'),
               Input('outlier-input-state', 'data'),
-              Input('params-z-score', 'value'),
+              State('params-z-score', 'value'),
               [State('sample-selector', 'value')])
 def outlier_detect_plot(measure_col, data_input, z_cut_off, these_samples):
     ''' 
@@ -376,8 +385,11 @@ def download_outlier_data(n_clicks, dff):
         return dcc.send_data_frame(dff.to_csv, 'expression_lvl_viz_data.csv')
 
 
-@app.callback(Output('expression-out', 'data'), Input('this-gene', 'value'),
-              Input('input-data', 'data'), Input('input-metadata', 'data'))
+@app.callback(Output('expression-out', 'data'),
+              Input('this-gene', 'value'),
+              Input('input-data', 'data'),
+              Input('input-metadata', 'data'),
+              prevent_initial_call=True)
 def store_gene_data(this_gene, input_data, input_metadata):
     ''' Caches and stores data for callbacks 
     '''
@@ -476,40 +488,47 @@ def scrna_variance_decomp_plot(var_input):
 
 @app.callback(Output('scrna_features_decomp', 'figure'),
               Output('scrna_gene_subset_output', 'data'),
-              Input('var-decomp', 'data'), Input('var-select-btn', 'n_clicks'),
-              State('gene-dropdown-select', 'value'))
+              Input('var-decomp', 'data'),
+              Input('var-select-btn', 'n_clicks'),
+              State('gene-dropdown-select', 'value'),
+              prevent_initial_call=True)
 def scrna_features_decomp_plot(var_input, clicks, var_chosen):
-    var_decomp = pd.read_json(var_input, orient='split')
-    var_decomp.index = var_decomp['Gene']
-    var_decomp = pd.melt(var_decomp,
-                         id_vars='Gene',
-                         value_vars=['PTID', 'Time', 'Residual', 'celltype'])
-    donors_sorted = var_decomp.loc[var_decomp['variable'].eq('donor'), ]
-    if clicks > 0:
-        var_decomp = var_decomp.loc[var_decomp['Gene'].isin(var_chosen), ]
+    if clicks is None:
+        raise PreventUpdate
     else:
-        # choose some default genes - top 15
-        top_vars = var_decomp.sort_values(
-            by='value', ascending=False)[0:15]['Gene'].unique().tolist()
-        var_decomp = var_decomp.loc[var_decomp['Gene'].isin(top_vars), ]
-    donors_sorted.sort_values(by='value', ascending=False, inplace=True)
-    var_fig = px.bar(var_decomp,
-                     x='value',
-                     y='Gene',
-                     color='variable',
-                     orientation='h',
-                     category_orders={
-                         'Gene': donors_sorted['Gene'].tolist(),
-                         'variable': ['PTID', 'Time', 'celltype', 'Residual']
-                     },
-                     labels={
-                         'Gene': 'Features',
-                         'value': '% variance explained'
-                     },
-                     color_discrete_sequence=THISCOLORSCALE)
-    var_fig.update_traces().update_layout(title_x=0.5,
-                                          legend_title_text='FeatureList')
-    return var_fig, var_decomp.to_json(orient='split')
+        var_decomp = pd.read_json(var_input, orient='split')
+        var_decomp.index = var_decomp['Gene']
+        var_decomp = pd.melt(
+            var_decomp,
+            id_vars='Gene',
+            value_vars=['PTID', 'Time', 'Residual', 'celltype'])
+        donors_sorted = var_decomp.loc[var_decomp['variable'].eq('donor'), ]
+        if clicks > 0:
+            var_decomp = var_decomp.loc[var_decomp['Gene'].isin(var_chosen), ]
+        else:
+            # choose some default genes - top 15
+            top_vars = var_decomp.sort_values(
+                by='value', ascending=False)[0:15]['Gene'].unique().tolist()
+            var_decomp = var_decomp.loc[var_decomp['Gene'].isin(top_vars), ]
+        donors_sorted.sort_values(by='value', ascending=False, inplace=True)
+        var_fig = px.bar(var_decomp,
+                         x='value',
+                         y='Gene',
+                         color='variable',
+                         orientation='h',
+                         category_orders={
+                             'Gene': donors_sorted['Gene'].tolist(),
+                             'variable':
+                             ['PTID', 'Time', 'celltype', 'Residual']
+                         },
+                         labels={
+                             'Gene': 'Features',
+                             'value': '% variance explained'
+                         },
+                         color_discrete_sequence=THISCOLORSCALE)
+        var_fig.update_traces().update_layout(title_x=0.5,
+                                              legend_title_text='FeatureList')
+        return var_fig, var_decomp.to_json(orient='split')
 
 
 def prep_var_contribute_df(tbl: pd.DataFrame, mean_threshold):
@@ -530,7 +549,7 @@ def prep_var_contribute_df(tbl: pd.DataFrame, mean_threshold):
               Input('var-decomp', 'data'),
               State('params-mean', 'value'),
               [State('gene-dropdown-select', 'value')],
-              prevent_initial_callback=True)
+              prevent_initial_call=True)
 def subset_var_df(n, input_var, mean_threshold, var_chosen):
     '''
     '''
@@ -657,12 +676,11 @@ def define_group_options(cvprof):
     return gene_list
 
 
-@app.callback(
-    Output('scrna_cv_profile', 'figure'),
-    Input('input-cvprof', 'data'),
-    Input('this-gene-intra', 'value'),
-    State('params-cv', 'value'),
-)
+@app.callback(Output('scrna_cv_profile', 'figure'),
+              Input('input-cvprof', 'data'),
+              Input('this-gene-intra', 'value'),
+              State('params-cv', 'value'),
+              prevent_initial_call=True)
 def scrna_cv_profile_plot(input_cv, this_gene, cv_threshold):
     cv_input = pd.read_json(input_cv, orient='split')
     housekeeping_genes = ['GAPDH', 'ACTB']
@@ -809,10 +827,14 @@ def cv_density_plot(gene_df, metadata_input):
     return fig
 
 
-@app.callback(Output('cvplot', 'figure'), Output('gene-df', 'data'),
-              Input('gene-type', 'value'), Input('input-metadata', 'data'),
-              Input('input-data', 'data'), Input('params-mean', 'value'),
-              Input('params-cv', 'value'))
+@app.callback(Output('cvplot', 'figure'),
+              Output('gene-df', 'data'),
+              Input('gene-type', 'value'),
+              Input('input-metadata', 'data'),
+              Input('input-data', 'data'),
+              State('params-mean', 'value'),
+              State('params-cv', 'value'),
+              prevent_initial_call=True)
 def cvplot(gene_type, metadata_input, matrix_input, mean_threshold,
            cv_threshold):
     datamatrix = pd.read_json(matrix_input, orient='split')
@@ -1173,7 +1195,6 @@ bulk_tab_content = {
         # insert button
         html.Button('Update Plots',
                     id='z-submit',
-                    n_clicks=0,
                     className='button-default-style'),
         dcc.Download(id='download-outlier-df'),
         dcc.RadioItems(
@@ -1227,7 +1248,6 @@ scrna_tab_content = {
                      multi=True,
                      className='custom-dropdown'),
         html.Button(id='var-select-btn',
-                    n_clicks=0,
                     children='Update feature plot',
                     className='button-default-style'),
         dcc.Graph(id='scrna_features_decomp'),
