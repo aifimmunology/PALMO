@@ -102,7 +102,6 @@ def download_outlier_data(n_clicks, dff):
 def prep_outlierP_data(outlier_df, z_cutoff, z_score_subset, nGenes, groupby):
     '''
     '''
-
     # load custom function to calcualte p-values
     p_value_for_event = robjects.r['p_value_for_event']
     rpnorm = robjects.r['pnorm']

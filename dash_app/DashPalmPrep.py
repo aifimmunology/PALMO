@@ -15,6 +15,9 @@ from rpy2.robjects.vectors import StrVector
 # TODO: suppress system warnings from imports
 from rpy2.robjects.packages import importr
 
+utils = importr('utils')
+importr("PALMO")
+
 
 def rpy_2py(df):
     ''' convenient function that will convert rpy object to a pandas data.frame 
@@ -199,11 +202,11 @@ def run(data_filepath, metadata_filepath, datatype, z_cutoff, mean_threshold,
         2. run variance custom function 
         3. run outlier detection custom function  
     '''
-    palmo_obj = load_data(data_filepath, metadata_filepath, datatype)
-    palmo_obj = prep_data(palmo_obj, datatype, na_threshold)
+    #palmo_obj = load_data(data_filepath, metadata_filepath, datatype)
+    #palmo_obj = prep_data(palmo_obj, datatype, na_threshold)
+    work_dir = '{}/data'.format(os.getcwd())
     if datatype == 'bulk':
-        palmo_obj = load_data(data_filepath, metadata_filepath, datatype)
-        palmo_obj = prep_data(palmo_obj, datatype, na_threshold)
+        """
         palmo_obj = run_lmeVariance(palmo_obj, mean_threshold, feature_set,
                                     datatype)
         palmo_obj = run_cvCalc(palmo_obj,
@@ -221,9 +224,42 @@ def run(data_filepath, metadata_filepath, datatype, z_cutoff, mean_threshold,
             ro.r("palmo_obj@result$variance_decomposition"))
         cv_all = rpy_2py(ro.r("palmo_obj@result$cv_all"))
         outlier_res = rpy_2py(ro.r("palmo_obj@result[['outlier_res']]"))
+        """
+        datamatrix = pd.read_csv('{}/bulk_data.csv'.format(work_dir))
+        datamatrix.index = datamatrix['Unnamed: 0']
+        del datamatrix['Unnamed: 0']
+
+        metadata = pd.read_csv('{}/bulk_metadata.csv'.format(work_dir))
+        metadata.index = metadata['Unnamed: 0']
+        del metadata['Unnamed: 0']
+
+        decomp_var_df = pd.read_csv('{}/bulk_var_decomp.csv'.format(work_dir))
+        decomp_var_df.index = decomp_var_df['Unnamed: 0']
+        del decomp_var_df['Unnamed: 0']
+
+        cv_all = pd.read_csv('{}/bulk_cv.csv'.format(work_dir))
+        cv_all.index = cv_all['Unnamed: 0']
+        del cv_all['Unnamed: 0']
+
+        outlier_res = pd.read_csv('{}/bulk_outlier.csv'.format(work_dir))
+        outlier_res.index = outlier_res['Unnamed: 0']
+        del outlier_res['Unnamed: 0']
+
         umap = pd.DataFrame()
         return (datamatrix, metadata, decomp_var_df, cv_all, outlier_res, umap)
     if datatype == 'singlecell':
+
+        data = pd.read_csv('{}/data.csv'.format(work_dir))
+        metadata = pd.read_csv('{}/metadata.csv'.format(work_dir))
+        var_decomp = pd.read_csv('{}/var_decomp.csv'.format(work_dir))
+        var_genes = pd.read_csv('{}/var_genes.csv'.format(work_dir))
+        var_genes['is_var_gene'] = 1
+        stable_genes = pd.read_csv('{}/non_var_genes.csv'.format(work_dir))
+        stable_genes['is_var_gene'] = 0
+        cv_res = pd.concat([var_genes, stable_genes])
+        outlier_res = pd.DataFrame()
+        umap = pd.read_csv('{}/umap_input.csv'.format(work_dir))
+        """
         palmo_obj = run_cvcalc_scprofile(palmo_obj, mean_threshold,
                                          housekeeping_genes)
         palmo_obj = run_lmeVariance(palmo_obj, mean_threshold, feature_set,
@@ -243,6 +279,7 @@ def run(data_filepath, metadata_filepath, datatype, z_cutoff, mean_threshold,
         stable_genes = rpy_2py(ro.r("palmo_obj@result$non_variable_gene"))
         cv_res = pd.concat([var_genes, stable_genes])
         umap = get_umap(palmo_obj)
+        """
 
         return (data, metadata, var_decomp, cv_res, outlier_res, umap)
 
