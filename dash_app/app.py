@@ -1,8 +1,9 @@
 # dash stuff
+from turtle import width
 from dash import Dash, html, dcc
 import dash
-import dash_html_components as html
-import dash_core_components as dcc
+from dash import dcc
+from dash import html
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
@@ -19,7 +20,7 @@ import numpy as np
 import rpy2.robjects as robjects
 
 # custom prep module
-import DashPalmPrep as dpp
+# import DashPalmPrep as dpp
 
 # debugging
 import pdb
@@ -33,6 +34,8 @@ external_stylesheets = [
 #app = JupyterDash(__name__, external_stylesheets=external_stylesheets,long_callback_manager=long_callback_manager) # jupyter-only
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.config['suppress_callback_exceptions'] = True
+# Create server variable with Flask server object for use with gunicorn
+server = app.server
 
 THISCOLORSCALE = px.colors.qualitative.Dark2
 pio.templates.default = "plotly_white"
@@ -1464,13 +1467,15 @@ def render_params(dtype):
 
 submit_params_page = html.Div(className='wrapper', children=[
         html.Header(className='header', children=[
-            html.Nav(className='navbar navbar-dark bg-primary', children=[
+            html.Nav(className='navbar navbar-dark bg-hise-blue-1', children=[
                 html.Div(className='container-fluid', children=[
-                    html.Div('HISE Interactive Visualization'),
+                    html.A(className='navbar-brand', href='#', children=[
+                        html.Img(src='https://storage.googleapis.com/aifi-static-assets/logo_imm_graphic_desktop.png', alt='AI logo', height='24')
+                    ])
                 ])
             ]),
         ]),
-        html.Main(children=[
+        html.Main(className='bg-hise-blue-1', children=[
             html.Section(className='container-fluid', children=[
                 html.H1(children='Platform for Analyzing Longitudinal Multi-omics Data',
                     className="text-white text-center"),
@@ -1478,16 +1483,22 @@ submit_params_page = html.Div(className='wrapper', children=[
             html.Section(className='container-fluid', children=[
                 html.Form(children=[
                     html.Div(className='row mb-3', children=[
-                        html.Div(className='col-md-4', children=[
-                            html.Label(children='Choose datatype', htmlFor='params-dtype', className='form-label'),
+                        html.Div(className='col-md-2', children=[
+                            html.Label(children='Choose datatype', htmlFor='params-dtype', className='form-label text-white'),
                             dcc.Dropdown(id='params-dtype',
                                 options=list(dtype_dict.keys()),
-                                className='form-select'),
+                                className=''),
                         ])
                     ]),
                     html.Div(className='row mb-3', children=[
-                        html.Div(id='params-content'),
-                        html.Button("Run App", id='run_app_btn', className='button-default-style'),
+                        html.Div(className='col-md-12', children=[
+                            html.Div(id='params-content', className='mb-3'),
+                        ])
+                    ]),
+                    html.Div(className='row pb-3', children=[
+                        html.Div(className='col-md-12 text-center', children=[
+                            html.Button("Run App", id='run_app_btn', className='btn btn-hise-green-2 btn-lg'),
+                        ])
                     ]),
                 ]),
                 dbc.Spinner(id='loading-content',
