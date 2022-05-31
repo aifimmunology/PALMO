@@ -1,10 +1,11 @@
-# debugging
-import os
-import time
 
 # data manipulation
 import pandas as pd
 import numpy as np
+
+# debugging
+import os
+import time
 
 # dash stuff
 from dash import Dash, html, dcc
@@ -22,17 +23,20 @@ from plotly.subplots import make_subplots
 import plotly.io as pio
 
 # custom prep module
-import DashPalmPrep as dpp
+#import DashPalmPrep as dpp
 import rpy2.robjects as robjects
+from rpy2.robjects.packages import importr
+# utils = importr('utils')
+# importr("PALMO")
 
 # bootstrap - style sheet
 external_stylesheets = [
     'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css'
 ]
-#app = JupyterDash(__name__, external_stylesheets=external_stylesheets,long_callback_manager=long_callback_manager) # jupyter-only
+#app = JupyterDash(__name__,
+#                  external_stylesheets=external_stylesheets)  # jupyter-only
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.config['suppress_callback_exceptions'] = True
-
 THISCOLORSCALE = px.colors.qualitative.Dark2
 pio.templates.default = "plotly_white"
 colors = {
@@ -51,10 +55,10 @@ colors = {
 
 @app.callback(Output('corr-matrix', 'data'),
               Output('corr-fig', 'figure'),
-              Input('input-data', 'data'),
               Input('corr-dropdown', 'value'),
+              State('input-data', 'data'),
               prevent_initial_call=True)
-def correlation_matrix_plot(data_input, correlation_method='spearman'):
+def correlation_matrix_plot(correlation_method, data_input):
     datamatrix = pd.read_json(data_input, orient='split')
     cols = datamatrix.columns.tolist()
     cor_res = datamatrix.corr(method=correlation_method)
@@ -102,6 +106,7 @@ def prep_outlierP_data(outlier_df, z_cutoff, z_score_subset, nGenes, groupby):
     '''
     '''
     # load custom function to calcualte p-values
+    robjects.r.source('{}/PALMO/R/outlierDetectP.R'.format(os.getcwd()))
     p_value_for_event = robjects.r['p_value_for_event']
     rpnorm = robjects.r['pnorm']
     rate = 1 - rpnorm(z_cutoff)[0]
@@ -326,8 +331,6 @@ def download_scrna_exp(n_clicks, dff):
 def plot_scrna_gene_exp(this_gene, input_data, input_metadata):
     data = pd.read_json(input_data, orient='split')
     metadata = pd.read_json(input_metadata, orient='split')
-    data.index = data['Unnamed: 0'].values
-    del data['Unnamed: 0']
     this_gene_vals = data.loc[data.index == this_gene, ].values
     metadata['exp'] = list(this_gene_vals[0])
 
@@ -354,8 +357,6 @@ def plot_scrna_gene_exp(this_gene, input_data, input_metadata):
 def plot_scrna_gene_bytime(this_gene, input_data, input_metadata):
     data = pd.read_json(input_data, orient='split')
     metadata = pd.read_json(input_metadata, orient='split')
-    data.index = data['Unnamed: 0'].values
-    del data['Unnamed: 0']
     this_gene_vals = data.loc[data.index == this_gene, ].values
     metadata['exp'] = list(this_gene_vals[0])
     fig = px.strip(metadata,
@@ -382,8 +383,8 @@ def download_outlier_data(n_clicks, dff):
 
 @app.callback(Output('expression-out', 'data'),
               Input('this-gene', 'value'),
-              Input('input-data', 'data'),
-              Input('input-metadata', 'data'),
+              State('input-data', 'data'),
+              State('input-metadata', 'data'),
               prevent_initial_call=True)
 def store_gene_data(this_gene, input_data, input_metadata):
     ''' Caches and stores data for callbacks 
@@ -536,7 +537,7 @@ def prep_var_contribute_df(tbl: pd.DataFrame, mean_threshold):
 
 @app.callback(Output('variance-out', 'data'),
               Input('feature-button', 'n_clicks'),
-              Input('var-decomp', 'data'),
+              State('var-decomp', 'data'),
               State('params-mean', 'value'),
               [State('gene-dropdown-select', 'value')],
               prevent_initial_call=True)
@@ -1060,14 +1061,68 @@ def render_tabs(click1, dtype, zscore_cutoff, mean_cutoff, cv_cutoff,
     ctx = dash.callback_context
     action = ctx.triggered[0]['prop_id'].split('.')[0]
     if (action == 'run_app_btn') and (click1 is not None):
-        (data, metadata, var_decomp, cv_res, outlier,
-         umap) = run_prep(dtype, zscore_cutoff, mean_cutoff, cv_cutoff,
-                          na_cutoff)
+        if dtype == 'Bulk Plasma':
+            data = pd.read_csv('{}/data/bulk_datamatrix.csv'.format(
+                os.getcwd()))
+            data.index = data['Unnamed: 0']
+            del data['Unnamed: 0']
+
+            metadata = pd.read_csv('{}/data/bulk_metadata.csv'.format(
+                os.getcwd()))
+            metadata.index = metadata['Unnamed: 0']
+            del metadata['Unnamed: 0']
+
+            var_decomp = pd.read_csv('{}/data/bulk_decomp_var.csv'.format(
+                os.getcwd()))
+            var_decomp.index = var_decomp['Unnamed: 0']
+            del var_decomp['Unnamed: 0']
+
+            cv_res = pd.read_csv('{}/data/bulk_cv.csv'.format(os.getcwd()))
+            cv_res.index = cv_res['Unnamed: 0']
+            del cv_res['Unnamed: 0']
+
+            outlier = pd.read_csv('{}/data/bulk_outlier.csv'.format(
+                os.getcwd()))
+            outlier.index = outlier['Unnamed: 0']
+            del outlier['Unnamed: 0']
+
+            umap = pd.DataFrame()
+        if dtype == 'Single-Cell':
+            try: 
+                print('trying') 
+                data = pd.DataFrame() # pd.read_pickle('{}/data/sc_data.pkl'.format(os.getcwd()))
+                #data.index = data['Unnamed: 0']
+                #del data['Unnamed: 0']
+
+                metadata =  pd.read_csv('{}/data/sc_metadata.csv'.format(
+                    os.getcwd()))
+                metadata.index = metadata['Unnamed: 0']
+                del metadata['Unnamed: 0']
+
+                var_decomp = pd.read_csv('{}/data/sc_decomp_var.csv'.format(
+                    os.getcwd()))
+                var_decomp.index = var_decomp['Unnamed: 0']
+                del var_decomp['Unnamed: 0']
+
+                cv_res = pd.read_csv('{}/data/sc_cv.csv'.format(os.getcwd()))
+                cv_res.index = cv_res['Unnamed: 0']
+                del cv_res['Unnamed: 0']
+
+                outlier = pd.DataFrame()
+                umap = pd.read_csv('{}/data/sc_umap.csv'.format(os.getcwd()), usecols=['UMAP_1', 'UMAP_2', 'predicted.celltype.l2.y', 'PC_1', 'PC_2']).head(n=100) 
+            except: 
+                print('woops')
+  
+
+        #(data, metadata, var_decomp, cv_res, outlier,
+        # umap) = run_prep(dtype, zscore_cutoff, mean_cutoff, cv_cutoff,
+        #                  na_cutoff)
         # if user doesn't specify z-score: return empty data.frame
 
         # get gene options
         tabs = []
         for num in dtype_dict[dtype]:
+            print(num)
             content = get_tab_content(dtype, num)
             if (zscore_cutoff is None) and (num == 'Outliers'):
                 outlier = pd.DataFrame()
@@ -1079,8 +1134,8 @@ def render_tabs(click1, dtype, zscore_cutoff, mean_cutoff, cv_cutoff,
                         className='default-tab-style',
                         selected_className='tab-selected-style'))
         # return to some default tab
-        return (dcc.Tabs(id='tab',
-                         value='tab1',
+        return (dcc.Tabs(id='output-content',
+                         value='Correlation',
                          children=tabs,
                          colors={
                              'border': colors['aiwhite'],
@@ -1334,36 +1389,54 @@ def render_params(dtype):
             dbc.Row([]),
             dbc.Row([
                 dbc.Col([
-                    html.H4("Choose CV threshold", className='params-header'),
-                    html.P('(Required)', className='optional-text'),
+                    html.H4("Choose CV threshold",
+                            className='params-header',
+                            style={'display': 'none'}),
+                    html.P('(Required)',
+                           className='optional-text',
+                           style={'display': 'none'}),
                     dcc.Input(id='params-cv',
                               type='number',
                               value=5,
-                              className='center-component-style'),
+                              className='center-component-style',
+                              style={'display': 'none'}),
                 ]),
                 dbc.Col([
                     html.H4("Choose mean threshold",
-                            className='params-header'),
-                    html.P('(Required)', className='optional-text'),
+                            className='params-header',
+                            style={'display': 'none'}),
+                    html.P('(Required)',
+                           className='optional-text',
+                           style={'display': 'none'}),
                     dcc.Input(id='params-mean',
                               type='number',
                               value=1,
-                              className='center-component-style'),
+                              className='center-component-style',
+                              style={'display': 'none'}),
                 ]),
                 dbc.Col([
                     html.H4("Choose z-score cutoff",
-                            className='params-header'),
-                    html.P('(Optional)', className='optional-text'),
+                            className='params-header',
+                            style={'display': 'none'}),
+                    html.P('(Optional)',
+                           className='optional-text',
+                           style={'display': 'none'}),
                     dcc.Input(id='params-z-score',
                               type='number',
-                              className='center-component-style'),
+                              className='center-component-style',
+                              style={'display': 'none'}),
                 ]),
                 dbc.Col([
-                    html.H4("Choose NA Threshold", className='params-header'),
-                    html.P('(Optional)', className='optional-text'),
+                    html.H4("Choose NA Threshold",
+                            className='params-header',
+                            style={'display': 'none'}),
+                    html.P('(Optional)',
+                           className='optional-text',
+                           style={'display': 'none'}),
                     dcc.Input(id='params-na',
                               type='number',
-                              className='center-component-style')
+                              className='center-component-style',
+                              style={'display': 'none'})
                 ])
             ],
                     style={"background-color": colors['aiblue']})
@@ -1386,21 +1459,30 @@ def render_params(dtype):
             ]),
             dbc.Row([
                 dbc.Col([
-                    html.H4("Choose CV threshold", className='params-header'),
-                    html.P('(Required)', className='optional-text'),
+                    html.H4("Choose CV threshold",
+                            className='params-header',
+                            style={'display': 'none'}),
+                    html.P('(Required)',
+                           className='optional-text',
+                           style={'display': 'none'}),
                     dcc.Input(id='params-cv',
                               type='number',
                               value=10,
-                              className='center-component-style')
+                              className='center-component-style',
+                              style={'display': 'none'})
                 ]),
                 dbc.Col([
                     html.H4("Choose mean threshold",
-                            className='params-header'),
-                    html.P('(Required)', className='optional-text'),
+                            className='params-header',
+                            style={'display': 'none'}),
+                    html.P('(Required)',
+                           className='optional-text',
+                           style={'display': 'none'}),
                     dcc.Input(id='params-mean',
                               type='number',
                               value=0.1,
-                              className='center-component-style'),
+                              className='center-component-style',
+                              style={'display': 'none'}),
                 ])
             ]),
         ],
@@ -1413,7 +1495,7 @@ submit_params_page = html.Div(children=[
                 className='custom-h2-header'),
         html.H4("Choose datatype", className='params-header'),
         dcc.Dropdown(id='params-dtype',
-                     options=list(dtype_dict.keys()),
+                     options=['Bulk Plasma'],
                      className='custom-dropdown'),
         html.Div(id='params-content'),
         html.Button(
@@ -1444,9 +1526,9 @@ data_store = html.Div(children=[
     dcc.Store('gene-df'),
     dcc.Store('input_stablevar')
 ])
+
 app.layout = html.Div([submit_params_page, data_store])
 
+
 if __name__ == '__main__':
-    app.run_server(debug=True,
-                   host=os.getenv('IP', '0.0.0.0'),
-                   port=int(os.getenv('PORT', 4444)))
+    app.run_server(host='0.0.0.0', port=8050)
