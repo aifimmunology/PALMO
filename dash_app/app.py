@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> b29d970 (prod upload)
 # data manipulation
 import pandas as pd
 import numpy as np
@@ -24,17 +27,26 @@ from plotly.subplots import make_subplots
 import plotly.io as pio
 
 # custom prep module
+<<<<<<< HEAD
 import rpy2.robjects as robjects
 from rpy2.robjects.packages import importr
 # debugging
 import pdb
 import os
 import time
+=======
+#import DashPalmPrep as dpp
+import rpy2.robjects as robjects
+from rpy2.robjects.packages import importr
+# utils = importr('utils')
+# importr("PALMO")
+>>>>>>> b29d970 (prod upload)
 
 # bootstrap - style sheet
 external_stylesheets = [
     'https://storage.googleapis.com/aifi-static-assets/custom2.css'
 ]
+<<<<<<< HEAD
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.config['suppress_callback_exceptions'] = True
@@ -43,6 +55,12 @@ app.config['suppress_callback_exceptions'] = True
 server = app.server
 
 
+=======
+#app = JupyterDash(__name__,
+#                  external_stylesheets=external_stylesheets)  # jupyter-only
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app.config['suppress_callback_exceptions'] = True
+>>>>>>> b29d970 (prod upload)
 THISCOLORSCALE = px.colors.qualitative.Dark2
 pio.templates.default = "plotly_white"
 
@@ -1122,6 +1140,7 @@ def render_tabs(click1, dtype, zscore_cutoff, mean_cutoff, cv_cutoff,
     action = ctx.triggered[0]['prop_id'].split('.')[0]
     if (action == 'run_app_btn') and (click1 is not None):
         if dtype == 'Bulk Plasma':
+<<<<<<< HEAD
             data = pd.read_csv('{}/bulk_datamatrix.csv'.format(
                 os.getcwd()))
             data.index = data['Unnamed: 0']
@@ -1129,6 +1148,13 @@ def render_tabs(click1, dtype, zscore_cutoff, mean_cutoff, cv_cutoff,
 
             metadata = pd.read_csv('{}/bulk_metadata.csv'.format(
                 os.getcwd()))
+=======
+            data = pd.read_csv('{}/bulk_datamatrix.csv'.format(os.getcwd()))
+            data.index = data['Unnamed: 0']
+            del data['Unnamed: 0']
+
+            metadata = pd.read_csv('{}/bulk_metadata.csv'.format(os.getcwd()))
+>>>>>>> b29d970 (prod upload)
             metadata.index = metadata['Unnamed: 0']
             del metadata['Unnamed: 0']
 
@@ -1141,13 +1167,18 @@ def render_tabs(click1, dtype, zscore_cutoff, mean_cutoff, cv_cutoff,
             cv_res.index = cv_res['Unnamed: 0']
             del cv_res['Unnamed: 0']
 
+<<<<<<< HEAD
             outlier = pd.read_csv('{}/bulk_outlier.csv'.format(
                 os.getcwd()))
+=======
+            outlier = pd.read_csv('{}/bulk_outlier.csv'.format(os.getcwd()))
+>>>>>>> b29d970 (prod upload)
             outlier.index = outlier['Unnamed: 0']
             del outlier['Unnamed: 0']
 
             umap = pd.DataFrame()
         if dtype == 'Single-Cell':
+<<<<<<< HEAD
             try: 
                 print('trying') 
                 data = pd.DataFrame() # pd.read_pickle('{}/data/sc_data.pkl'.format(os.getcwd()))
@@ -1155,6 +1186,16 @@ def render_tabs(click1, dtype, zscore_cutoff, mean_cutoff, cv_cutoff,
                 #del data['Unnamed: 0']
 
                 metadata =  pd.read_csv('{}/data/sc_metadata.csv'.format(
+=======
+            try:
+                print('trying')
+                data = pd.DataFrame(
+                )  # pd.read_pickle('{}/data/sc_data.pkl'.format(os.getcwd()))
+                #data.index = data['Unnamed: 0']
+                #del data['Unnamed: 0']
+
+                metadata = pd.read_csv('{}/data/sc_metadata.csv'.format(
+>>>>>>> b29d970 (prod upload)
                     os.getcwd()))
                 metadata.index = metadata['Unnamed: 0']
                 del metadata['Unnamed: 0']
@@ -1169,10 +1210,21 @@ def render_tabs(click1, dtype, zscore_cutoff, mean_cutoff, cv_cutoff,
                 del cv_res['Unnamed: 0']
 
                 outlier = pd.DataFrame()
+<<<<<<< HEAD
                 umap = pd.read_csv('{}/data/sc_umap.csv'.format(os.getcwd()), usecols=['UMAP_1', 'UMAP_2', 'predicted.celltype.l2.y', 'PC_1', 'PC_2']).head(n=100) 
             except: 
                 print('woops')
   
+=======
+                umap = pd.read_csv('{}/data/sc_umap.csv'.format(os.getcwd()),
+                                   usecols=[
+                                       'UMAP_1', 'UMAP_2',
+                                       'predicted.celltype.l2.y', 'PC_1',
+                                       'PC_2'
+                                   ]).head(n=100)
+            except:
+                print('woops')
+>>>>>>> b29d970 (prod upload)
 
         #(data, metadata, var_decomp, cv_res, outlier,
         # umap) = run_prep(dtype, zscore_cutoff, mean_cutoff, cv_cutoff,
@@ -1549,6 +1601,7 @@ def render_params(dtype):
         style={"background-color": colors['aiblue']})
 
 
+<<<<<<< HEAD
 
 submit_params_page = html.Div(className='wrapper', children=[
         html.Header(className='header', children=[
@@ -1595,6 +1648,26 @@ submit_params_page = html.Div(className='wrapper', children=[
         html.Footer(),
     ])
 
+=======
+submit_params_page = html.Div(children=[
+    html.Div(children=[
+        html.H2('Platform for Analyzing Longitudinal Multi-omics Data',
+                className='custom-h2-header'),
+        html.H4("Choose datatype", className='params-header'),
+        dcc.Dropdown(id='params-dtype',
+                     options=['Bulk Plasma'],
+                     className='custom-dropdown'),
+        html.Div(id='params-content'),
+        html.Button(
+            "Run App", id='run_app_btn', className='button-default-style'),
+    ],
+             style={'background-color': colors['aiblue']}),
+    dbc.Spinner(id='loading-content',
+                children=[html.Div(id='output-content')],
+                delay_hide=10,
+                fullscreen=True)
+])
+>>>>>>> b29d970 (prod upload)
 
 data_store = html.Div(children=[
     dcc.Store('input-data'),
