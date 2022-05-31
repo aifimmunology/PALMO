@@ -28,7 +28,7 @@ import time
 
 # bootstrap - style sheet
 external_stylesheets = [
-    'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css'
+    'https://storage.googleapis.com/aifi-static-assets/custom2.css'
 ]
 #app = JupyterDash(__name__, external_stylesheets=external_stylesheets,long_callback_manager=long_callback_manager) # jupyter-only
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -36,6 +36,59 @@ app.config['suppress_callback_exceptions'] = True
 
 THISCOLORSCALE = px.colors.qualitative.Dark2
 pio.templates.default = "plotly_white"
+
+# HISE colors
+# exported from custom 2
+colors_aifi = {
+    "--bs-blue": "#0d6efd",
+    "--bs-indigo": "#6610f2",
+    "--bs-purple": "#6f42c1",
+    "--bs-pink": "#d63384",
+    "--bs-red": "#dc3545",
+    "--bs-orange": "#fd7e14",
+    "--bs-yellow": "#ffc107",
+    "--bs-green": "#198754",
+    "--bs-teal": "#20c997",
+    "--bs-cyan": "#0dcaf0",
+    "--bs-white": "#FFFFFF",
+    "--bs-gray": "#6c757d",
+    "--bs-gray-dark": "#343a40",
+    "--bs-gray-100": "#f8f9fa",
+    "--bs-gray-200": "#e9ecef",
+    "--bs-gray-300": "#dee2e6",
+    "--bs-gray-400": "#ced4da",
+    "--bs-gray-500": "#adb5bd",
+    "--bs-gray-600": "#6c757d",
+    "--bs-gray-700": "#495057",
+    "--bs-gray-800": "#343a40",
+    "--bs-gray-900": "#212529",
+    "--bs-hise-blue-1": "#003056",
+    "--bs-hise-blue-2": "#325876",
+    "--bs-hise-blue-3": "#5286b0",
+    "--bs-hise-blue-4": "#71899c",
+    "--bs-hise-blue-5": "#b4c3cf",
+    "--bs-hise-blue-6": "#d9e0e6",
+    "--bs-hise-teal-1": "#33B0C8",
+    "--bs-hise-teal-2": "#76CFE0",
+    "--bs-hise-teal-3": "#DEF2F6",
+    "--bs-hise-grey-1": "#272D3B",
+    "--bs-hise-grey-2": "#3E3E3E",
+    "--bs-hise-grey-3": "#616161",
+    "--bs-hise-grey-4": "#707070",
+    "--bs-hise-grey-5": "#ECEDEE",
+    "--bs-hise-grey-6": "#FBFBFB",
+    "--bs-hise-green-1": "#E3EADA",
+    "--bs-hise-green-2": "#A0C572",
+    "--bs-hise-green-3": "#94BC62",
+    "--bs-hise-green-4": "#4AD991",
+    "--bs-aifi-new-001": "#003057",
+    "--bs-aifi-new-002": "#5da7e5",
+    "--bs-aifi-new-003": "#74A03E",
+    "--bs-aifi-new-004": "#f4a261",
+    "--bs-aifi-new-005": "#e76f51",
+    "--bs-aifi-new-006": "#FFFFD0"
+}
+
 colors = {
     'aiwhite': 'rgb(64, 85, 100)',
     'aiblue': 'rgb(0, 48, 87)',
@@ -45,6 +98,7 @@ colors = {
     'aigrey': 'rgb(124, 125, 127)',
     'ailightgrey': 'rgb(231, 230, 230)',
 }
+
 ##############################
 # --- correlation matrix --- #
 ##############################
@@ -1405,27 +1459,45 @@ def render_params(dtype):
                 ])
             ]),
         ],
-                        style={"background-color": colors['aiblue']})
+        style={"background-color": colors['aiblue']})
 
 
-submit_params_page = html.Div(children=[
-    html.Div(children=[
-        html.H2('Platform for Analyzing Longitudinal Multi-omics Data',
-                className='custom-h2-header'),
-        html.H4("Choose datatype", className='params-header'),
-        dcc.Dropdown(id='params-dtype',
-                     options=list(dtype_dict.keys()),
-                     className='custom-dropdown'),
-        html.Div(id='params-content'),
-        html.Button(
-            "Run App", id='run_app_btn', className='button-default-style'),
-    ],
-             style={'background-color': colors['aiblue']}),
-    dbc.Spinner(id='loading-content',
-                children=[html.Div(id='output-content')],
-                delay_hide=10,
-                fullscreen=True)
-])
+submit_params_page = html.Div(className='wrapper', children=[
+        html.Header(className='header', children=[
+            html.Nav(className='navbar navbar-dark bg-primary', children=[
+                html.Div(className='container-fluid', children=[
+                    html.Div('HISE Interactive Visualization'),
+                ])
+            ]),
+        ]),
+        html.Main(children=[
+            html.Section(className='container-fluid', children=[
+                html.H1(children='Platform for Analyzing Longitudinal Multi-omics Data',
+                    className="text-white text-center"),
+            ]),
+            html.Section(className='container-fluid', children=[
+                html.Form(children=[
+                    html.Div(className='row mb-3', children=[
+                        html.Div(className='col-md-4', children=[
+                            html.Label(children='Choose datatype', htmlFor='params-dtype', className='form-label'),
+                            dcc.Dropdown(id='params-dtype',
+                                options=list(dtype_dict.keys()),
+                                className='form-select'),
+                        ])
+                    ]),
+                    html.Div(className='row mb-3', children=[
+                        html.Div(id='params-content'),
+                        html.Button("Run App", id='run_app_btn', className='button-default-style'),
+                    ]),
+                ]),
+                dbc.Spinner(id='loading-content',
+                    children=[html.Div(id='output-content')],
+                    delay_hide=10,
+                    fullscreen=True)
+            ]),
+        ]),
+        html.Footer(),
+    ])
 
 data_store = html.Div(children=[
     dcc.Store('input-data'),
