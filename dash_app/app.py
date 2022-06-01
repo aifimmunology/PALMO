@@ -41,7 +41,6 @@ app.config['suppress_callback_exceptions'] = True
 # Create server variable with Flask server object for use with gunicorn
 server = app.server
 
-
 THISCOLORSCALE = px.colors.qualitative.Dark2
 pio.templates.default = "plotly_white"
 
@@ -1121,47 +1120,40 @@ def render_tabs(click1, dtype, zscore_cutoff, mean_cutoff, cv_cutoff,
     action = ctx.triggered[0]['prop_id'].split('.')[0]
     if (action == 'run_app_btn') and (click1 is not None):
         if dtype == 'Bulk Plasma':
-<<<<<<< HEAD
-            data = pd.read_csv('{}/bulk_datamatrix.csv'.format(
+            data = pd.read_csv('{}/data/bulk_datamatrix.csv'.format(
                 os.getcwd()))
             data.index = data['Unnamed: 0']
             del data['Unnamed: 0']
 
-            metadata = pd.read_csv('{}/bulk_metadata.csv'.format(
+            metadata = pd.read_csv('{}/data/bulk_metadata.csv'.format(
                 os.getcwd()))
-=======
-            data = pd.read_csv('{}/bulk_datamatrix.csv'.format(os.getcwd()))
-            data.index = data['Unnamed: 0']
-            del data['Unnamed: 0']
-
-            metadata = pd.read_csv('{}/bulk_metadata.csv'.format(os.getcwd()))
->>>>>>> b29d970 (prod upload)
             metadata.index = metadata['Unnamed: 0']
             del metadata['Unnamed: 0']
 
-            var_decomp = pd.read_csv('{}/bulk_decomp_var.csv'.format(
+            var_decomp = pd.read_csv('{}/data/bulk_decomp_var.csv'.format(
                 os.getcwd()))
             var_decomp.index = var_decomp['Unnamed: 0']
             del var_decomp['Unnamed: 0']
 
-            cv_res = pd.read_csv('{}/bulk_cv.csv'.format(os.getcwd()))
+            cv_res = pd.read_csv('{}/data/bulk_cv.csv'.format(os.getcwd()))
             cv_res.index = cv_res['Unnamed: 0']
             del cv_res['Unnamed: 0']
 
-            outlier = pd.read_csv('{}/bulk_outlier.csv'.format(
+            outlier = pd.read_csv('{}/data/bulk_outlier.csv'.format(
                 os.getcwd()))
             outlier.index = outlier['Unnamed: 0']
             del outlier['Unnamed: 0']
 
             umap = pd.DataFrame()
         if dtype == 'Single-Cell':
-            try: 
-                print('trying') 
-                data = pd.DataFrame() # pd.read_pickle('{}/data/sc_data.pkl'.format(os.getcwd()))
+            try:
+                print('trying')
+                data = pd.DataFrame(
+                )  # pd.read_pickle('{}/data/sc_data.pkl'.format(os.getcwd()))
                 #data.index = data['Unnamed: 0']
                 #del data['Unnamed: 0']
 
-                metadata =  pd.read_csv('{}/data/sc_metadata.csv'.format(
+                metadata = pd.read_csv('{}/data/sc_metadata.csv'.format(
                     os.getcwd()))
                 metadata.index = metadata['Unnamed: 0']
                 del metadata['Unnamed: 0']
@@ -1176,10 +1168,14 @@ def render_tabs(click1, dtype, zscore_cutoff, mean_cutoff, cv_cutoff,
                 del cv_res['Unnamed: 0']
 
                 outlier = pd.DataFrame()
-                umap = pd.read_csv('{}/data/sc_umap.csv'.format(os.getcwd()), usecols=['UMAP_1', 'UMAP_2', 'predicted.celltype.l2.y', 'PC_1', 'PC_2']).head(n=100) 
-            except: 
+                umap = pd.read_csv('{}/data/sc_umap.csv'.format(os.getcwd()),
+                                   usecols=[
+                                       'UMAP_1', 'UMAP_2',
+                                       'predicted.celltype.l2.y', 'PC_1',
+                                       'PC_2'
+                                   ]).head(n=100)
+            except:
                 print('woops')
-  
 
         #(data, metadata, var_decomp, cv_res, outlier,
         # umap) = run_prep(dtype, zscore_cutoff, mean_cutoff, cv_cutoff,
@@ -1490,6 +1486,7 @@ def render_params(dtype):
                            style={'display': 'none'}),
                     dcc.Input(id='params-z-score',
                               type='number',
+                              value=2,
                               className='center-component-style',
                               style={'display': 'none'}),
                 ]),
@@ -1514,6 +1511,7 @@ def render_params(dtype):
                 dbc.Col([
                     dcc.Input(id='params-z-score',
                               type='number',
+                              value=2,
                               className='center-component-style',
                               style={'display': 'none'})
                 ]),
@@ -1553,55 +1551,97 @@ def render_params(dtype):
                 ])
             ]),
         ],
-        style={"background-color": colors['aiblue']})
+                        style={"background-color": colors['aiblue']})
 
 
-
-submit_params_page = html.Div(className='wrapper', children=[
-        html.Header(className='header', children=[
-            html.Nav(className='navbar navbar-dark bg-hise-blue-1', children=[
-                html.Div(className='container-fluid', children=[
-                    html.A(className='navbar-brand', href='#', children=[
-                        html.Img(src='https://storage.googleapis.com/aifi-static-assets/logo_imm_graphic_desktop.png', alt='AI logo', height='24')
-                    ])
-                ])
-            ]),
-        ]),
-        html.Main(className='bg-hise-blue-1', children=[
-            html.Section(className='container-fluid', children=[
-                html.H1(children='Platform for Analyzing Longitudinal Multi-omics Data',
-                    className="text-white text-center"),
-            ]),
-            html.Section(className='container-fluid', children=[
-                html.Form(children=[
-                    html.Div(className='row mb-3', children=[
-                        html.Div(className='col-md-2', children=[
-                            html.Label(children='Choose datatype', htmlFor='params-dtype', className='form-label text-white'),
-                            dcc.Dropdown(id='params-dtype',
-                                options=['Bulk Plasma'],
-                                className=''),
-                        ])
+submit_params_page = html.Div(
+    className='wrapper',
+    children=[
+        html.Header(
+            className='header',
+            children=[
+                html.Nav(
+                    className='navbar navbar-dark bg-hise-blue-1',
+                    children=[
+                        html.Div(
+                            className='container-fluid',
+                            children=[
+                                html.
+                                A(className='navbar-brand',
+                                  href='#',
+                                  children=[
+                                      html.Img(
+                                          src=
+                                          'https://storage.googleapis.com/aifi-static-assets/logo_imm_graphic_desktop.png',
+                                          alt='AI logo',
+                                          height='24')
+                                  ])
+                            ])
                     ]),
-                    html.Div(className='row mb-3', children=[
-                        html.Div(className='col-md-12', children=[
-                            html.Div(id='params-content', className='mb-3'),
-                        ])
-                    ]),
-                    html.Div(className='row pb-3', children=[
-                        html.Div(className='col-md-12 text-center', children=[
-                            html.Button("Run App", id='run_app_btn', className='btn btn-hise-green-2 btn-lg'),
-                        ])
-                    ]),
-                ]),
-                dbc.Spinner(id='loading-content',
-                    children=[html.Div(id='output-content')],
-                    delay_hide=10,
-                    fullscreen=True)
             ]),
-        ]),
+        html.Main(
+            className='bg-hise-blue-1',
+            children=[
+                html.Section(
+                    className='container-fluid',
+                    children=[
+                        html.
+                        H1(children=
+                           'Platform for Analyzing Longitudinal Multi-omics Data',
+                           className="text-white text-center"),
+                    ]),
+                html.Section(
+                    className='container-fluid',
+                    children=[
+                        html.Form(children=[
+                            html.Div(
+                                className='row mb-3',
+                                children=[
+                                    html.Div(
+                                        className='col-md-2',
+                                        children=[
+                                            html.Label(
+                                                children='Choose datatype',
+                                                htmlFor='params-dtype',
+                                                className=
+                                                'form-label text-white'),
+                                            dcc.Dropdown(
+                                                id='params-dtype',
+                                                options=['Bulk Plasma'],
+                                                className=''),
+                                        ])
+                                ]),
+                            html.Div(className='row mb-3',
+                                     children=[
+                                         html.Div(className='col-md-12',
+                                                  children=[
+                                                      html.Div(
+                                                          id='params-content',
+                                                          className='mb-3'),
+                                                  ])
+                                     ]),
+                            html.Div(
+                                className='row pb-3',
+                                children=[
+                                    html.Div(
+                                        className='col-md-12 text-center',
+                                        children=[
+                                            html.Button(
+                                                "Run App",
+                                                id='run_app_btn',
+                                                className=
+                                                'btn btn-hise-green-2 btn-lg'),
+                                        ])
+                                ]),
+                        ]),
+                        dbc.Spinner(id='loading-content',
+                                    children=[html.Div(id='output-content')],
+                                    delay_hide=10,
+                                    fullscreen=True)
+                    ]),
+            ]),
         html.Footer(),
     ])
-
 
 data_store = html.Div(children=[
     dcc.Store('input-data'),
@@ -1623,7 +1663,6 @@ data_store = html.Div(children=[
 ])
 
 app.layout = html.Div([submit_params_page, data_store])
-
 
 if __name__ == '__main__':
     app.run_server(host='0.0.0.0', port=8050)
