@@ -9,7 +9,12 @@ General workflow and analysis schema of **PALMO**. It can work with longitudinal
 # <a name="library"></a> Install package and load library
 
 To install library, simply run
-   
+    From CRAN (https://cran.r-project.org/web/packages/PALMO/index.html)
+    install.packages("PALMO")
+    library("PALMO")
+    
+    OR
+    
     library("devtools")
     install_github("aifimmunology/PALMO")
     library("PALMO")
