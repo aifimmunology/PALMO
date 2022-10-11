@@ -24,15 +24,16 @@ To install library, simply run
 
 There are couple of tutorials presented to help users to run PALMO on bulk and single cell data. The examples includes:
 
-* [Tutorial-1: Plasma proteome longitudinal data](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.1.pdf#page=3)
-* [Tutorial-2: scRNA longitudinal data](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.1.pdf#page=11)
-* [Tutorial-3: scATAC longitudinal data](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.1.pdf#page=23)
-* [Tutorial-4: Multi-modal data integration](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.1.pdf#page=31)
-* [Tutorial-5: Longitudinal COVID dataset (CNP0001102)](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.1.pdf#page=33)
-* [Tutorial-6: Differential Gene analysis in longitudinal data](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.1.pdf#page=41)
-* [Tutorial-7: Mouse brain dataset (GSE129788)](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.1.pdf#page=43)
-* [Tutorial-8: TCRB profiling dataset(GSE156980)](https://github.com/aifimmunology/PALMO/blob/main/ReferenceManual-PALMO-v0.1.1.pdf#page=52)
- 
+* [Tutorial-1: Plasma proteome longitudinal data](https://github.com/aifimmunology/PALMO/blob/main/Vignette-PALMO.pdf#page=3)
+* [Tutorial-2: scRNA longitudinal data](https://github.com/aifimmunology/PALMO/blob/main/Vignette-PALMO.pdf#page=11)
+* [Tutorial-3: scATAC longitudinal data](https://github.com/aifimmunology/PALMO/blob/main/Vignette-PALMO.pdf#page=23)
+* [Tutorial-4: Multi-modal data integration](https://github.com/aifimmunology/PALMO/blob/main/Vignette-PALMO.pdf#page=31)
+* [Tutorial-5: Longitudinal COVID dataset (CNP0001102)](https://github.com/aifimmunology/PALMO/blob/main/Vignette-PALMO.pdf#page=33)
+* [Tutorial-6: Differential Gene analysis in longitudinal data](https://github.com/aifimmunology/PALMO/blob/main/Vignette-PALMO.pdf#page=41)
+* [Tutorial-7: Mouse brain dataset (GSE129788)](https://github.com/aifimmunology/PALMO/blob/main/Vignette-PALMO.pdf#page=43)
+* [Tutorial-8: TCRB profiling dataset(GSE156980)](https://github.com/aifimmunology/PALMO/blob/main/Vignette-PALMO.pdf#page=52)
+* [PALMO Data Structure]()(https://github.com/aifimmunology/PALMO/blob/main/Vignette-PALMO.pdf#page=56)
+* [Other examples](https://github.com/aifimmunology/PALMO/blob/main/Vignette-PALMO.pdf#page=56) 
 
 # <a name="authors"></a> Authors
 
