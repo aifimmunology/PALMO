@@ -20,6 +20,10 @@ To install library, simply run
     install_github("aifimmunology/PALMO")
     library("PALMO")
 
+# <a name="manual"></a> Reference manual
+
+PALMO reference manual can be obtained from [https://cran.r-project.org/web/packages/PALMO/PALMO.pdf](https://cran.r-project.org/web/packages/PALMO/PALMO.pdf)
+
 # <a name="example-main"></a> Tutorials
 
 There are couple of tutorials presented to help users to run PALMO on bulk and single cell data. The examples includes:
