@@ -1,0 +1,75 @@
+.tab-selected-style {
+    border-top: 1px solid #d6d6d6;
+    border-bottom: 1px solid #d6d6d6;
+    background-color: rgb(120, 156, 74) !important;
+    color: white !important;
+    padding: 6px;
+}
+.default-tab-style { 
+    border-bottom: 1px solid #d6d6d6;
+    padding: 6px;
+    font-weight: bold;
+    color: white; 
+}
+.params-header { 
+    text-align: center;
+    color: white;
+    padding-top: 12px;
+    display: grid;
+    justify-content: center;
+}
+.optional-text { 
+    color: white; 
+    justify-content: center;
+    display: grid;
+}
+.header-button-text {
+    text-align: center;
+    color:  rgb(0, 48, 87);
+    padding-top: 16px;
+    display: grid;
+    justify-content: center;
+}
+.center-component-style { 
+    width: 200px;
+    margin: 0 auto;
+    align-items: center;
+    display: grid;
+}
+.button-default-style { 
+    align-items: center;
+    width: 200px;
+    display: grid;
+    justify-content: center;
+    margin: 0 auto;
+    background: rgb(120, 156, 74);
+}
+.graph-component-align { 
+    width: 200px;
+    margin: 0 auto;
+    align-items: center;
+}
+.matrix-graph-style {
+    height: 800px;
+    width: 800px;
+    margin: 0 auto;
+}
+.side-by-side-graph { 
+    display: inline-block;
+    width: 50%;
+}
+.custom-dropdown { 
+    width: 200px;
+    margin: 0 auto;
+}
+.custom-cv-graph { 
+    height: 150vh;
+}
+.custom-h2-header { 
+    text-align: center;
+    color: white;
+    background-color: rgb(0, 48, 87);
+}
+.need-to-run-message { 
+    text-align: center;
+}
