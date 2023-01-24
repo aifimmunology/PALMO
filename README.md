@@ -3,7 +3,7 @@
 # <a name="introduction"></a> Introduction
 PALMO `(Platform for Analyzing Longitudinal Multi-omics data)` is a platform for anayzing longitudinal data from bulk as well as single cell. It allows to identify inter-, intra-donor variations in genes over longitudinal time points. The analysis can be done on bulk expression dataset without known celltype information or single cell with celltype/user-defined groups. It allows to infer stable and variable features in given donor and each celltype (or user defined group). The outlier analysis can be performed to identify techinical/biological perturbed samples in donor/participant. Further, differential analysis can be performed to deciher time-wise changes in gene expression in a celltype.
 
-<br> ![img](https://github.com/aifimmunology/PALMO/blob/data/data/vignette/PALMO-workflow.png) <br>
+<br> ![img](vignettes/imgs/PALMO-workflow.png) <br>
 General workflow and analysis schema of **PALMO**. It can work with longitudinal data obtained from bulk such as clinical, bulk RNAseq, proteomic or single cell dataset from scRNAseq, and scATACseq.
 
 # <a name="library"></a> Install package and load library
