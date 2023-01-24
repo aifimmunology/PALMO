@@ -1,0 +1,338 @@
+---
+title: "Tutorial 1: Plasma Proteome"
+output:
+  pdf_document:
+    toc: yes
+    number_sections: yes
+  html_document:
+    toc: yes
+    df_print: paged
+  word_document:
+    toc: yes
+urlcolor: blue
+vignette: |
+  %\VignetteIndexEntry{ReferenceManual}
+  %\VignetteEngine{knitr::rmarkdown} %\VignetteEncoding{UTF-8}
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# <a name="example1"></a> Plasma Proteome (bulk dataset)
+
+This tutorial allows users to explore bulk plasma proteome data (1156 proteins) measured from 6 healthy donors over 10 timepoints.
+Plasma proteomic data available at GitHub.
+1.
+[AIFI-Olink-NPX_log2_Protein.Rda](https://github.com/aifimmunology/PALMO/blob/data/data/AIFI-Olink-NPX_log2_Protein.Rda) (Normalized protein expression data) 2.
+[AIFI-Metadata.Rda](https://github.com/aifimmunology/PALMO/blob/data/data/AIFI-Metadata.Rda) (clinical metadata).
+Longitudinal data set includes 6 donors (3 male and 3 females).
+PBMC samples were collected from 6 donors over 10 weeks.
+To interrogate longitudinal data, please follow following steps.
+
+*Note: Users need to check the data quality, batch effect or normalization before running PALMO. Confounding effect of variables like batch on features can be deduced using variance decomposition analysis.*
+
+## Load Library
+
+    #Load Library and other visualization packages
+    library("PALMO")
+    library("Hmisc")
+
+## Load data and assign parameters (Time \~ 10sec)
+
+The annotation table `metadata` must consist of column `Sample` (Participant sample name), `PTID` (donor/Participant), `Time` (longitudinal time points) information, but not necessarily same column names.
+Users can assign respective columns in subsequent steps.
+The data is an Expression data frame, where rows represents gene/proteins and column represents participant samples (same as annotation table `Sample` column).
+We strongly suggest combining both `PTID` and `Time` column by separator to make `Sample` column.
+For example, PTID1 and Week1 can be represented as Sample PTID1W1 or PTID1_W1.
+
+    #Load Plasma proteome data (longitudinal)
+    load("data/AIFI-Olink-NPX_log2_Protein.Rda")
+    #Load metadata
+    load("data/AIFI-Metadata.Rda")
+
+## Create PALMO object and merge annotation data (Time \~ 20sec)
+
+First create the PALMO S4 object consisting of expression data frame and clinical annotations.
+The expression data frame columns merged with input annotation data frame.
+Only overlapping samples kept.
+Missing annotations with Sample, Donor/participant, or Time columns are removed from downstream analysis.
+
+    #Create PALMO object
+    palmo_obj <- createPALMOobject(anndata=ann, data=data)
+
+    #Assign Sample, PTID and Time parameters
+    palmo_obj<- annotateMetadata(data_object=palmo_obj,
+                sample_column= "Sample", donor_column= "PTID",
+                time_column= "Time")
+
+    #Sample overlap and final matrix
+    palmo_obj <- mergePALMOdata(data_object=palmo_obj, datatype="bulk")
+
+    #Check for replicates
+    palmo_obj <- checkReplicates(data_object=palmo_obj, mergeReplicates = T)
+
+## Remove genes with \>40%NAs (optional)
+
+For downstream analysis select genes/proteins with less than 40% of missing values.
+Users can select cut-off for missing values as necessary.
+
+    palmo_obj <- naFilter(data_object=palmo_obj, na_cutoff=0.4)
+
+## Features contributing towards donor variations (Variance decomposition) (Time \~1min)
+
+To perform variance decomposition across donors, apply `lmeVariance` function on PALMO object consisting of input metadata and expression data.
+The `featureSet` is a list of variables for which fraction of variance explained by each gene is calculated.
+`meanThreshold` defines the minimum average expression threshold to be used for longitudinal data.
+Here we used normalized protein expression 1 based on mean expression profile of each gene across longitudinal samples.
+Residuals suggest the variance cannot be explained by available feature set.
+The variance explained by each gene towards the featureSet of interest given in percentage.
+*(Note: To reduce the processing time use nodes cl=8 (or greater) and lmer_control=TRUE)*
+
+    featureSet <- c("PTID","Time")
+    palmo_obj <- lmeVariance(data_object=palmo_obj, featureSet=featureSet,
+                             meanThreshold=1, fileName="olink")
+    var_decomp <- palmo_obj@result$variance_decomposition
+
+<br> ![img](imgs/Tutorial-1-variance.png){width="50%" height="50%"} <br>
+
+    head(var_decomp[,c(featureSet, "Residual")])
+    #Features      donor      week  Residuals
+    #FOLR3   99.90070 0.0000000 0.09930098
+    #GH2     99.49856 0.0000000 0.50144042
+    #PSPN    99.26882 0.1021076 0.62906798
+    #CDHR2   99.07933 0.1157406 0.80493162
+    #SSC4D   98.82794 0.0000000 1.17206000
+    #XPNPEP2 98.67628 0.0000000 1.32372323
+
+In this example FOLR3 protein shows high (99%) variations from donor.
+
+## Donor-specific variance contributing features
+
+The top 15 features contributing to donor, and time attributes variance can be seen in barplot.
+Users can include other attributes to see variance decomposition on user-defined attributes.
+
+    plots <- variancefeaturePlot(vardata=var_decomp, 
+    featureSet=featureSet,
+                Residual=T)
+
+<br> ![img](imgs/Tutorial-1-DonorVariance.png) <br>
+
+### Plot top features
+
+Protein expression plot for interested features can be visualized.
+
+    plots <- gene_featureplot(data_object=palmo_obj,
+                              featureList=c("FOLR3", "MICA", "EIF4G1", "SRC"),
+                              x_group_by="PTID", var_oi="Time")
+
+<br> ![img](imgs/Tutorial-1-geneplot.png){width="50%" height="50%"} <br>
+
+## Intra-donor variations over time
+
+To calculate longitudinal stability within donor first visualize the CV (coefficient of variation) vs mean distribution for given data.
+The CV distribution plot allows users to visualize the CV vs mean relation and helps to define threshold using the histogram or selecting few features of interest CV as cut-off.
+We used CV=5 as threshold here.
+
+    #CV distribution
+    cv <- cvCalcBulkProfile(data_object=palmo_obj)
+
+<br> ![img](imgs/Tutorial-1-cvDistribution.png)<br>
+
+    #Find the stable and variable features from the user-defined cut-off
+    palmo_obj <- cvCalcBulk(data_object=palmo_obj, meanThreshold=1, cvThreshold=5)
+
+<br> ![img](imgs/Tutorial-1-VariableStable-Features.png){width="80%" height="80%"}<br>
+
+The longitudinally stable and variable features within donors are identified using user-defined cut-off.
+The variable and stable heatmap shows top 50 features.
+Here each cell represents the CV value and color of value is black (CV=zero), blue (less than or equal to CV threshold) and red (greater than CV threshold).
+The data results can be retrieved from PLAMO S4 object as given below.
+
+    #Variable genes
+    head(palmo_obj@result[["variable_gene"]])
+    head(palmo_obj@result[["var_mat"]])
+    #Non-variable genes (stable)
+    head(palmo_obj@result[["non_variable_gene"]])
+    head(palmo_obj@result[["stable_mat"]])
+
+## Outlier analysis (Time \~ 30sec)
+
+PALMO applies both graphic and statistical methods to examine the temporal behavior of longitudinal data.
+It calculates intra- and inter-donor correlations (across analytes) and displays the results in a heatmap.
+Time points showing obvious weaker correlations with other time points are potential outliers.
+Users can plot heatmap by donor (group_by = "PTID"), time (group_by = "Time") or group of interest.
+
+    #Sample variability (Correlation)
+    palmo_obj <- sample_correlation(data_object=palmo_obj, group_by="PTID")
+
+<br> ![img](imgs/Tutorial-1-samplecorrelation.png){width="50%" height="50%"} <br>
+
+To detect abnormal time points, PALMO first calculates the mean and the standard deviation (SD) of each feature from samples of the same donor across all time points, then calculates `z=(value-mean)/SD` for the feature at individual time points.
+Using a user selected cutoff value of Z, the feature is identified as an outlier at the given time point if `|Z|>Z_cutoff`.
+
+    #Detect outliers (if any)
+    palmo_obj <- outlierDetect(data_object=palmo_obj, z_cutoff=2.5)
+    outlier_res <- palmo_obj@result[["outlier_res"]]
+    head(outlier_res)
+    #  exp  Sample  PTID Time    Sex      gene  meanDev        z
+    #PTID3W643 10.729880 PTID3W6 PTID3   W6 Female     IFI30 8.340474 2.845471
+    #PTID3W627 10.133645 PTID3W6 PTID3   W6 Female     DPEP2 6.595705 2.844629
+    #PTID3W631 10.188437 PTID3W6 PTID3   W6 Female      FCAR 7.004890 2.844607
+    #PTID3W626  7.656418 PTID3W6 PTID3   W6 Female     DPEP1 4.574449 2.844574
+    #PTID3W685  9.129149 PTID3W6 PTID3   W6 Female TNFRSF13C 6.605767 2.844410 2.844410
+    #PTID3W652  8.031215 PTID3W6 PTID3   W6 Female   KIR2DL3 5.156982 2.844018
+
+Users can plot top features with `|Z|>Z_cutoff`.
+
+    #Gene plot (probable outliers)
+    plots <- gene_featureplot(data_object=palmo_obj,
+                     featureList=c("IFI30", "DPEP2","FCAR",
+                                   "TNFRSF13C", "IL15", "IL32"),
+                     x_group_by="PTID", var_oi="Time")
+
+<br> ![img](imgs/Tutorial-1-outlier-geneplot.png){width="100%" height="100%"}<br>
+
+    #Number of outlier features
+    num_outlier <- data.frame(table(outlier_res$Sample))
+    num_outlier <- num_outlier[order(num_outlier$Freq, decreasing = T),]
+    head(num_outlier)
+    #Var1 Freq
+    #PTID3W6   71
+    #PTID5W9   28
+    #PTID4W5   20
+    #PTID1W1   17
+    #PTID1W8   12
+    #PTID6W1    7
+
+<br> ![img](imgs/Tutorial-1-Z-plot.png){width="100%" height="100%"}<br>
+
+Assuming `Z` follows a normal distribution the expected rate `r` of features having `|Z|>Z_cutoff` (two-sided) or having `Z>Zcutoff` or `Z< -Zcutoff` (one-sided).
+Afterwards PALMO counts how many features are outliers at individual timepoints and uses binomial tests to evaluate the corresponding `p` values, and applies Benjamini & Hochberg procedure to adjust the `p` values since multiple timepoints are tested.
+A donor-specific abnormal timepoint is identified if the corresponding adjusted `p` value is less than 0.05.
+
+    #Calculate p value
+    outlierDetectP(outlier_events=outlier_res, z_cutoff=2.5, nGenes=1046)
+
+<br> ![img](imgs/Tutorial-1-outlier-pvalue.png){width="100%" height="100%"}<br>
+
+# <a name="session"></a> Session Info
+
+    sessionInfo()
+    #> R version 4.1.2 (2021-11-01)
+    #> Platform: x86_64-apple-darwin17.0 (64-bit)
+    #> Running under: macOS Big Sur 10.16
+    #> 
+    #> Matrix products: default
+    #> BLAS:   /Library/Frameworks/R.framework/Versions/4.1/Resources/lib/libRblas.0.dylib
+    #> LAPACK: /Library/Frameworks/R.framework/Versions/4.1/Resources/lib/libRlapack.dylib
+    #> 
+    #> locale:
+    #> [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+    #> 
+    #> attached base packages:
+    #> [1] grid      stats     graphics  grDevices utils     datasets  methods  
+    #> [8] base     
+    #> 
+    #> other attached packages:
+    #> [1] PALMO_0.1.1
+    #> 
+    #> loaded via a namespace (and not attached):
+    #>   [1] utf8_1.2.2                  reticulate_1.25            
+    #>   [3] tidyselect_1.1.2            lme4_1.1-31                
+    #>   [5] htmlwidgets_1.5.4           Rtsne_0.16                 
+    #>   [7] munsell_0.5.0               codetools_0.2-18           
+    #>   [9] ragg_1.2.2                  ica_1.0-2                  
+    #>  [11] future_1.26.1               miniUI_0.1.1.1             
+    #>  [13] withr_2.5.0                 spatstat.random_2.2-0      
+    #>  [15] colorspace_2.0-3            progressr_0.10.1           
+    #>  [17] Biobase_2.54.0              knitr_1.40                 
+    #>  [19] rstudioapi_0.14             SingleCellExperiment_1.16.0
+    #>  [21] Seurat_4.1.1                stats4_4.1.2               
+    #>  [23] ROCR_1.0-11                 tensor_1.5                 
+    #>  [25] listenv_0.8.0               MatrixGenerics_1.6.0       
+    #>  [27] GenomeInfoDbData_1.2.7      polyclip_1.10-0            
+    #>  [29] farver_2.1.1                pheatmap_1.0.12            
+    #>  [31] rprojroot_2.0.3             parallelly_1.32.0          
+    #>  [33] vctrs_0.5.1                 generics_0.1.3             
+    #>  [35] xfun_0.33                   GenomeInfoDb_1.30.1        
+    #>  [37] R6_2.5.1                    doParallel_1.0.17          
+    #>  [39] clue_0.3-61                 DelayedArray_0.20.0        
+    #>  [41] bitops_1.0-7                spatstat.utils_2.3-1       
+    #>  [43] cachem_1.0.6                assertthat_0.2.1           
+    #>  [45] promises_1.2.0.1            scales_1.2.1               
+    #>  [47] rgeos_0.5-9                 gtable_0.3.1               
+    #>  [49] globals_0.15.0              goftest_1.2-3              
+    #>  [51] rlang_1.0.6                 systemfonts_1.0.4          
+    #>  [53] GlobalOptions_0.1.2         splines_4.1.2              
+    #>  [55] lazyeval_0.2.2              spatstat.geom_2.4-0        
+    #>  [57] broom_0.8.0                 yaml_2.3.5                 
+    #>  [59] reshape2_1.4.4              abind_1.4-5                
+    #>  [61] modelr_0.1.8                backports_1.4.1            
+    #>  [63] httpuv_1.6.5                tools_4.1.2                
+    #>  [65] ggplot2_3.4.0               ellipsis_0.3.2             
+    #>  [67] spatstat.core_2.4-4         jquerylib_0.1.4            
+    #>  [69] RColorBrewer_1.1-3          BiocGenerics_0.40.0        
+    #>  [71] ggridges_0.5.3              Rcpp_1.0.9                 
+    #>  [73] plyr_1.8.7                  zlibbioc_1.40.0            
+    #>  [75] RCurl_1.98-1.8              purrr_0.3.4                
+    #>  [77] rpart_4.1.16                deldir_1.0-6               
+    #>  [79] pbapply_1.5-0               GetoptLong_1.0.5           
+    #>  [81] cowplot_1.1.1               S4Vectors_0.32.4           
+    #>  [83] zoo_1.8-10                  SummarizedExperiment_1.24.0
+    #>  [85] SeuratObject_4.1.0          haven_2.5.0                
+    #>  [87] ggrepel_0.9.1               cluster_2.1.3              
+    #>  [89] factoextra_1.0.7            fs_1.5.2                   
+    #>  [91] magrittr_2.0.3              data.table_1.14.2          
+    #>  [93] scattermore_0.8             circlize_0.4.15            
+    #>  [95] lmtest_0.9-40               reprex_2.0.1               
+    #>  [97] RANN_2.6.1                  fitdistrplus_1.1-8         
+    #>  [99] matrixStats_0.62.0          hms_1.1.2                  
+    #> [101] patchwork_1.1.1             mime_0.12                  
+    #> [103] evaluate_0.16               xtable_1.8-4               
+    #> [105] readxl_1.4.0                IRanges_2.28.0             
+    #> [107] gridExtra_2.3               shape_1.4.6                
+    #> [109] compiler_4.1.2              tibble_3.1.8               
+    #> [111] KernSmooth_2.23-20          crayon_1.5.1               
+    #> [113] minqa_1.2.4                 htmltools_0.5.3            
+    #> [115] mgcv_1.8-40                 later_1.3.0                
+    #> [117] tzdb_0.3.0                  tidyr_1.2.1                
+    #> [119] lubridate_1.8.0             DBI_1.1.3                  
+    #> [121] tweenr_1.0.2                dbplyr_2.2.1               
+    #> [123] ComplexHeatmap_2.10.0       MASS_7.3-57                
+    #> [125] MAST_1.20.0                 boot_1.3-28                
+    #> [127] Matrix_1.5-1                readr_2.1.2                
+    #> [129] cli_3.4.0                   parallel_4.1.2             
+    #> [131] igraph_1.3.2                GenomicRanges_1.46.1       
+    #> [133] forcats_0.5.2               pkgconfig_2.0.3            
+    #> [135] pkgdown_2.0.7               sp_1.5-0                   
+    #> [137] plotly_4.10.0               spatstat.sparse_2.1-1      
+    #> [139] xml2_1.3.3                  foreach_1.5.2              
+    #> [141] bslib_0.3.1                 XVector_0.34.0             
+    #> [143] rvest_1.0.2                 stringr_1.4.1              
+    #> [145] digest_0.6.29               sctransform_0.3.3          
+    #> [147] RcppAnnoy_0.0.19            spatstat.data_2.2-0        
+    #> [149] rmarkdown_2.14              cellranger_1.1.0           
+    #> [151] leiden_0.4.2                uwot_0.1.14                
+    #> [153] shiny_1.7.1                 rjson_0.2.21               
+    #> [155] nloptr_2.0.3                lifecycle_1.0.3            
+    #> [157] nlme_3.1-158                jsonlite_1.8.0             
+    #> [159] desc_1.4.1                  viridisLite_0.4.1          
+    #> [161] fansi_1.0.3                 pillar_1.8.1               
+    #> [163] lattice_0.20-45             fastmap_1.1.0              
+    #> [165] httr_1.4.4                  survival_3.3-1             
+    #> [167] glue_1.6.2                  png_0.1-7                  
+    #> [169] iterators_1.0.14            ggforce_0.3.3              
+    #> [171] stringi_1.7.8               sass_0.4.1                 
+    #> [173] textshaping_0.3.6           memoise_2.0.1              
+    #> [175] dplyr_1.0.10                tidyverse_1.3.1            
+    #> [177] irlba_2.3.5                 future.apply_1.9.0
+*The analysis time reported in tutorials were based on macOS with 2.3GHz 8-core Intel Core i9 processor and 32GB RAM memory.*
+
+\newpage
