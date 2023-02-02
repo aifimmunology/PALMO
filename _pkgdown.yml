@@ -1,0 +1,8 @@
+url: ~
+template:
+  bootstrap: 5
+  bootswatch: materia
+  navbar:
+    structure:
+      left:  [intro, reference, articles, tutorials, news]
+      right: [github]

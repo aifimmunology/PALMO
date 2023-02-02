@@ -1,0 +1,229 @@
+---
+title: "Tutorial 6: Differential Gene Analysis"
+output:
+  pdf_document:
+    toc: yes
+    number_sections: yes
+  html_document:
+    toc: yes
+    df_print: paged
+  word_document:
+    toc: yes
+urlcolor: blue
+vignette: |
+  %\VignetteIndexEntry{ReferenceManual}
+  %\VignetteEngine{knitr::rmarkdown} %\VignetteEncoding{UTF-8}
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# <a name="example6"></a> Differential Gene Analysis in Longitudinal Data (CNP0001102)
+
+This tutorial allows users to identify differential expressed genes in direction of longitudinal time-points.
+As an example single cell data from [Zhu et al. 2020](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7368915/) downloaded from [CNP0001102](https://db.cngb.org/search/project/CNP0001102/).
+Metadata is downloaded from Supplementary table and curated version can be found in the [metadata](https://github.com/aifimmunology/PALMO/blob/data/data/CNP0001102-annotation.csv).
+The dataset consists of 5 Covid-19 donors, 2 Flu donors with longitudinal data and 3 controls.
+To explore differential expressed genes in each celltype of each donor we used hurdle model-based modeling on input data to retrieve the DEGs.
+To infer DEGs in each celltype over time progression (3 or more timepoints) timepoints were considered as continuous variable (otherwise discrete).
+To infer differential genes over time in COVID dataset please follow following steps.
+
+## Load data and clinical metadata (Time \~ 30sec)
+
+Single cell Seurat object from study CNP0001102.
+
+    #Single cell object CNP0001102
+    pbmc <- readRDS("data/CNP0001102_Final_nCoV_0716_upload.RDS")
+    #Add column Sample
+    pbmc@meta.data$Sample <- pbmc@meta.data$batch
+
+## Clinical annotations [Table S1. Clinical data of the enrolled subjects](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7368915/) (Time \~ 5sec)
+
+    metadata <- read.csv("data/CNP0001102-annotation.csv", stringsAsFactors = F)
+
+## Load library and run (Time \~15 min)
+
+    #Load Library
+    library("PALMO")
+    library("tidyverse")
+
+First create the PALMO S4 object using input scRNA object and annotation dataframe (metadata).
+The expression dataframe columns merged with input annotation dataframe.
+Only overlapping samples kept.
+
+    #Create PALMO object
+    palmo_obj <- createPALMOobject(anndata=metadata, data=pbmc)
+
+Assign sample_column, donor_column and time_column variables in this step.
+
+    #Assign Sample, PTID and Time parameters
+    palmo_obj <- annotateMetadata(data_object=palmo_obj,
+                                  sample_column= "Sample",
+                                  donor_column= "Participant",
+                                  time_column= "Day")
+
+For single cell data merge annotation and single cell metadata by mentioned sample_column.
+
+    #Sample overlap and final matrix
+    palmo_obj <- mergePALMOdata(data_object=palmo_obj, datatype="singlecell")
+
+Perform longitudinal differential analysis in each donor and celltype over timepoints.
+
+    #Perform longitudinal differential analysis
+    palmo_obj <- sclongitudinalDEG(data_object=palmo_obj, scassay="RNA",
+                                   group_column="cell_type")
+    >Fitting a ZLM model for donorID:  COV-1 ...
+    >Fitting a ZLM model for donorID:  COV-2 ...
+    >Fitting a ZLM model for donorID:  COV-3 ... 
+    >Fitting a ZLM model for donorID:  COV-4 ... 
+    >Fitting a ZLM model for donorID:  COV-5 ... 
+    >Fitting a ZLM model for donorID:  IAV-1 ... 
+    >Fitting a ZLM model for donorID:  IAV-2 ... 
+
+### Check output folder for tabular results and visualization.
+The `coef` is equivalent to `log2FC`, `nomP` suggest nominal p-value and `adjP` suggests the adjusted p-value.
+
+    #Plots can be seen in output directory output
+    DEGres <- palmo_obj@result$degs
+    head(DEGres[order(DEGres$coef, decreasing = T),])
+    #primerid contrast         nomP     coef         adjP donorID celltype dir
+    #IGHG4   TimeD9 1.701579e-26 3.056092 1.453999e-23   IAV-2   Plasma upregulated at D9
+    #JCHAIN   TimeD9 8.759407e-32 2.647757 2.245474e-28   IAV-2   Plasma upregulated at D9
+    #IGHG3   TimeD9 8.470810e-22 2.485250 2.412769e-19   IAV-2   Plasma upregulated at D9
+    #IGLC2   TimeD9 1.352490e-16 2.289544 8.890022e-15   IAV-2   Plasma upregulated at D9
+    #IGHG1   TimeD9 1.292885e-16 2.219146 8.608601e-15   IAV-2   Plasma upregulated at D9
+    #SYNE2   TimeD4 7.249010e-13 2.209541 1.215659e-09   COV-4 XCL+_NKs upregulated at D4
+
+    #Or interested celltypes
+    celltype_oi <- c("Activated CD4 T cells", "Naive B cells")
+    palmo_obj <- sclongitudinalDEG(data_object=palmo_obj, scassay="RNA",
+                               group_column="cell_type",
+                               group_oi = celltype_oi)
+
+General analysis schema and differential results in each donor over timepoints in celltype Cytotoxic CD8 T-cells using `PALMO` shown below.
+
+<br><br> ![img](imgs/Tutorial-6-CNP0001102-DEG.png) <br><br>
+
+
+# <a name="session"></a> Session Info
+
+    sessionInfo()
+    #> R version 4.1.2 (2021-11-01)
+    #> Platform: x86_64-apple-darwin17.0 (64-bit)
+    #> Running under: macOS Big Sur 10.16
+    #> 
+    #> Matrix products: default
+    #> BLAS:   /Library/Frameworks/R.framework/Versions/4.1/Resources/lib/libRblas.0.dylib
+    #> LAPACK: /Library/Frameworks/R.framework/Versions/4.1/Resources/lib/libRlapack.dylib
+    #> 
+    #> locale:
+    #> [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+    #> 
+    #> attached base packages:
+    #> [1] grid      stats     graphics  grDevices utils     datasets  methods  
+    #> [8] base     
+    #> 
+    #> other attached packages:
+    #> [1] PALMO_0.1.1
+    #> 
+    #> loaded via a namespace (and not attached):
+    #>   [1] utf8_1.2.2                  reticulate_1.25            
+    #>   [3] tidyselect_1.1.2            lme4_1.1-31                
+    #>   [5] htmlwidgets_1.5.4           Rtsne_0.16                 
+    #>   [7] munsell_0.5.0               codetools_0.2-18           
+    #>   [9] ragg_1.2.2                  ica_1.0-2                  
+    #>  [11] future_1.26.1               miniUI_0.1.1.1             
+    #>  [13] withr_2.5.0                 spatstat.random_2.2-0      
+    #>  [15] colorspace_2.0-3            progressr_0.10.1           
+    #>  [17] Biobase_2.54.0              knitr_1.40                 
+    #>  [19] rstudioapi_0.14             SingleCellExperiment_1.16.0
+    #>  [21] Seurat_4.1.1                stats4_4.1.2               
+    #>  [23] ROCR_1.0-11                 tensor_1.5                 
+    #>  [25] listenv_0.8.0               MatrixGenerics_1.6.0       
+    #>  [27] GenomeInfoDbData_1.2.7      polyclip_1.10-0            
+    #>  [29] farver_2.1.1                pheatmap_1.0.12            
+    #>  [31] rprojroot_2.0.3             parallelly_1.32.0          
+    #>  [33] vctrs_0.5.1                 generics_0.1.3             
+    #>  [35] xfun_0.33                   GenomeInfoDb_1.30.1        
+    #>  [37] R6_2.5.1                    doParallel_1.0.17          
+    #>  [39] clue_0.3-61                 DelayedArray_0.20.0        
+    #>  [41] bitops_1.0-7                spatstat.utils_2.3-1       
+    #>  [43] cachem_1.0.6                assertthat_0.2.1           
+    #>  [45] promises_1.2.0.1            scales_1.2.1               
+    #>  [47] rgeos_0.5-9                 gtable_0.3.1               
+    #>  [49] globals_0.15.0              goftest_1.2-3              
+    #>  [51] rlang_1.0.6                 systemfonts_1.0.4          
+    #>  [53] GlobalOptions_0.1.2         splines_4.1.2              
+    #>  [55] lazyeval_0.2.2              spatstat.geom_2.4-0        
+    #>  [57] broom_0.8.0                 yaml_2.3.5                 
+    #>  [59] reshape2_1.4.4              abind_1.4-5                
+    #>  [61] modelr_0.1.8                backports_1.4.1            
+    #>  [63] httpuv_1.6.5                tools_4.1.2                
+    #>  [65] ggplot2_3.4.0               ellipsis_0.3.2             
+    #>  [67] spatstat.core_2.4-4         jquerylib_0.1.4            
+    #>  [69] RColorBrewer_1.1-3          BiocGenerics_0.40.0        
+    #>  [71] ggridges_0.5.3              Rcpp_1.0.9                 
+    #>  [73] plyr_1.8.7                  zlibbioc_1.40.0            
+    #>  [75] RCurl_1.98-1.8              purrr_0.3.4                
+    #>  [77] rpart_4.1.16                deldir_1.0-6               
+    #>  [79] pbapply_1.5-0               GetoptLong_1.0.5           
+    #>  [81] cowplot_1.1.1               S4Vectors_0.32.4           
+    #>  [83] zoo_1.8-10                  SummarizedExperiment_1.24.0
+    #>  [85] SeuratObject_4.1.0          haven_2.5.0                
+    #>  [87] ggrepel_0.9.1               cluster_2.1.3              
+    #>  [89] factoextra_1.0.7            fs_1.5.2                   
+    #>  [91] magrittr_2.0.3              data.table_1.14.2          
+    #>  [93] scattermore_0.8             circlize_0.4.15            
+    #>  [95] lmtest_0.9-40               reprex_2.0.1               
+    #>  [97] RANN_2.6.1                  fitdistrplus_1.1-8         
+    #>  [99] matrixStats_0.62.0          hms_1.1.2                  
+    #> [101] patchwork_1.1.1             mime_0.12                  
+    #> [103] evaluate_0.16               xtable_1.8-4               
+    #> [105] readxl_1.4.0                IRanges_2.28.0             
+    #> [107] gridExtra_2.3               shape_1.4.6                
+    #> [109] compiler_4.1.2              tibble_3.1.8               
+    #> [111] KernSmooth_2.23-20          crayon_1.5.1               
+    #> [113] minqa_1.2.4                 htmltools_0.5.3            
+    #> [115] mgcv_1.8-40                 later_1.3.0                
+    #> [117] tzdb_0.3.0                  tidyr_1.2.1                
+    #> [119] lubridate_1.8.0             DBI_1.1.3                  
+    #> [121] tweenr_1.0.2                dbplyr_2.2.1               
+    #> [123] ComplexHeatmap_2.10.0       MASS_7.3-57                
+    #> [125] MAST_1.20.0                 boot_1.3-28                
+    #> [127] Matrix_1.5-1                readr_2.1.2                
+    #> [129] cli_3.4.0                   parallel_4.1.2             
+    #> [131] igraph_1.3.2                GenomicRanges_1.46.1       
+    #> [133] forcats_0.5.2               pkgconfig_2.0.3            
+    #> [135] pkgdown_2.0.7               sp_1.5-0                   
+    #> [137] plotly_4.10.0               spatstat.sparse_2.1-1      
+    #> [139] xml2_1.3.3                  foreach_1.5.2              
+    #> [141] bslib_0.3.1                 XVector_0.34.0             
+    #> [143] rvest_1.0.2                 stringr_1.4.1              
+    #> [145] digest_0.6.29               sctransform_0.3.3          
+    #> [147] RcppAnnoy_0.0.19            spatstat.data_2.2-0        
+    #> [149] rmarkdown_2.14              cellranger_1.1.0           
+    #> [151] leiden_0.4.2                uwot_0.1.14                
+    #> [153] shiny_1.7.1                 rjson_0.2.21               
+    #> [155] nloptr_2.0.3                lifecycle_1.0.3            
+    #> [157] nlme_3.1-158                jsonlite_1.8.0             
+    #> [159] desc_1.4.1                  viridisLite_0.4.1          
+    #> [161] fansi_1.0.3                 pillar_1.8.1               
+    #> [163] lattice_0.20-45             fastmap_1.1.0              
+    #> [165] httr_1.4.4                  survival_3.3-1             
+    #> [167] glue_1.6.2                  png_0.1-7                  
+    #> [169] iterators_1.0.14            ggforce_0.3.3              
+    #> [171] stringi_1.7.8               sass_0.4.1                 
+    #> [173] textshaping_0.3.6           memoise_2.0.1              
+    #> [175] dplyr_1.0.10                tidyverse_1.3.1            
+    #> [177] irlba_2.3.5                 future.apply_1.9.0
+*The analysis time reported in tutorials were based on macOS with 2.3GHz 8-core Intel Core i9 processor and 32GB RAM memory.*
+
+\newpage
+\newpage

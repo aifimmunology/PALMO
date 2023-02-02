@@ -1,0 +1,417 @@
+---
+title: "Tutorial 2: scRNA Longitudinal Data"
+output:
+  pdf_document:
+    toc: yes
+    number_sections: yes
+  html_document:
+    toc: yes
+    df_print: paged
+  word_document:
+    toc: yes
+urlcolor: blue
+vignette: |
+  %\VignetteIndexEntry{ReferenceManual}
+  %\VignetteEngine{knitr::rmarkdown} %\VignetteEncoding{UTF-8}
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# <a name="example1"></a> scRNA Longitudinal Data (n=4 and 6 weeks follow-up)
+
+This tutorial allows users to explore single cell RNAseq data measured from 4 healthy donors over 6 time points (week 2-7).
+Single cell data is available at [GSE190992\*](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE190992).
+(1) AIFI-scRNA-PBMC-FinalData.RDS (Normalized scRNA seurat object) (2) [AIFI-Metadata.Rda](https://github.com/aifimmunology/PALMO/blob/data/data/AIFI-Metadata.Rda) (clinical metadata).
+Longitudinal data set includes 4 donors and 6 donors (24 samples).
+To infer inter-donor, intra-donor variations, and stable features, please follow the following steps.
+
+*(Note:If any issue with data access or needed RAW files please [Contact Us](mailto:suhas.vasaikar@alleninstitute.org))*.
+
+## Load Library
+
+    #Load Library
+    library("PALMO")
+    library("Hmisc")
+
+Load single cell data and define the `Sample` column which is same as `Sample` column in metadata.
+
+## Load single cell data and metadata
+
+    #scRNA seurat object
+    pbmc <- readRDS("data/AIFI-scRNA-PBMC-FinalData.RDS")
+    metaData <- pbmc@meta.data
+    pbmc@meta.data$Sample <- pbmc@meta.data$orig.ident
+    pbmc@meta.data$celltype <- gsub(" ", "_", pbmc@meta.data$celltype)
+
+    #Load annotation datas
+    load("data/AIFI-Metadata.Rda")
+
+We selected major 19 celltypes based on proportion.
+Users can select celltype of interest to investigate longitudinal stability.
+
+    #Group of ineterst
+    avgGroup <- "celltype"
+    #Celltypes observed in dataset
+    cell_type <- sort(unique(pbmc@meta.data$celltype))
+    #Celltypes selected for analysis consisting atleast >5% of cells in each celltype.
+    celltype_oi <- c("CD4_Naive","CD4_TEM","CD4_TCM","CD4_CTL","CD8_Naive",
+                  "CD8_TEM","CD8_TCM","Treg","MAIT","gdT",
+                  "NK", "NK_CD56bright",
+                  "B_naive", "B_memory", "B_intermediate",
+                  "CD14_Mono","CD16_Mono",
+                  "cDC2","pDC")
+
+## Create PALMO object (Time \~ 2min)
+
+First create the PALMO S4 object using input scRNA object and annotation dataframe.
+The expression dataframe columns merged with input annotation dataframe.
+Only overlapping samples kept.
+Missing annotations with Sample, Donor/participant, or Time columns are removed from downstream analysis.
+
+    #Create PALMO object
+    palmo_obj <- createPALMOobject(anndata=ann, data=pbmc)
+
+Assign `sample_column`, `donor_column` and `time_column` variables in this step.
+
+    #Assign Sample, PTID and Time parameters
+    palmo_obj <- annotateMetadata(data_object=palmo_obj,
+                              sample_column= "Sample",
+                              donor_column= "PTID",
+                              time_column= "Time")
+
+For single cell data merge annotation and single cell metadata by mentioned `sample_column`.
+
+    #Sample overlap and final matrix
+    palmo_obj <- mergePALMOdata(data_object=palmo_obj, datatype="singlecell")
+
+Single cell data is aggregated by average method at sample group level.
+Features with average expression greater than zero across all samples are kept.
+
+    #Aggregate data (Psuedo-bulk)
+    palmo_obj <- avgExpCalc(data_object=palmo_obj,
+                        assay="RNA", group_column="celltype")
+    head(palmo_obj@curated[["anndata"]]) #merged annotation data
+    head(palmo_obj@curated[["data"]]) #scRNA average expression data
+
+**Optional step**.
+If data consists of replicates then they can be merged by `mergeReplicates = TRUE`.
+
+    #Check for replicates
+    palmo_obj <- checkReplicates(data_object=palmo_obj, mergeReplicates = T)
+
+## CV profile (Time \~ 5min)
+
+To calculate longitudinal stability within donor first visualize the CV vs mean distribution for given data.
+Define CV threshold using the histogram or selecting few features of interest CV as cut-off.
+Here we used housekeeping genes **GAPDH** and **ACTB** to define CV threshold.
+
+    #Check the mean expression and CV across groups (celltypes)
+    palmo_obj <- cvCalcSCProfile(data_object=palmo_obj,
+                           housekeeping_genes=c("GAPDH", "ACTB"),
+                           fileName="scrna")
+
+<br> ![img](imgs/Tutorial-2-CVPlot-1.png) <br>
+
+Here, CV (coefficient of variation) vs mean plot shows spikes at end which are associated with lowly expressed genes.
+Thus, users can select appropriate `meanThreshold` to remove features with very low expression.
+Overall CV pattern for housekeeping genes can be explored on right panel to choose optimum CV threshold.
+
+    #Lowly expressed genes show abnormal CV
+    palmo_obj <- cvCalcSCProfile(data_object=palmo_obj, meanThreshold = 0.1,
+                           housekeeping_genes=c("GAPDH", "ACTB"),
+                           fileName="scrna")
+
+<br> ![img](imgs/Tutorial-2-CVPlot-2.png) <br>
+
+## Donor wise CV profile over longitudinal timepoints (Time \~ 4min)
+
+**Optional step**.
+To check the donor or participant wise CV profile run the CV sample profile analysis.
+
+    #Sample Celltype Mean-CV plot (check output folder)
+    cvSCsampleprofile(data_object=palmo_obj, meanThreshold = 0.1,
+    cvThreshold = 10)
+
+## Features contributing towards donor variations (Time \~ 10min)
+
+Variance decomposition analysis was performed to identify the features associated with attributes of interest such as participants, sex, disease type, celltype, or batch.
+The `featureSet` is a list of variables for which fraction of variance explained by each gene is calculated.
+The variance explained by each gene towards the `featureSet` of interest given in percentage.
+*(Note: To reduce the processing time use nodes cl=8 (or greater) and lmer_control=TRUE)*
+
+    #Check the group of interest
+    head(palmo_obj@curated$anndata)
+
+    #Variance decomposition
+    featureSet <- c("PTID", "Time","celltype")
+    palmo_obj <- lmeVariance(data_object=palmo_obj,
+                             featureSet=featureSet,
+                             meanThreshold=0.1, cl=4,
+                             fileName="scrna")
+
+    #Get the result
+    var_decomp <- palmo_obj@result$variance_decomposition
+
+<br> ![img](imgs/Tutorial-2-variancePlot.png){width="50%" height="50%"}<br>
+
+## Variance plot
+
+The top 15 features contributing to donor, time or celltype attributes variance can be seen in barplot.
+
+    plots <- variancefeaturePlot(vardata=var_decomp, featureSet=featureSet,
+                                 cols=c("purple", "darkgreen", "cyan"))
+
+<br> ![img](imgs/Tutorial-2-Donor-variancePlot.png) <br>
+
+## Plot the top features
+
+Gene expression plot for interested features can be visualized by donors or by time.
+
+    gene_featureplot(data_object=palmo_obj, featureList="LILRA4")
+
+<br> ![img](imgs/Tutorial-2-celltype-LILRA4-1.png){width="50%" height="50%"}<br>
+
+Gene expression plot for interested features can be visualized by celltypes.
+
+    gene_featureplot(data_object=palmo_obj, featureList="LILRA4", facet_by="group")
+
+<br> ![img](imgs/Tutorial-2-celltype-LILRA4-2.png)<br>
+
+Further multiple features expression pattern can be visualized.
+
+    #Multiple-gene visulization
+    plots <- gene_featureplot(data_object=palmo_obj,
+                              featureList=c("MTRNR2L8", "XIST", 
+                                            "JUN", "DAXX",
+                                            "LILRA4", "CLEC9A"),
+                              x_group_by="PTID", var_oi="Time",
+                              x_text_angle=90)
+
+<br> ![img](imgs/Tutorial-2-celltype-LILRA4-3.png) <br>
+
+## Intra-donor variations over time (Time \~10min)
+
+To calculate longitudinal stability within donor define `meanThreshold` and `cvThreshold` parameters as discussed above.
+The analysis will calculate the CV across average group ("celltype") mentioned by user.
+It will create a CV-Mean plots for individual donor over longitudinal timepoints that shows the highly variable and stable features in each donor.
+The plots are stored in `output` directory if not mentioned.
+It also provides a housekeeping genes position in CV-Mean plot across each celltype/group of interest.
+*(Note: To reduce the processing time use nodes cl=8 (or greater))*
+
+    #Calculate CV
+    palmo_obj <- cvCalcSC(data_object=palmo_obj,
+                          meanThreshold=0.1, cvThreshold=10,
+                          housekeeping_genes=c("GAPDH", "ACTB"),
+                          fileName="scrna")
+
+Plots saved in user-defined output directory
+
+<br> ![img](imgs/Tutorial-2-CV-distribution-HousekeepingGenes.png) <br>
+
+*(Note: Black dots, all genes; red dots, genes with given mean and CV threshold; blue dots, housekeeping genes)*
+
+## Find stable and variable features in longitudinal data (Time \<1 min)
+
+Above step resulted CV values used to identify Stable and variable features across celltype or group of interest.
+Define minimum number of donors (`donorThreshold`) for consideration and group threshold (`groupThreshold`) which means among group of interest (celltypes here) how many minimum groups should have consensus stable/variable profile.
+For example, T-cell subtypes can share similar stable features.
+This value is arbitrary but suggest criteria to be more stringent or lenient in selecting features.
+For example, `donorThreshold=4` and `groupThreshold=40` suggests identifying stable/variable features in all 4 donors with atleast in 40 donor-group from 4 donors and 19 celltypes.
+These parameters are optional and PALMO can calculate it for users.
+The general formula to select number of donors is more than 50% of donors (\> N/2) and group threshold $groupThreshold=numberofDonors * (numberofCelltypes/2)$.
+For stringency users can select group threshold=number of donors.
+Here its (\~4x19/2) where we considered about 40 samples (less stringent).
+Left panel shows super-variable (SUV) or super-stable (SUS) features that shows high CV over longitudinal timepoints across celltypes.
+Whereas right panel shows variable features or stable (here STATIC, longitudinally stable transcription across time in cell-types) across celltypes.
+
+    palmo_obj <- VarFeatures(data_object=palmo_obj, group_oi=celltype_oi,
+                            cvThreshold=10,
+                            donorThreshold=4,
+                            groupThreshold=40, 
+                            topFeatures=25,
+                            fileName="scrna")
+    var_genes <- palmo_obj@result$var_genes
+
+Variable genes observed in longitudinal data (CV\>10%)
+
+<br> ![img](imgs/Tutorial-2-Variable-Plot.png) <br>
+
+    palmo_obj <- StableFeatures(data_object=palmo_obj, group_oi=celltype_oi,
+                                  cvThreshold=10,
+                                  donorThreshold=4, groupThreshold=40, 
+                                  topFeatures=25,
+                                  fileName="scrna")
+    stable_genes <- palmo_obj@result$stable_genes
+
+Stable genes observed in longitudinal data (CV\<10%)
+
+<br> ![img](imgs/Tutorial-2-Stable-Plot.png) <br>
+
+## UMAP Plot (Stable/variable) (Time \~ 5min)
+
+To visualize how these stable or variable features performing, users can reduce high dimensional single cell RNA (scRNA) data into lower dimensions using selected Top features from stable/variable analysis.
+The UMAP plot shows whether identified stable features can reproduce celltype/group identity based on few but stable features.
+
+    group_column <- "celltype"
+    #Top variable and stable features used for UMAP
+    dimUMAPPlot(data_object=palmo_obj, nPC=15,
+            gene_oi=unique(var_genes$gene),
+            group_column=group_column, plotname="variable",
+            fileName="scrna")
+
+<br> ![img](imgs/Tutorial-2-scRNA-UMAP-variable-Genes.png) <br>
+
+    dimUMAPPlot(data_object=palmo_obj, nPC=15,
+            gene_oi=unique(stable_genes$gene),
+            group_column=group_column, plotname="stable",
+            fileName="scrna")
+
+<br> ![img](imgs/Tutorial-2-scRNA-UMAP-stable-Genes.png) <br>
+
+## Circular gene expression plot
+
+The top features or gene families can be visualized in circos plot for easy comparison.
+
+    geneList <- c("IL32","CCL5","TCF7","IL7R","LEF1") #T-cell
+    plots <- genecircosPlot(data_object=palmo_obj, geneList=geneList,
+                          group_oi=celltype_oi, colorThreshold=10)
+
+<br> ![img](imgs/Tutorial-2-Tcelltype-circularPlot.png){width="50%" height="50%"} <br>
+
+Users can also load PALMO output result.
+
+    #Get CV result
+    cv_res <- palmo_obj@result[["cv_all"]]
+
+    #Cannonical and non-canonical HLA markers
+    geneList <- c("HLA-A","HLA-B","HLA-C","HLA-DRA","HLA-DPA1","HLA-DRB1")
+    plotres <- genecircosPlot(data=cv_res, geneList=geneList,
+                          titleName="HLA", group_oi=celltype_oi,
+                          colorThreshold=10)
+
+<br> ![img](imgs/Tutorial-2-Tcelltype-circularPlot-HLA.png){width="50%" height="50%"} <br>
+
+
+# <a name="session"></a> Session Info
+
+    sessionInfo()
+    #> R version 4.1.2 (2021-11-01)
+    #> Platform: x86_64-apple-darwin17.0 (64-bit)
+    #> Running under: macOS Big Sur 10.16
+    #> 
+    #> Matrix products: default
+    #> BLAS:   /Library/Frameworks/R.framework/Versions/4.1/Resources/lib/libRblas.0.dylib
+    #> LAPACK: /Library/Frameworks/R.framework/Versions/4.1/Resources/lib/libRlapack.dylib
+    #> 
+    #> locale:
+    #> [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+    #> 
+    #> attached base packages:
+    #> [1] grid      stats     graphics  grDevices utils     datasets  methods  
+    #> [8] base     
+    #> 
+    #> other attached packages:
+    #> [1] PALMO_0.1.1
+    #> 
+    #> loaded via a namespace (and not attached):
+    #>   [1] utf8_1.2.2                  reticulate_1.25            
+    #>   [3] tidyselect_1.1.2            lme4_1.1-31                
+    #>   [5] htmlwidgets_1.5.4           Rtsne_0.16                 
+    #>   [7] munsell_0.5.0               codetools_0.2-18           
+    #>   [9] ragg_1.2.2                  ica_1.0-2                  
+    #>  [11] future_1.26.1               miniUI_0.1.1.1             
+    #>  [13] withr_2.5.0                 spatstat.random_2.2-0      
+    #>  [15] colorspace_2.0-3            progressr_0.10.1           
+    #>  [17] Biobase_2.54.0              knitr_1.40                 
+    #>  [19] rstudioapi_0.14             SingleCellExperiment_1.16.0
+    #>  [21] Seurat_4.1.1                stats4_4.1.2               
+    #>  [23] ROCR_1.0-11                 tensor_1.5                 
+    #>  [25] listenv_0.8.0               MatrixGenerics_1.6.0       
+    #>  [27] GenomeInfoDbData_1.2.7      polyclip_1.10-0            
+    #>  [29] farver_2.1.1                pheatmap_1.0.12            
+    #>  [31] rprojroot_2.0.3             parallelly_1.32.0          
+    #>  [33] vctrs_0.5.1                 generics_0.1.3             
+    #>  [35] xfun_0.33                   GenomeInfoDb_1.30.1        
+    #>  [37] R6_2.5.1                    doParallel_1.0.17          
+    #>  [39] clue_0.3-61                 DelayedArray_0.20.0        
+    #>  [41] bitops_1.0-7                spatstat.utils_2.3-1       
+    #>  [43] cachem_1.0.6                assertthat_0.2.1           
+    #>  [45] promises_1.2.0.1            scales_1.2.1               
+    #>  [47] rgeos_0.5-9                 gtable_0.3.1               
+    #>  [49] globals_0.15.0              goftest_1.2-3              
+    #>  [51] rlang_1.0.6                 systemfonts_1.0.4          
+    #>  [53] GlobalOptions_0.1.2         splines_4.1.2              
+    #>  [55] lazyeval_0.2.2              spatstat.geom_2.4-0        
+    #>  [57] broom_0.8.0                 yaml_2.3.5                 
+    #>  [59] reshape2_1.4.4              abind_1.4-5                
+    #>  [61] modelr_0.1.8                backports_1.4.1            
+    #>  [63] httpuv_1.6.5                tools_4.1.2                
+    #>  [65] ggplot2_3.4.0               ellipsis_0.3.2             
+    #>  [67] spatstat.core_2.4-4         jquerylib_0.1.4            
+    #>  [69] RColorBrewer_1.1-3          BiocGenerics_0.40.0        
+    #>  [71] ggridges_0.5.3              Rcpp_1.0.9                 
+    #>  [73] plyr_1.8.7                  zlibbioc_1.40.0            
+    #>  [75] RCurl_1.98-1.8              purrr_0.3.4                
+    #>  [77] rpart_4.1.16                deldir_1.0-6               
+    #>  [79] pbapply_1.5-0               GetoptLong_1.0.5           
+    #>  [81] cowplot_1.1.1               S4Vectors_0.32.4           
+    #>  [83] zoo_1.8-10                  SummarizedExperiment_1.24.0
+    #>  [85] SeuratObject_4.1.0          haven_2.5.0                
+    #>  [87] ggrepel_0.9.1               cluster_2.1.3              
+    #>  [89] factoextra_1.0.7            fs_1.5.2                   
+    #>  [91] magrittr_2.0.3              data.table_1.14.2          
+    #>  [93] scattermore_0.8             circlize_0.4.15            
+    #>  [95] lmtest_0.9-40               reprex_2.0.1               
+    #>  [97] RANN_2.6.1                  fitdistrplus_1.1-8         
+    #>  [99] matrixStats_0.62.0          hms_1.1.2                  
+    #> [101] patchwork_1.1.1             mime_0.12                  
+    #> [103] evaluate_0.16               xtable_1.8-4               
+    #> [105] readxl_1.4.0                IRanges_2.28.0             
+    #> [107] gridExtra_2.3               shape_1.4.6                
+    #> [109] compiler_4.1.2              tibble_3.1.8               
+    #> [111] KernSmooth_2.23-20          crayon_1.5.1               
+    #> [113] minqa_1.2.4                 htmltools_0.5.3            
+    #> [115] mgcv_1.8-40                 later_1.3.0                
+    #> [117] tzdb_0.3.0                  tidyr_1.2.1                
+    #> [119] lubridate_1.8.0             DBI_1.1.3                  
+    #> [121] tweenr_1.0.2                dbplyr_2.2.1               
+    #> [123] ComplexHeatmap_2.10.0       MASS_7.3-57                
+    #> [125] MAST_1.20.0                 boot_1.3-28                
+    #> [127] Matrix_1.5-1                readr_2.1.2                
+    #> [129] cli_3.4.0                   parallel_4.1.2             
+    #> [131] igraph_1.3.2                GenomicRanges_1.46.1       
+    #> [133] forcats_0.5.2               pkgconfig_2.0.3            
+    #> [135] pkgdown_2.0.7               sp_1.5-0                   
+    #> [137] plotly_4.10.0               spatstat.sparse_2.1-1      
+    #> [139] xml2_1.3.3                  foreach_1.5.2              
+    #> [141] bslib_0.3.1                 XVector_0.34.0             
+    #> [143] rvest_1.0.2                 stringr_1.4.1              
+    #> [145] digest_0.6.29               sctransform_0.3.3          
+    #> [147] RcppAnnoy_0.0.19            spatstat.data_2.2-0        
+    #> [149] rmarkdown_2.14              cellranger_1.1.0           
+    #> [151] leiden_0.4.2                uwot_0.1.14                
+    #> [153] shiny_1.7.1                 rjson_0.2.21               
+    #> [155] nloptr_2.0.3                lifecycle_1.0.3            
+    #> [157] nlme_3.1-158                jsonlite_1.8.0             
+    #> [159] desc_1.4.1                  viridisLite_0.4.1          
+    #> [161] fansi_1.0.3                 pillar_1.8.1               
+    #> [163] lattice_0.20-45             fastmap_1.1.0              
+    #> [165] httr_1.4.4                  survival_3.3-1             
+    #> [167] glue_1.6.2                  png_0.1-7                  
+    #> [169] iterators_1.0.14            ggforce_0.3.3              
+    #> [171] stringi_1.7.8               sass_0.4.1                 
+    #> [173] textshaping_0.3.6           memoise_2.0.1              
+    #> [175] dplyr_1.0.10                tidyverse_1.3.1            
+    #> [177] irlba_2.3.5                 future.apply_1.9.0
+*The analysis time reported in tutorials were based on macOS with 2.3GHz 8-core Intel Core i9 processor and 32GB RAM memory.*
+
+\newpage
+\newpage

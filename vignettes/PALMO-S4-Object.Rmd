@@ -1,0 +1,35 @@
+---
+title: "PALMO S4 Object"
+output:
+  pdf_document:
+    toc: yes
+    number_sections: yes
+  html_document:
+    toc: yes
+    df_print: paged
+  word_document:
+    toc: yes
+urlcolor: blue
+vignette: |
+  %\VignetteIndexEntry{ReferenceManual}
+  %\VignetteEngine{knitr::rmarkdown} %\VignetteEncoding{UTF-8}
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# <a name="example9"></a> PALMO Data Structure
+
+PALMO uses createPALMOobject(anndata, data) function to create S4 object.
+The S4 object stores all input and output information in PALMO object.
+The representative PALMO S4 object structure is shown in Figure below.
+Users can access the data and result directly from PALMO S4 object .
+
+<br> ![img](imgs/PALMO_S4_object.png) <br>
