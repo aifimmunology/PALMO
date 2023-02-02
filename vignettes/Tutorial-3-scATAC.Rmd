@@ -1,5 +1,5 @@
 ---
-title: "Tutorial 3: scATAC Longitudinal Data (n=4 and 6 weeks follow-up)"
+title: "Tutorial 3: scATAC Longitudinal Data"
 output:
   pdf_document:
     toc: yes
